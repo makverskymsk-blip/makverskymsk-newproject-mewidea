@@ -10,6 +10,7 @@ import 'providers/matches_provider.dart';
 import 'providers/wallet_provider.dart';
 import 'providers/stats_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/match_events_provider.dart';
 
 
 /// Запуск напрямую (по умолчанию — prod).
@@ -47,6 +48,7 @@ Future<void> appMain() async {
         ChangeNotifierProvider(create: (_) => WalletProvider()),
         ChangeNotifierProvider(create: (_) => StatsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MatchEventsProvider()),
       ],
       child: const SportsClubApp(),
     ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/sport_match.dart';
 import '../../providers/matches_provider.dart';
 import '../../providers/stats_provider.dart';
+import '../../providers/match_events_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -31,6 +32,22 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     super.initState();
     _initRatings();
     _loadPlayerPositions();
+    _loadLiveEventStats();
+  }
+
+  /// Pre-fill stats from live match events
+  Future<void> _loadLiveEventStats() async {
+    final eventsProv = context.read<MatchEventsProvider>();
+    await eventsProv.loadEvents(widget.match.id);
+    if (!mounted) return;
+    for (final pid in _ratings.keys) {
+      final stats = eventsProv.getPlayerEventStats(pid);
+      setState(() {
+        _ratings[pid]!.goals = stats['goals'] ?? 0;
+        _ratings[pid]!.assists = stats['assists'] ?? 0;
+        _ratings[pid]!.saves = stats['saves'] ?? 0;
+      });
+    }
   }
 
   /// Load positions from DB for all players
@@ -312,6 +329,28 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
 
           const SizedBox(height: 14),
 
+          // Live event stats from match (pre-recorded)
+          if (rating.goals > 0 || rating.assists > 0 || rating.saves > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.fiber_manual_record, size: 8, color: AppColors.error),
+                  const SizedBox(width: 4),
+                  Text('Live:', style: TextStyle(
+                    color: AppColors.of(context).textHint,
+                    fontSize: 11, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  if (rating.goals > 0)
+                    _liveStatBadge('⚽', rating.goals),
+                  if (rating.assists > 0)
+                    _liveStatBadge('🅰️', rating.assists),
+                  if (rating.saves > 0)
+                    _liveStatBadge('🧤', rating.saves),
+                ],
+              ),
+            ),
+
           // Counters: Goals, Assists, Saves — dynamic by position
           _buildCountersForPosition(rating),
 
@@ -352,6 +391,19 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       ),
     );
   }
+  /// Badge for live event stat display
+  Widget _liveStatBadge(String emoji, int count) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text('$emoji $count', style: const TextStyle(fontSize: 12)),
+    );
+  }
+
   /// Dynamic counters based on player position
   Widget _buildCountersForPosition(_PlayerRating rating) {
     final pos = rating.position;

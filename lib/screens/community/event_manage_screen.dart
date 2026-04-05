@@ -4,6 +4,8 @@ import '../../models/sport_match.dart';
 import '../../providers/matches_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
+import '../../providers/match_events_provider.dart';
+import 'match_live_screen.dart';
 import 'rate_players_screen.dart';
 
 class EventManageScreen extends StatefulWidget {
@@ -22,6 +24,10 @@ class _EventManageScreenState extends State<EventManageScreen>
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
+    // Load live events for auto-score
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MatchEventsProvider>().loadEvents(widget.matchId);
+    });
   }
 
   @override
@@ -42,6 +48,22 @@ class _EventManageScreenState extends State<EventManageScreen>
     }
 
     return Scaffold(
+      floatingActionButton: !match.isCompleted && match.innerMatches.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MatchLiveScreen(match: match),
+                ),
+              ),
+              backgroundColor: AppColors.error,
+              icon: const Icon(Icons.fiber_manual_record, size: 14, color: Colors.white),
+              label: const Text('LIVE', style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              )),
+            )
+          : null,
       body: Stack(
         children: [
           Container(color: AppColors.of(context).scaffoldBg),
@@ -582,6 +604,12 @@ class _EventManageScreenState extends State<EventManageScreen>
     final c1 = Color(t1.colorValue);
     final c2 = Color(t2.colorValue);
 
+    // Use live event scores
+    final eventsProv = context.watch<MatchEventsProvider>();
+    final liveScores = eventsProv.getScoreForInnerMatch(im.id);
+    final s1 = liveScores[im.team1Index] ?? im.team1Score;
+    final s2 = liveScores[im.team2Index] ?? im.team2Score;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       child: GlassCard(
@@ -669,7 +697,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                               AppColors.borderLight),
                     ),
                     child: Text(
-                      '${im.team1Score} : ${im.team2Score}',
+                      '$s1 : $s2',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,

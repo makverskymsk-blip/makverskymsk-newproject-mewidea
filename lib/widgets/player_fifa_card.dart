@@ -251,6 +251,31 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
                                 ),
                               ],
                             ),
+
+                          // Distance under position
+                          if (stats.totalDistanceKm > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.directions_run_rounded,
+                                    size: 13,
+                                    color: const Color(0xFF26A69A).withValues(alpha: 0.8),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${stats.totalDistanceKm.toStringAsFixed(1)} км',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF26A69A),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
                     ),

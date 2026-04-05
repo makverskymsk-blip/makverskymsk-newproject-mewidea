@@ -591,4 +591,108 @@ class SupabaseService {
       return [];
     }
   }
+
+  // ===== MATCH EVENTS (LIVE) =====
+
+  /// Add a live match event (goal, assist, save, foul, own_goal)
+  Future<void> addMatchEvent(Map<String, dynamic> eventData) async {
+    await _supabase.from('match_events').insert(eventData);
+  }
+
+  /// Delete a match event by ID
+  Future<void> deleteMatchEvent(String eventId) async {
+    await _supabase.from('match_events').delete().eq('id', eventId);
+  }
+
+  /// Get all events for a match, ordered chronologically
+  Future<List<Map<String, dynamic>>> getMatchEvents(String matchId) async {
+    final data = await _supabase
+        .from('match_events')
+        .select()
+        .eq('match_id', matchId)
+        .order('created_at', ascending: true);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  /// Subscribe to realtime changes on match_events for a specific match
+  dynamic watchMatchEventsChannel(String matchId, {required VoidCallback onChanged}) {
+    return _supabase
+        .channel('match_events_$matchId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'match_events',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'match_id',
+            value: matchId,
+          ),
+          callback: (payload) {
+            debugPrint('REALTIME: match_events changed — ${payload.eventType}');
+            onChanged();
+          },
+        )
+        .subscribe();
+  }
+
+  // ===== PLAYER DISTANCE =====
+
+  /// Save distance for a specific match+player
+  Future<void> savePlayerDistance(String matchId, String userId, double km) async {
+    // Check if record exists
+    final existing = await _supabase
+        .from('match_player_stats')
+        .select('id')
+        .eq('match_id', matchId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existing != null) {
+      // Update existing
+      await _supabase
+          .from('match_player_stats')
+          .update({'distance_km': km})
+          .eq('match_id', matchId)
+          .eq('user_id', userId);
+    } else {
+      // Insert new
+      await _supabase.from('match_player_stats').insert({
+        'match_id': matchId,
+        'user_id': userId,
+        'distance_km': km,
+      });
+    }
+  }
+
+  /// Get distance for a player in a specific match
+  Future<double> getPlayerDistance(String matchId, String userId) async {
+    try {
+      final data = await _supabase
+          .from('match_player_stats')
+          .select('distance_km')
+          .eq('match_id', matchId)
+          .eq('user_id', userId)
+          .maybeSingle();
+      return (data?['distance_km'] ?? 0.0).toDouble();
+    } catch (_) {
+      return 0.0;
+    }
+  }
+
+  /// Get total distance across all matches for a player
+  Future<double> getPlayerTotalDistance(String userId) async {
+    try {
+      final data = await _supabase
+          .from('match_player_stats')
+          .select('distance_km')
+          .eq('user_id', userId);
+      double total = 0;
+      for (final row in data) {
+        total += (row['distance_km'] ?? 0.0).toDouble();
+      }
+      return total;
+    } catch (_) {
+      return 0.0;
+    }
+  }
 }

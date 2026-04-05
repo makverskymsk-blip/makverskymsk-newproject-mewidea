@@ -35,6 +35,7 @@ class StatsProvider extends ChangeNotifier {
     try {
       final data = await _db.getPlayerAggregateStats(userId);
       if (data != null) {
+        final totalDist = await _db.getPlayerTotalDistance(userId);
         _playerStats[userId] = PlayerOverallStats(
           totalGames: data['total_games'] ?? 0,
           totalGoals: data['total_goals'] ?? 0,
@@ -45,10 +46,11 @@ class StatsProvider extends ChangeNotifier {
           winCount: data['win_count'] ?? 0,
           lossCount: data['loss_count'] ?? 0,
           drawCount: data['draw_count'] ?? 0,
+          totalDistanceKm: totalDist,
         );
         // Also check achievements
         _checkAchievementsFromStats(userId, _playerStats[userId]!);
-        debugPrint('STATS: Loaded real stats for $userId: overall=${_playerStats[userId]!.overallRating}');
+        debugPrint('STATS: Loaded real stats for $userId: overall=${_playerStats[userId]!.overallRating}, distance=${totalDist}km');
       }
 
       // Load match history

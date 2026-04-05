@@ -9,6 +9,7 @@ class MatchStats {
   int fouls;
   double rating; // 1-10
   bool isManOfTheMatch;
+  double distanceKm; // пробег в км (с трекера)
 
   MatchStats({
     required this.id,
@@ -21,6 +22,7 @@ class MatchStats {
     this.fouls = 0,
     this.rating = 6.0,
     this.isManOfTheMatch = false,
+    this.distanceKm = 0.0,
   });
 
   int get kda => goals + assists;
@@ -36,6 +38,7 @@ class PlayerOverallStats {
   int winCount;
   int lossCount;
   int drawCount;
+  double totalDistanceKm; // суммарный пробег
 
   PlayerOverallStats({
     this.totalGames = 0,
@@ -47,6 +50,7 @@ class PlayerOverallStats {
     this.winCount = 0,
     this.lossCount = 0,
     this.drawCount = 0,
+    this.totalDistanceKm = 0,
   });
 
   // FIFA-style stats (0-99 scale)

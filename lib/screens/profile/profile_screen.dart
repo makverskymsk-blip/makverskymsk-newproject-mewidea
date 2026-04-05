@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/stats_provider.dart';
@@ -13,6 +14,8 @@ import '../community/community_manage_screen.dart';
 import '../../models/enums.dart';
 import '../../models/achievement.dart';
 import '../community/members_screen.dart';
+import '../../services/supabase_service.dart';
+import '../../providers/matches_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -746,6 +749,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             () => _showCreateDialog(context)),
         _menuTile(Icons.login_rounded, 'Вступить по коду',
             () => _showJoinDialog(context)),
+        _menuTile(Icons.directions_run_rounded, 'Моя дистанция',
+            () => _showDistanceSheet(context)),
         _menuTile(Icons.notifications_none_rounded, 'Уведомления', () {}),
         Divider(
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
@@ -768,6 +773,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: Text(title, style: TextStyle(color: color, fontSize: 14)),
       trailing: Icon(Icons.chevron_right_rounded,
           color: t.borderLight, size: 20),
+    );
+  }
+
+  // ─────────── DISTANCE SHEET ───────────
+
+  void _showDistanceSheet(BuildContext context) {
+    final t = AppColors.of(context);
+    final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final matchesProv = context.read<MatchesProvider>();
+    final completed = matchesProv.completedEvents;
+    final db = SupabaseService();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: t.dialogBg,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _DistanceSheet(
+        completedMatches: completed,
+        userId: userId,
+        db: db,
+      ),
     );
   }
 
@@ -1037,4 +1066,227 @@ class _NearAchievement {
     required this.description,
     required this.rarity,
   });
+}
+
+// ─── Distance Sheet Widget ───
+class _DistanceSheet extends StatefulWidget {
+  final List<dynamic> completedMatches;
+  final String userId;
+  final SupabaseService db;
+
+  const _DistanceSheet({
+    required this.completedMatches,
+    required this.userId,
+    required this.db,
+  });
+
+  @override
+  State<_DistanceSheet> createState() => _DistanceSheetState();
+}
+
+class _DistanceSheetState extends State<_DistanceSheet> {
+  final Map<String, TextEditingController> _controllers = {};
+  final Map<String, double> _savedDistances = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDistances();
+  }
+
+  Future<void> _loadDistances() async {
+    for (final match in widget.completedMatches) {
+      final km = await widget.db.getPlayerDistance(match.id, widget.userId);
+      _savedDistances[match.id] = km;
+      _controllers[match.id] = TextEditingController(
+        text: km > 0 ? km.toStringAsFixed(1) : '',
+      );
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppColors.of(context);
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      maxChildSize: 0.85,
+      minChildSize: 0.3,
+      expand: false,
+      builder: (_, scrollCtrl) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: t.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.directions_run_rounded,
+                  color: Color(0xFF26A69A), size: 24),
+                const SizedBox(width: 8),
+                Text('Моя дистанция', style: TextStyle(
+                  color: t.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                )),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text('Введите километры из вашего трекера (смарт-часы)',
+              style: TextStyle(color: t.textHint, fontSize: 12)),
+            const SizedBox(height: 16),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (widget.completedMatches.isEmpty)
+              Center(child: Text('Нет завершённых матчей',
+                style: TextStyle(color: t.textHint)))
+            else
+              Expanded(
+                child: Builder(
+                  builder: (ctx) {
+                    final sorted = List.of(widget.completedMatches)
+                      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+                    return ListView.separated(
+                      controller: scrollCtrl,
+                      itemCount: sorted.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (ctx, i) {
+                        final match = sorted[i];
+                        return _matchDistanceTile(t, match);
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _matchDistanceTile(AppThemeColors t, dynamic match) {
+    final ctrl = _controllers[match.id]!;
+    final saved = _savedDistances[match.id] ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: t.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: t.borderLight.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${match.category.displayName} • ${match.format}',
+                  style: TextStyle(
+                    color: t.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  '${match.dateTime.day}.${match.dateTime.month}.${match.dateTime.year}',
+                  style: TextStyle(color: t.textHint, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 80,
+            child: TextField(
+              controller: ctrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: 'км',
+                hintStyle: TextStyle(color: t.textHint, fontSize: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: t.borderLight),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: t.borderLight),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFF26A69A)),
+                ),
+                filled: true,
+                fillColor: t.surfaceBg,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () async {
+              final km = double.tryParse(ctrl.text.replaceAll(',', '.')) ?? 0;
+              if (km <= 0) return;
+              try {
+                await widget.db.savePlayerDistance(match.id, widget.userId, km);
+                setState(() => _savedDistances[match.id] = km);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('✅ Сохранено: ${km.toStringAsFixed(1)} км'),
+                    backgroundColor: const Color(0xFF26A69A),
+                    duration: const Duration(seconds: 1),
+                  ));
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Ошибка: $e'),
+                    backgroundColor: AppColors.error,
+                  ));
+                }
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: saved > 0
+                    ? const Color(0xFF26A69A).withValues(alpha: 0.1)
+                    : AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                saved > 0 ? Icons.check_rounded : Icons.save_rounded,
+                color: saved > 0 ? const Color(0xFF26A69A) : AppColors.primary,
+                size: 20,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
