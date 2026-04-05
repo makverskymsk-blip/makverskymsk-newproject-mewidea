@@ -129,6 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildHeader(
       dynamic user, String posAbbr, String posFull, IconData posIcon, Color posColor) {
+    final t = AppColors.of(context);
     return Row(
       children: [
         // Avatar
@@ -159,15 +160,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Text(
                 user?.name ?? 'Игрок',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: t.textPrimary,
                 ),
               ),
               Text(
                 'ID: ${(user?.id ?? "0000").substring((user?.id ?? "0000").length - 4)}',
-                style: const TextStyle(color: AppColors.textHint, fontSize: 12),
+                style: TextStyle(color: t.textHint, fontSize: 12),
               ),
             ],
           ),
@@ -741,10 +742,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         _menuTile(Icons.edit_rounded, 'Изменить позицию',
             () => _showPositionDialog(context, auth)),
-        _menuTile(Icons.bar_chart_rounded, 'Полная статистика', () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const PlayerStatsScreen()));
-        }),
+        _menuTile(Icons.add_circle_outline_rounded, 'Создать сообщество',
+            () => _showCreateDialog(context)),
+        _menuTile(Icons.login_rounded, 'Вступить по коду',
+            () => _showJoinDialog(context)),
         _menuTile(Icons.notifications_none_rounded, 'Уведомления', () {}),
         Divider(
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
@@ -779,7 +780,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.of(context).dialogBg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.borderLight),
+          side: BorderSide(color: AppColors.of(context).borderLight),
         ),
         title: const Text('Выберите позицию'),
         content: Column(
@@ -834,7 +835,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.of(context).dialogBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: AppColors.borderLight),
+            side: BorderSide(color: AppColors.of(context).borderLight),
           ),
           title: const Text('Новое сообщество'),
           content: SingleChildScrollView(
@@ -844,14 +845,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _dialogField(nameCtrl, 'Название', Icons.group_rounded),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<SportCategory>(
-                  dropdownColor: Colors.white,
+                  dropdownColor: AppColors.of(context).dialogBg,
                   initialValue: sport,
+                  style: TextStyle(color: AppColors.of(context).textPrimary, fontSize: 14),
                   decoration: InputDecoration(
                     labelText: 'Вид спорта',
-                    labelStyle: TextStyle(color: AppColors.textHint),
+                    labelStyle: TextStyle(color: AppColors.of(context).textHint),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: AppColors.borderLight),
+                      borderSide: BorderSide(color: AppColors.of(context).borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -913,7 +915,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.of(context).dialogBg,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: AppColors.borderLight),
+          side: BorderSide(color: AppColors.of(context).borderLight),
         ),
         title: const Text('Вступить по коду'),
         content:
@@ -981,24 +983,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _dialogField(
       TextEditingController ctrl, String label, IconData icon,
       {bool isNumber = false}) {
+    final t = AppColors.of(context);
     return TextField(
       controller: ctrl,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(color: t.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: AppColors.textHint),
+        labelStyle: TextStyle(color: t.textHint),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.borderLight),
+          borderSide: BorderSide(color: t.borderLight),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.primary),
         ),
         filled: true,
-        fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
+        fillColor: t.cardBg,
       ),
     );
   }

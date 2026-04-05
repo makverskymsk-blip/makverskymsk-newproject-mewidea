@@ -42,7 +42,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.borderLight.withValues(alpha: 0.5),
+                            color: AppColors.of(context).borderLight.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -79,10 +79,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                       color:
                                           AppColors.borderLight),
                                   const SizedBox(height: 16),
-                                  const Text(
+                                  Text(
                                     'Вы не состоите ни в одном сообществе',
                                     style:
-                                        TextStyle(color: AppColors.textHint),
+                                        TextStyle(color: AppColors.of(context).textHint),
                                   ),
                                 ],
                               ),
@@ -212,14 +212,21 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.backgroundCard.withValues(alpha: 0.5),
+          color: AppColors.of(context).cardBg,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isActive
                 ? AppColors.primary.withValues(alpha: 0.4)
-                : AppColors.borderLight.withValues(alpha: 0.5),
+                : AppColors.of(context).borderLight.withValues(alpha: 0.5),
             width: isActive ? 1.5 : 1,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF000000).withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -229,12 +236,12 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
               decoration: BoxDecoration(
                 color: isActive
                     ? AppColors.primary.withValues(alpha: 0.15)
-                    : AppColors.borderLight.withValues(alpha: 0.5),
+                    : AppColors.of(context).borderLight.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 Icons.groups_rounded,
-                color: isActive ? AppColors.primary : AppColors.textHint,
+                color: isActive ? AppColors.primary : AppColors.of(context).textHint,
               ),
             ),
             const SizedBox(width: 14),
@@ -287,8 +294,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                       Expanded(
                         child: Text(
                           '$sport • $subtitle',
-                          style: const TextStyle(
-                              color: AppColors.textHint, fontSize: 12),
+                          style: TextStyle(
+                              color: AppColors.of(context).textHint, fontSize: 12),
                         ),
                       ),
                       GestureDetector(

@@ -86,11 +86,19 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: tier.borderColor, width: 1.5),
             boxShadow: [
+              // Base shadow
               BoxShadow(
-                color: tier.accentColor.withValues(alpha: 0.1),
-                blurRadius: 24,
-                offset: const Offset(0, 6),
+                color: const Color(0xFF000000).withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
+              // Glow for Gold & Legendary only
+              if (tier == CardTier.top || tier == CardTier.legendary)
+                BoxShadow(
+                  color: tier.accentColor.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 0,
+                ),
             ],
           ),
           child: Column(

@@ -815,12 +815,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   Widget _statItem(String label, String value, IconData icon,
       {bool highlight = false}) {
+    final t = AppColors.of(context);
     return Expanded(
       child: Column(
         children: [
           Icon(icon,
               size: 18,
-              color: highlight ? AppColors.accent : AppColors.textHint),
+              color: highlight ? AppColors.accent : t.textHint),
           const SizedBox(height: 4),
           Text(
             value,
@@ -829,13 +830,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               fontSize: 14,
               color: highlight
                   ? AppColors.accent
-                  : AppColors.textPrimary,
+                  : t.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
           Text(label,
-              style: const TextStyle(
-                  color: AppColors.textHint, fontSize: 10)),
+              style: TextStyle(
+                  color: t.textHint, fontSize: 10)),
         ],
       ),
     );
@@ -1112,12 +1113,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.backgroundCard.withValues(alpha: 0.97),
+                  color: AppColors.of(context).dialogBg.withValues(alpha: 0.97),
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(28)),
                   border: Border(
                     top: BorderSide(
-                        color: AppColors.borderLight),
+                        color: AppColors.of(context).borderLight),
                   ),
                 ),
                 child: Column(
@@ -1129,7 +1130,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.1),
+                          color: AppColors.of(context).textHint.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1145,8 +1146,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     const SizedBox(height: 6),
                     Text(
                       'Доступно: ${Helpers.formatCurrency(bankBalance + sub.compensationAmount)}',
-                      style: const TextStyle(
-                          color: AppColors.textHint, fontSize: 13),
+                      style: TextStyle(
+                          color: AppColors.of(context).textHint, fontSize: 13),
                     ),
                     const SizedBox(height: 20),
 
@@ -1154,17 +1155,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     TextField(
                       controller: controller,
                       keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.white, fontSize: 20),
+                      style: TextStyle(color: AppColors.of(context).textPrimary, fontSize: 20),
                       decoration: InputDecoration(
                         labelText: 'Сумма компенсации (\u20BD)',
                         labelStyle: TextStyle(
-                            color: AppColors.textHint),
+                            color: AppColors.of(context).textHint),
                         prefixIcon: const Icon(Icons.savings_rounded,
                             color: AppColors.accent),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
-                              color: AppColors.borderLight),
+                              color: AppColors.of(context).borderLight),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -1204,15 +1205,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                     color: previewAmount == amount
                                         ? AppColors.accent
                                             .withValues(alpha: 0.2)
-                                        : Colors.white
-                                            .withValues(alpha: 0.06),
+                                        : AppColors.of(context).chipBg,
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
                                       color: previewAmount == amount
                                           ? AppColors.accent
                                               .withValues(alpha: 0.4)
-                                          : Colors.white
-                                              .withValues(alpha: 0.08),
+                                          : AppColors.of(context).borderLight,
                                     ),
                                   ),
                                   child: Text(
@@ -1220,7 +1219,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                     style: TextStyle(
                                       color: previewAmount == amount
                                           ? AppColors.accent
-                                          : AppColors.textSecondary,
+                                          : AppColors.of(context).textSecondary,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -1235,10 +1234,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: AppColors.backgroundCard.withValues(alpha: 0.5),
+                        color: AppColors.of(context).surfaceBg.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                            color: AppColors.borderLight.withValues(alpha: 0.5)),
+                            color: AppColors.of(context).borderLight.withValues(alpha: 0.5)),
                       ),
                       child: Column(
                         children: [
@@ -1249,7 +1248,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                 '−${Helpers.formatCurrency(previewAmount)}',
                                 color: AppColors.accent),
                           Divider(
-                              color: AppColors.borderLight.withValues(alpha: 0.5),
+                              color: AppColors.of(context).borderLight.withValues(alpha: 0.5),
                               height: 16),
                           _previewRow(
                             'Эффективная аренда',
@@ -1319,7 +1318,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                               : null,
                           color: previewAmount > 0
                               ? null
-                              : AppColors.borderLight.withValues(alpha: 0.5),
+                              : AppColors.of(context).borderLight.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -1328,7 +1327,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             Icon(Icons.check_circle_rounded,
                                 color: previewAmount > 0
                                     ? Colors.white
-                                    : AppColors.textHint,
+                                    : AppColors.of(context).textHint,
                                 size: 20),
                             const SizedBox(width: 8),
                             Text(
@@ -1336,7 +1335,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                               style: TextStyle(
                                 color: previewAmount > 0
                                     ? Colors.white
-                                    : AppColors.textHint,
+                                    : AppColors.of(context).textHint,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 15,
                               ),
@@ -1357,6 +1356,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
   Widget _previewRow(String label, String value,
       {bool bold = false, Color? color}) {
+    final t = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1364,13 +1364,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         children: [
           Text(label,
               style: TextStyle(
-                color: color ?? AppColors.textSecondary,
+                color: color ?? t.textSecondary,
                 fontSize: 12,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
               )),
           Text(value,
               style: TextStyle(
-                color: color ?? AppColors.textPrimary,
+                color: color ?? t.textPrimary,
                 fontSize: 12,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
               )),

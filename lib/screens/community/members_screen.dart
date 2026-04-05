@@ -438,10 +438,10 @@ class _MembersScreenState extends State<MembersScreen>
                 children: [
                   Text(
                     user.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color: AppColors.textPrimary,
+                      color: AppColors.of(context).textPrimary,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -695,16 +695,28 @@ class _MembersScreenState extends State<MembersScreen>
 
 
 
+    final t = AppColors.of(context);
+    // Paid player highlight
+    final paidBg = hasSubscription
+        ? const Color(0xFF22C55E).withValues(alpha: 0.08)
+        : t.cardBg;
+    final paidBorder = hasSubscription
+        ? const Color(0xFF22C55E).withValues(alpha: 0.2)
+        : t.borderLight;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: AppColors.of(context).cardBg,
-        border: Border.all(
-          color: hasSubscription
-              ? AppColors.accent.withValues(alpha: 0.3)
-              : AppColors.borderLight,
-        ),
+        color: paidBg,
+        border: Border.all(color: paidBorder),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000000).withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -748,10 +760,10 @@ class _MembersScreenState extends State<MembersScreen>
                           Flexible(
                             child: Text(
                               user.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
-                                color: AppColors.textPrimary,
+                                color: t.textPrimary,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -797,20 +809,20 @@ class _MembersScreenState extends State<MembersScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.accent.withValues(alpha: 0.08),
+                                color: const Color(0xFF22C55E).withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                    color: AppColors.accent.withValues(alpha: 0.2)),
+                                    color: const Color(0xFF22C55E).withValues(alpha: 0.2)),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(Icons.verified_rounded,
-                                      size: 10, color: AppColors.accent),
+                                      size: 10, color: Color(0xFF22C55E)),
                                   SizedBox(width: 3),
-                                  Text('Абонемент',
+                                  Text('Активен',
                                     style: TextStyle(
-                                      color: AppColors.accent,
+                                      color: Color(0xFF22C55E),
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -840,11 +852,11 @@ class _MembersScreenState extends State<MembersScreen>
                 if (isOwner || isAdmin)
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_vert_rounded,
-                        color: AppColors.textHint, size: 20),
-                    color: Colors.white,
+                        color: t.textHint, size: 20),
+                    color: t.dialogBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: AppColors.borderLight),
+                      side: BorderSide(color: t.borderLight),
                     ),
                     itemBuilder: (ctx) => [
                       if (isAdmin || isOwner) ...[
