@@ -1,0 +1,246 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/material.dart';
+import '../models/user_profile.dart';
+import '../services/supabase_service.dart';
+
+class AuthProvider extends ChangeNotifier {
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseService _db = SupabaseService();
+  UserProfile? _currentUser;
+  bool _isLoading = true;
+
+  UserProfile? get currentUser => _currentUser;
+  bool get isLoggedIn => _supabase.auth.currentUser != null && _currentUser != null;
+  bool get isLoading => _isLoading;
+  String? get uid => _supabase.auth.currentUser?.id;
+
+  AuthProvider() {
+    _supabase.auth.onAuthStateChange.listen((data) {
+      if (!_initialCheckDone) return; // skip until initial check completes
+      _onAuthStateChanged(data.session?.user);
+    });
+    _checkInitialAuth();
+  }
+
+  bool _initialCheckDone = false;
+
+  Future<void> _checkInitialAuth() async {
+    final user = _supabase.auth.currentUser;
+    debugPrint('AUTH INIT: currentUser = ${user?.id}');
+    
+    if (user == null) {
+      debugPrint('AUTH INIT: No session, showing login');
+      _isLoading = false;
+      _initialCheckDone = true;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      // Try to load user profile with a timeout
+      _currentUser = await _db.getUser(user.id).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('AUTH INIT: getUser timed out');
+          return null;
+        },
+      );
+
+      if (_currentUser == null) {
+        debugPrint('AUTH INIT: No profile in DB, creating...');
+        _currentUser = UserProfile(
+          id: user.id,
+          name: user.userMetadata?['full_name'] ?? 'Игрок',
+          email: user.email,
+          balance: 0,
+        );
+        try {
+          await _db.createUser(_currentUser!).timeout(const Duration(seconds: 5));
+          debugPrint('AUTH INIT: Profile created!');
+        } catch (e) {
+          debugPrint('AUTH INIT: Create failed: $e');
+        }
+      } else {
+        debugPrint('AUTH INIT: Profile loaded: ${_currentUser!.name}');
+      }
+    } catch (e) {
+      debugPrint('AUTH INIT ERROR: $e');
+    }
+
+    _isLoading = false;
+    _initialCheckDone = true;
+    notifyListeners();
+  }
+
+  Future<void> _onAuthStateChanged(User? supabaseUser) async {
+    try {
+      if (supabaseUser != null) {
+        debugPrint('AUTH STATE: User changed: ${supabaseUser.id}');
+        _currentUser = await _db.getUser(supabaseUser.id);
+        if (_currentUser == null) {
+          _currentUser = UserProfile(
+            id: supabaseUser.id,
+            name: supabaseUser.userMetadata?['full_name'] ?? 'Игрок',
+            email: supabaseUser.email,
+            balance: 0,
+          );
+          try {
+            await _db.createUser(_currentUser!);
+          } catch (_) {
+            _currentUser = await _db.getUser(supabaseUser.id);
+          }
+        }
+      } else {
+        _currentUser = null;
+      }
+    } catch (e) {
+      debugPrint('AUTH STATE ERROR: $e');
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<String?> login(String email, String password) async {
+    try {
+      await _supabase.auth.signInWithPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return null; // success
+    } on AuthException catch (e) {
+      return _mapAuthError(e.message);
+    }
+  }
+
+  Future<String?> register(String name, String email, String password) async {
+    try {
+      debugPrint('AUTH: Starting registration for $email');
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': name},
+      );
+      debugPrint('AUTH: SignUp response: user=${response.user?.id}, session=${response.session != null}');
+
+      if (response.user != null && response.session != null) {
+        // Session exists — email confirmation disabled or auto-confirmed
+        _currentUser = UserProfile(
+          id: response.user!.id,
+          name: name,
+          email: email,
+          balance: 0,
+        );
+        debugPrint('AUTH: Creating user profile in DB...');
+        await _db.createUser(_currentUser!);
+        debugPrint('AUTH: User profile created!');
+        notifyListeners();
+        return null; // success — logged in
+      } else if (response.user != null && response.session == null) {
+        // User created but email confirmation required
+        // Pre-create profile in DB so it's ready when user confirms
+        try {
+          final profile = UserProfile(
+            id: response.user!.id,
+            name: name,
+            email: email,
+            balance: 0,
+          );
+          await _db.createUser(profile);
+          debugPrint('AUTH: Profile pre-created, awaiting email confirmation');
+        } catch (e) {
+          debugPrint('AUTH: Pre-create profile failed (may already exist): $e');
+        }
+        return 'EMAIL_CONFIRM'; // special marker for UI
+      }
+      return 'Неизвестная ошибка регистрации';
+    } on AuthException catch (e) {
+      debugPrint('AUTH ERROR (AuthException): ${e.message}');
+      return _mapAuthError(e.message);
+    } catch (e) {
+      debugPrint('AUTH ERROR (General): $e');
+      return 'Ошибка: $e';
+    }
+  }
+
+  Future<void> updateBalance(double amount) async {
+    if (_currentUser != null) {
+      _currentUser!.balance += amount;
+      await _db.updateUser(_currentUser!.id, {'balance': _currentUser!.balance});
+      notifyListeners();
+    }
+  }
+
+  /// Перечитать баланс из БД (после изменений другими провайдерами)
+  Future<void> refreshBalance() async {
+    if (_currentUser == null) return;
+    try {
+      final profile = await _db.getUser(_currentUser!.id);
+      if (profile != null) {
+        _currentUser!.balance = profile.balance;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('AUTH: refreshBalance error: $e');
+    }
+  }
+
+  Future<void> updatePosition(String position) async {
+    if (_currentUser != null) {
+      _currentUser!.position = position;
+      await _db.updateUser(_currentUser!.id, {'position': position});
+      notifyListeners();
+    }
+  }
+
+  Future<void> addCommunityToUser(String communityId) async {
+    if (_currentUser != null && !_currentUser!.communityIds.contains(communityId)) {
+      _currentUser!.communityIds.add(communityId);
+      await _db.updateUser(_currentUser!.id, {
+        'communityIds': _currentUser!.communityIds,
+      });
+      notifyListeners();
+    }
+  }
+
+  /// Убрать из профиля communityIds, которых нет в БД
+  Future<void> removeStaleCommunityIds(List<String> staleIds) async {
+    if (_currentUser == null || staleIds.isEmpty) return;
+    _currentUser!.communityIds.removeWhere((id) => staleIds.contains(id));
+    await _db.updateUser(_currentUser!.id, {
+      'communityIds': _currentUser!.communityIds,
+    });
+    notifyListeners();
+  }
+
+  Future<void> updateAvatar(String url) async {
+    if (_currentUser != null) {
+      _currentUser!.avatarUrl = url;
+      await _db.updateUser(_currentUser!.id, {'avatarUrl': url});
+      notifyListeners();
+    }
+  }
+
+  /// Сброс пароля — отправить письмо на email
+  Future<String?> resetPassword(String email) async {
+    try {
+      await _supabase.auth.resetPasswordForEmail(email);
+      return null; // success
+    } catch (e) {
+      return 'Ошибка: $e';
+    }
+  }
+
+  Future<void> logout() async {
+    await _supabase.auth.signOut();
+    _currentUser = null;
+    notifyListeners();
+  }
+
+  String _mapAuthError(String message) {
+    if (message.contains('Invalid login credentials')) return 'Неверный логин или пароль';
+    if (message.contains('Email not confirmed')) return 'EMAIL_CONFIRM';
+    if (message.contains('User already registered')) return 'Email уже используется';
+    if (message.contains('Password should be')) return 'Слишком простой пароль';
+    return 'Ошибка авторизации: $message';
+  }
+}
