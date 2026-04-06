@@ -69,6 +69,7 @@ class SupabaseService {
       name: response['name'] ?? '',
       email: response['email'],
       position: response['position'] ?? 'Не указана',
+      avatarUrl: response['avatar_url'],
       balance: (response['balance'] ?? 0).toDouble(),
       debt: (response['debt'] ?? 0).toDouble(),
       communityIds: List<String>.from(response['community_ids'] ?? []),
