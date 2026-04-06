@@ -148,6 +148,7 @@ class SupabaseService {
       name: d['name'] ?? '',
       email: d['email'],
       position: d['position'] ?? 'Не указана',
+      avatarUrl: d['avatar_url'],
       balance: (d['balance'] ?? 0).toDouble(),
       debt: (d['debt'] ?? 0).toDouble(),
       communityIds: List<String>.from(d['community_ids'] ?? []),
