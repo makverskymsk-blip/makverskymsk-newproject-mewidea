@@ -418,16 +418,25 @@ class _MembersScreenState extends State<MembersScreen>
                 border:
                     Border.all(color: warningRed.withValues(alpha: 0.4), width: 1.5),
               ),
-              child: Center(
-                child: Text(
-                  user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    color: warningRed,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
+              child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        user.avatarUrl!,
+                        width: 50, height: 50, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                        style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
 
@@ -740,18 +749,25 @@ class _MembersScreenState extends State<MembersScreen>
                       color: roleColor.withValues(alpha: 0.3),
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      user.name.isNotEmpty
-                          ? user.name[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        color: roleColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.avatarUrl!,
+                            width: 44, height: 44, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 12),
 
