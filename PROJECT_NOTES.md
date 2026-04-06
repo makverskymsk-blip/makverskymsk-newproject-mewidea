@@ -177,10 +177,74 @@ lib/
 
 ---
 
+## Работа 6 апреля 2026
+
+### Утро: Статистика матчей и километраж игроков
+
+1. **match_player_stats** — таблица для хранения индивидуальных статистик по матчу
+2. **match_events** — таблица для голов, ассистов, карточек в реальном времени
+3. **StatsProvider** — провайдер для загрузки/расчёта рейтинга и общей статистики
+4. **MatchEventsProvider** — провайдер для событий внутри матча (голы, ассисты)
+5. **player_stats_screen** — экран подробной статистики игрока
+6. **rate_players_screen** — экран оценки игроков после матча
+7. **match_live_screen** — экран лайв-матча с событиями
+8. **radar_chart** — виджет радарной диаграммы навыков (ATK, DEF, PAS, SPD, SKL)
+
+### Вечер: Realtime, синхронизация команд, аватарки
+
+#### Коммит: `feat: Realtime sync, teams/matches JSONB persistence, avatar upload, RLS fix v1.1.0`
+
+#### 1. Supabase Realtime — автообновление данных
+- **watchCommunityChannel()** — слушает изменения конкретного сообщества (member_ids, bank_balance и др.)
+- **watchUserChannel()** — слушает изменения профиля пользователя (баланс, community_ids)
+- **CommunityProvider** — при загрузке/переключении сообщества автоподписка на Realtime, `_refreshActiveCommunity()` перечитывает данные
+- **AuthProvider** — после логина подписка на изменения профиля, `_refreshUserProfile()` обновляет баланс/community_ids. При logout — отписка
+- **Supabase Publications** — добавлены таблицы: `communities`, `users`, `match_player_stats`, `match_events`, `transactions`
+
+> Что уже было: `matches` и `subscriptions` уже имели Realtime через `watchMatchesChannel` и `watchSubscriptionsChannel`
+
+#### 2. Сохранение команд и матчей в БД (JSONB)
+**Проблема**: eventTeams и innerMatches хранились только в памяти → другие пользователи не видели команды/счёт
+
+**Решение**:
+- SQL: `ALTER TABLE matches ADD COLUMN event_teams JSONB DEFAULT '[]'` + `inner_matches JSONB DEFAULT '[]'`
+- **EventTeam.toJson()/fromJson()** — сериализация команд
+- **InnerMatch.toJson()/fromJson()** — сериализация матчей
+- **SupabaseService**: `_parseEventTeams()`, `_parseInnerMatches()` — парсинг из JSONB
+- **MatchesProvider**: `_syncEventTeams()`, `_syncInnerMatches()` — автосохранение при любом изменении (addTeam, assignPlayer, updateScore и т.д.)
+
+#### 3. RLS-фикс — обычные игроки могут создавать события
+**Проблема**: Только owner/admin могли INSERT в `matches`. События от обычных members были невидимы
+
+**Решение**: Заменена политика `matches_insert_admin` → `matches_insert_member` с добавлением `member_ids` в проверку
+
+#### 4. Загрузка аватарок
+- **Supabase Storage**: создан bucket `avatars` (Public) + RLS-политики
+- **SupabaseService.uploadAvatar()** — загрузка в Storage, возврат publicUrl с cache buster
+- **ProfileScreen** — аватар кликабельный с иконкой камеры, bottom sheet (камера/галерея), загрузка + отображение
+- **Зависимость**: `image_picker` добавлен в pubspec.yaml
+
+#### 5. Версионирование
+- Версия обновлена: `1.0.0+1` → `1.1.0+2`
+- **Правило**: перед каждой сборкой APK увеличивать `+N` (versionCode) в pubspec.yaml
+
+---
+
 ## Известные задачи (TODO)
 
-- [ ] **Persistence темы** — сохранять выбор темы в `shared_preferences`
-- [ ] **Аудит Colors.white/black** — могут остаться в некоторых местах
-- [ ] **Linting warnings** — `use_build_context_synchronously` в app.dart, login_screen, subscription_screen
-- [ ] **Curly braces** — стиль в SupabaseService
+### Готово ✅
+- [x] Dark/Light тема
+- [x] Realtime для communities и users
+- [x] Команды/матчи сохраняются в БД (JSONB)
+- [x] RLS: members могут создавать события
+- [x] Аватарки — код + Storage bucket + RLS
+
+### В работе
+- [ ] Протестировать аватарки на Android
+- [ ] Показать аватарки в списке участников сообщества (members_screen)
+- [ ] Показать аватарки в списке игроков события (event_manage_screen)
+- [ ] Уведомления при входе нового участника
+- [ ] Pull-to-refresh как fallback для Realtime
+- [ ] **Persistence темы** — сохранять в shared_preferences
 - [ ] **Web deploy** — обновить `flutter build web` → `/docs`
+- [ ] **Linting warnings** — `use_build_context_synchronously`
