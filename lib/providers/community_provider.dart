@@ -11,6 +11,7 @@ class CommunityProvider extends ChangeNotifier {
   Community? _activeCommunity;
   final List<MonthlySubscription> _subscriptions = [];
   dynamic _subsRealtimeChannel;
+  dynamic _communityRealtimeChannel;
 
   List<Community> get communities => _communities;
   Community? get activeCommunity => _activeCommunity;
@@ -18,6 +19,7 @@ class CommunityProvider extends ChangeNotifier {
 
   void setActiveCommunity(Community community) {
     _activeCommunity = community;
+    _subscribeToCommunityRealtime(community.id);
     notifyListeners();
   }
 
@@ -28,7 +30,42 @@ class CommunityProvider extends ChangeNotifier {
     if (_communities.isNotEmpty && _activeCommunity == null) {
       _activeCommunity = _communities.first;
     }
+    // Subscribe to realtime for the active community
+    if (_activeCommunity != null) {
+      _subscribeToCommunityRealtime(_activeCommunity!.id);
+    }
     notifyListeners();
+  }
+
+  /// Subscribe to Realtime changes for a community
+  void _subscribeToCommunityRealtime(String communityId) {
+    _communityRealtimeChannel?.unsubscribe();
+    _communityRealtimeChannel = _db.watchCommunityChannel(
+      communityId,
+      onChanged: () => _refreshActiveCommunity(communityId),
+    );
+  }
+
+  /// Refresh community data from DB when realtime event fires
+  Future<void> _refreshActiveCommunity(String communityId) async {
+    try {
+      final freshList = await _db.getUserCommunities([communityId]);
+      if (freshList.isNotEmpty) {
+        final fresh = freshList.first;
+        // Update in local list
+        final idx = _communities.indexWhere((c) => c.id == communityId);
+        if (idx != -1) {
+          _communities[idx] = fresh;
+        }
+        if (_activeCommunity?.id == communityId) {
+          _activeCommunity = fresh;
+        }
+        debugPrint('REALTIME: Community refreshed — ${fresh.memberIds.length + fresh.adminIds.length} members');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('REALTIME: Failed to refresh community: $e');
+    }
   }
 
   Future<void> createCommunityFirestore({

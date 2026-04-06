@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
@@ -37,6 +38,16 @@ class SportsClubApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeProv.themeMode,
+      locale: const Locale('ru', 'RU'),
+      supportedLocales: const [
+        Locale('ru', 'RU'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           debugPrint('APP: isLoading=${auth.isLoading}, isLoggedIn=${auth.isLoggedIn}, user=${auth.currentUser?.name}, communityIds=${auth.currentUser?.communityIds}');

@@ -35,6 +35,22 @@ class EventTeam {
   }
 
   bool hasPlayer(String id) => playerIds.contains(id);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'colorValue': colorValue,
+    'playerIds': playerIds,
+    'playerNames': playerNames,
+  };
+
+  static EventTeam fromJson(Map<String, dynamic> json) => EventTeam(
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    colorValue: json['colorValue'] ?? 0xFFE53935,
+    playerIds: List<String>.from(json['playerIds'] ?? []),
+    playerNames: List<String>.from(json['playerNames'] ?? []),
+  );
 }
 
 /// Матч между двумя командами внутри события
@@ -62,6 +78,24 @@ class InnerMatch {
     if (team2Score > team1Score) return team2Index;
     return -1; // ничья
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'team1Index': team1Index,
+    'team2Index': team2Index,
+    'team1Score': team1Score,
+    'team2Score': team2Score,
+    'isCompleted': isCompleted,
+  };
+
+  static InnerMatch fromJson(Map<String, dynamic> json) => InnerMatch(
+    id: json['id'] ?? '',
+    team1Index: json['team1Index'] ?? 0,
+    team2Index: json['team2Index'] ?? 0,
+    team1Score: json['team1Score'] ?? 0,
+    team2Score: json['team2Score'] ?? 0,
+    isCompleted: json['isCompleted'] ?? false,
+  );
 }
 
 /// Результат команды в таблице (для итогов)

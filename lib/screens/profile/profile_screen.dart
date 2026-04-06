@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
 import '../../providers/stats_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/helpers.dart';
 import '../../widgets/glass_card.dart';
@@ -20,7 +22,8 @@ import '../../providers/matches_provider.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  static const _positionData = {
+  // ═══ Позиции по видам спорта ═══
+  static const _footballPositions = {
     'Нападающий': ('ST', 'Нападающий', Icons.sports_soccer, Color(0xFFE53935)),
     'Защитник': ('DF', 'Защитник', Icons.shield_rounded, Color(0xFF1E88E5)),
     'Полузащитник': ('MF', 'Полузащитник', Icons.swap_horiz_rounded, Color(0xFF43A047)),
@@ -28,12 +31,61 @@ class ProfileScreen extends StatefulWidget {
     'Универсал': ('UNI', 'Универсал', Icons.person_rounded, Color(0xFF8E24AA)),
   };
 
+  static const _hockeyPositions = {
+    'Центральный': ('C', 'Центральный', Icons.sports_hockey, Color(0xFFE53935)),
+    'Крайний': ('W', 'Крайний', Icons.speed_rounded, Color(0xFF43A047)),
+    'Защитник': ('D', 'Защитник', Icons.shield_rounded, Color(0xFF1E88E5)),
+    'Вратарь': ('G', 'Вратарь', Icons.sports_handball_rounded, Color(0xFFFF8F00)),
+    'Универсал': ('UNI', 'Универсал', Icons.person_rounded, Color(0xFF8E24AA)),
+  };
+
+  static const _tennisPositions = {
+    'Бэйслайнер': ('BL', 'Бэйслайнер', Icons.sports_tennis, Color(0xFF43A047)),
+    'Сёрв-воллейер': ('SV', 'Сёрв-воллейер', Icons.flash_on_rounded, Color(0xFFE53935)),
+    'Универсал': ('UNI', 'Универсал', Icons.person_rounded, Color(0xFF8E24AA)),
+  };
+
+  static const _esportsPositions = {
+    // ─── MOBA (Dota 2) ───
+    'Керри': ('P1', 'Керри', Icons.auto_awesome_rounded, Color(0xFFFFB300)),
+    'Мидер': ('P2', 'Мидер', Icons.flash_on_rounded, Color(0xFFE53935)),
+    'Оффлейнер': ('P3', 'Оффлейнер', Icons.shield_rounded, Color(0xFF1E88E5)),
+    'Семи-саппорт': ('P4', 'Семи-саппорт', Icons.swap_calls_rounded, Color(0xFF43A047)),
+    'Фулл-саппорт': ('P5', 'Фулл-саппорт', Icons.favorite_rounded, Color(0xFFAB47BC)),
+    // ─── FPS (CS2) ───
+    'IGL': ('IGL', 'Капитан', Icons.campaign_rounded, Color(0xFFFF6D00)),
+    'Энтри': ('ENT', 'Энтри', Icons.directions_run_rounded, Color(0xFFE53935)),
+    'Снайпер': ('AWP', 'Снайпер', Icons.gps_fixed_rounded, Color(0xFF1E88E5)),
+    'Люркер': ('LRK', 'Люркер', Icons.visibility_rounded, Color(0xFF607D8B)),
+    'Саппорт': ('SUP', 'Саппорт', Icons.support_agent_rounded, Color(0xFF43A047)),
+    'Якорь': ('ANC', 'Якорь', Icons.anchor_rounded, Color(0xFF8D6E63)),
+  };
+
+  static Map<String, (String, String, IconData, Color)> positionsForSport(SportCategory sport) {
+    return switch (sport) {
+      SportCategory.football => _footballPositions,
+      SportCategory.hockey => _hockeyPositions,
+      SportCategory.tennis => _tennisPositions,
+      SportCategory.esports => _esportsPositions,
+    };
+  }
+
+  /// Lookup position across all sports
+  static (String, String, IconData, Color)? findPosition(String? position) {
+    if (position == null) return null;
+    return _footballPositions[position] ??
+           _hockeyPositions[position] ??
+           _tennisPositions[position] ??
+           _esportsPositions[position];
+  }
+
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _statsLoaded = false;
+  SportCategory _selectedSport = SportCategory.football;
 
   @override
   void didChangeDependencies() {
@@ -54,14 +106,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final statsProv = context.watch<StatsProvider>();
     final user = auth.currentUser;
     final sub = community.getCurrentSubscription();
-    final overall = statsProv.getPlayerStats(user?.id ?? '');
-    final achievements = statsProv.getAchievements(user?.id ?? '');
+    final overall = statsProv.getPlayerStatsForSport(user?.id ?? '', _selectedSport);
+    final achievements = statsProv.getAchievementsForSport(user?.id ?? '', _selectedSport);
     final unlockedCount = achievements.where((a) => a.isUnlocked).length;
 
-    final posRecord = ProfileScreen._positionData[user?.position];
-    final posAbbr = posRecord?.$1 ?? 'ST';
-    final posFull = posRecord?.$2 ?? 'Нападающий';
-    final posIcon = posRecord?.$3 ?? Icons.sports_soccer;
+    // Sport-specific position
+    final sportPosName = user?.getPositionForSport(_selectedSport.name) ?? 'Не указана';
+    final posRecord = ProfileScreen.findPosition(sportPosName);
+    final posAbbr = posRecord?.$1 ?? '—';
+    final posFull = posRecord?.$2 ?? 'Не указана';
+    final posIcon = posRecord?.$3 ?? Icons.help_outline_rounded;
     final posColor = posRecord?.$4 ?? AppColors.primary;
     final t = AppColors.of(context);
 
@@ -77,14 +131,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // ─── Header ───
               _buildHeader(user, posAbbr, posFull, posIcon, posColor),
+              const SizedBox(height: 16),
+
+              // ─── Sport Selector ───
+              _buildSportSelector(),
               const SizedBox(height: 20),
 
-              // ─── Stats Card ───
+              // ─── Stats Card (sport-aware) ───
               PlayerFifaCard(
                 playerName: user?.name ?? 'Игрок',
                 position: posAbbr,
                 positionFull: posFull,
                 stats: overall,
+                sport: _selectedSport,
                 isPremium: user?.isPremium ?? false,
                 onTap: () => Navigator.push(
                   context,
@@ -93,12 +152,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ─── Last Matches ───
+              // ─── Last Matches (sport-specific) ───
               _buildLastMatches(
-                statsProv.getMatchHistoryRecords(user?.id ?? '')),
+                statsProv.getMatchHistoryForSport(user?.id ?? '', _selectedSport)),
               const SizedBox(height: 16),
 
-              // ─── Achievements ───
+              // ─── Achievements (sport-specific) ───
               _buildAchievements(achievements, unlockedCount),
               const SizedBox(height: 16),
 
@@ -128,6 +187,155 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ─────────── SPORT SELECTOR ───────────
+
+  Widget _buildSportSelector() {
+    final t = AppColors.of(context);
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: SportCategory.values.map((sport) {
+          final isSelected = _selectedSport == sport;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _selectedSport = sport);
+              // Load sport-specific stats
+              final uid = context.read<AuthProvider>().uid;
+              if (uid != null) {
+                context.read<StatsProvider>().loadPlayerStatsForSport(uid, sport);
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: isSelected ? AppColors.primaryGradient : null,
+                color: isSelected ? null : t.cardBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected ? Colors.transparent : t.borderLight,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    sport.icon,
+                    size: 16,
+                    color: isSelected ? Colors.white : t.textHint,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    sport.displayName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: isSelected ? Colors.white : t.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ─────────── AVATAR UPLOAD ───────────
+
+  Future<void> _pickAndUploadAvatar(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.of(context).cardBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textHint.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Выберите фото', style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: AppColors.of(context).textPrimary,
+              )),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                title: Text('Камера', style: TextStyle(color: AppColors.of(context).textPrimary)),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                title: Text('Галерея', style: TextStyle(color: AppColors.of(context).textPrimary)),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
+      if (picked == null) return;
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Загрузка аватара...')),
+      );
+
+      final bytes = await picked.readAsBytes();
+      final ext = picked.path.split('.').last.toLowerCase();
+      final validExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+
+      final auth = context.read<AuthProvider>();
+      final userId = auth.currentUser?.id;
+      if (userId == null) return;
+
+      final db = SupabaseService();
+      final url = await db.uploadAvatar(userId, bytes, validExt);
+
+      if (url != null && mounted) {
+        await auth.updateAvatar(url);
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Аватар обновлён! ✓'), backgroundColor: AppColors.success),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   // ─────────── HEADER ───────────
 
   Widget _buildHeader(
@@ -136,23 +344,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         // Avatar
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: posColor.withValues(alpha: 0.1),
-            border: Border.all(color: posColor.withValues(alpha: 0.3)),
-          ),
-          child: Center(
-            child: Text(
-              (user?.name ?? 'И').substring(0, 1).toUpperCase(),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: posColor,
+        GestureDetector(
+          onTap: () => _pickAndUploadAvatar(context),
+          child: Stack(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: posColor.withValues(alpha: 0.1),
+                  border: Border.all(color: posColor.withValues(alpha: 0.3)),
+                ),
+                child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          user.avatarUrl!,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Text(
+                              (user.name).substring(0, 1).toUpperCase(),
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          (user?.name ?? 'И').substring(0, 1).toUpperCase(),
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+                        ),
+                      ),
               ),
-            ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: t.cardBg, width: 2),
+                  ),
+                  child: const Icon(Icons.camera_alt, size: 10, color: Colors.white),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 12),
@@ -208,20 +448,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── LAST MATCHES ───────────
 
   Widget _buildLastMatches(List<Map<String, dynamic>> realHistory) {
-    // Build display data: use real if available, mock otherwise
-    List<_MatchResult> displayMatches;
-    if (realHistory.isNotEmpty) {
-      displayMatches = realHistory.take(5).map((r) {
-        if (r['is_win'] == true) return _MatchResult.win;
-        if (r['is_draw'] == true) return _MatchResult.draw;
-        return _MatchResult.loss;
-      }).toList();
-    } else {
-      displayMatches = [
-        _MatchResult.win, _MatchResult.loss, _MatchResult.win,
-        _MatchResult.draw, _MatchResult.win,
-      ];
+    if (realHistory.isEmpty) {
+      return GlassCard(
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history_rounded,
+                    size: 18, color: AppColors.textSecondary),
+                const SizedBox(width: 8),
+                const Text('Последние матчи',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Icon(Icons.sports_score_outlined,
+                size: 40, color: AppColors.of(context).textHint.withValues(alpha: 0.3)),
+            const SizedBox(height: 8),
+            Text('Нет сыгранных матчей',
+                style: TextStyle(
+                    color: AppColors.of(context).textHint, fontSize: 13)),
+            const SizedBox(height: 8),
+          ],
+        ),
+      );
     }
+
+    final displayMatches = realHistory.take(5).map((r) {
+      if (r['is_win'] == true) return _MatchResult.win;
+      if (r['is_draw'] == true) return _MatchResult.draw;
+      return _MatchResult.loss;
+    }).toList();
 
     final wins = displayMatches.where((m) => m == _MatchResult.win).length;
     final total = displayMatches.length;
@@ -245,7 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '$winsВ из $total',
+                  '${wins}В из $total',
                   style: const TextStyle(
                     color: Color(0xFF43A047), fontSize: 11, fontWeight: FontWeight.w700,
                   ),
@@ -289,25 +546,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── ACHIEVEMENTS ───────────
 
   Widget _buildAchievements(List<Achievement> achievements, int unlockedCount) {
-    // "Almost done" mock achievements
-    final almostDone = [
-      _NearAchievement(
-        name: 'Железный человек',
-        icon: Icons.fitness_center_rounded,
-        progress: 8,
-        target: 10,
-        description: 'Сыграйте 10 матчей',
-        rarity: AchievementRarity.common,
-      ),
-      _NearAchievement(
-        name: 'Снайпер',
-        icon: Icons.gps_fixed_rounded,
-        progress: 7,
-        target: 10,
-        description: 'Забейте 10 голов',
-        rarity: AchievementRarity.common,
-      ),
-    ];
+    // Empty state for new players
+    if (achievements.isEmpty) {
+      return GlassCard(
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_rounded,
+                    color: Color(0xFFFFB300), size: 20),
+                const SizedBox(width: 8),
+                const Text('Достижения',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Icon(Icons.emoji_events_outlined,
+                size: 40, color: AppColors.of(context).textHint.withValues(alpha: 0.3)),
+            const SizedBox(height: 8),
+            Text('Сыграйте матчи, чтобы открыть достижения',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: AppColors.of(context).textHint, fontSize: 13)),
+            const SizedBox(height: 8),
+          ],
+        ),
+      );
+    }
 
     return GlassCard(
       child: Column(
@@ -341,76 +606,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
 
-          // Near completion section
-          const SizedBox(height: 14),
-          const Text(
-            'Почти выполнено',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...almostDone.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: a.rarity.color.withValues(alpha: 0.1),
-                        border: Border.all(
-                            color: a.rarity.color.withValues(alpha: 0.3)),
-                      ),
-                      child: Icon(a.icon,
-                          size: 16, color: a.rarity.color),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(a.name,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  )),
-                              const Spacer(),
-                              Text(
-                                '${a.progress}/${a.target}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: a.rarity.color,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: LinearProgressIndicator(
-                              value: a.progress / a.target,
-                              backgroundColor: AppColors.borderLight,
-                              valueColor: AlwaysStoppedAnimation(
-                                  a.rarity.color),
-                              minHeight: 4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-
           // Horizontal scrollable trophy shelf
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           const Text(
             'Витрина трофеев',
             style: TextStyle(
@@ -425,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: achievements.length.clamp(0, 16),
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
                 final a = achievements[i];
                 final locked = !a.isUnlocked;
@@ -483,6 +680,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+
+
 
   // ─────────── BALANCE ───────────
 
@@ -803,6 +1002,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── DIALOGS ───────────
 
   void _showPositionDialog(BuildContext context, AuthProvider auth) {
+    final positions = ProfileScreen.positionsForSport(_selectedSport);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -811,21 +1011,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(color: AppColors.of(context).borderLight),
         ),
-        title: const Text('Выберите позицию'),
+        title: Row(
+          children: [
+            Icon(_selectedSport.icon, size: 20),
+            const SizedBox(width: 8),
+            Text('Позиция: ${_selectedSport.displayName}'),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: ProfileScreen._positionData.entries.map((e) {
+          children: positions.entries.map((e) {
             final name = e.key;
             final abbr = e.value.$1;
             final icon = e.value.$3;
             final color = e.value.$4;
+            final isSelected = auth.currentUser?.getPositionForSport(_selectedSport.name) == name;
             return ListTile(
-              title: Text(name),
+              selected: isSelected,
+              selectedTileColor: color.withValues(alpha: 0.05),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              title: Text(name,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    color: isSelected ? color : null,
+                  )),
               leading: Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withValues(alpha: isSelected ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
@@ -842,8 +1058,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+              trailing: isSelected
+                  ? Icon(Icons.check_circle_rounded, color: color, size: 20)
+                  : null,
               onTap: () {
-                auth.updatePosition(name);
+                auth.updateSportPosition(_selectedSport.name, name);
                 Navigator.pop(ctx);
               },
             );

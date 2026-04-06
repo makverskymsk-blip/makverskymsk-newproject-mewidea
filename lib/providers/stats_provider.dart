@@ -9,6 +9,7 @@ class StatsProvider extends ChangeNotifier {
   final Map<String, PlayerOverallStats> _playerStats = {};
   final Map<String, List<Map<String, dynamic>>> _matchHistory = {};
   final Map<String, List<Achievement>> _achievements = {};
+  final Map<String, List<Map<String, dynamic>>> _sportMatchHistory = {};
 
   PlayerOverallStats getPlayerStats(String userId) {
     return _playerStats[userId] ?? PlayerOverallStats(
@@ -30,7 +31,64 @@ class StatsProvider extends ChangeNotifier {
     return _matchHistory[userId] ?? [];
   }
 
-  /// Load real player stats from Supabase
+  /// Match history filtered by sport
+  List<Map<String, dynamic>> getMatchHistoryForSport(String userId, SportCategory sport) {
+    final key = '${userId}_${sport.name}';
+    return _sportMatchHistory[key] ?? _matchHistory[userId] ?? [];
+  }
+
+  /// Sport-specific stats cache: key = "userId_sportName"
+  final Map<String, PlayerOverallStats> _sportStats = {};
+
+  /// Get sport-specific stats (returns cached or empty for non-football)
+  PlayerOverallStats getPlayerStatsForSport(String userId, SportCategory sport) {
+    final key = '${userId}_${sport.name}';
+    // Return sport-specific cache if available
+    if (_sportStats.containsKey(key)) {
+      return _sportStats[key]!;
+    }
+    // For football, fallback to all-time stats (backward compat)
+    if (sport == SportCategory.football) {
+      return _playerStats[userId] ?? PlayerOverallStats();
+    }
+    // Other sports with no data yet → empty stats
+    return PlayerOverallStats();
+  }
+
+  /// Load stats for a specific sport from Supabase
+  Future<void> loadPlayerStatsForSport(String userId, SportCategory sport) async {
+    final sportStr = sport.name; // 'football', 'hockey', etc.
+    final key = '${userId}_$sportStr';
+    try {
+      final data = await _db.getPlayerAggregateStats(userId, sportCategory: sportStr);
+      if (data != null) {
+        final totalDist = await _db.getPlayerTotalDistance(userId, sportCategory: sportStr);
+        _sportStats[key] = PlayerOverallStats(
+          totalGames: data['total_games'] ?? 0,
+          totalGoals: data['total_goals'] ?? 0,
+          totalAssists: data['total_assists'] ?? 0,
+          totalSaves: data['total_saves'] ?? 0,
+          totalMotm: data['total_mvp'] ?? 0,
+          avgRating: (data['avg_rating'] ?? 0.0).toDouble(),
+          winCount: data['win_count'] ?? 0,
+          lossCount: data['loss_count'] ?? 0,
+          drawCount: data['draw_count'] ?? 0,
+          totalDistanceKm: totalDist,
+        );
+        debugPrint('STATS: Loaded $sportStr stats for $userId');
+      }
+
+      // Load sport-filtered match history
+      final history = await _db.getPlayerMatchHistory(userId, limit: 10, sportCategory: sportStr);
+      _sportMatchHistory[key] = history;
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('STATS ERROR: Failed to load $sportStr stats: $e');
+    }
+  }
+
+  /// Load real player stats from Supabase (all-time, backward compat)
   Future<void> loadPlayerStatsFromDb(String userId) async {
     try {
       final data = await _db.getPlayerAggregateStats(userId);

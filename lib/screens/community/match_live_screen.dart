@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../models/enums.dart';
 import '../../models/match_event.dart';
 import '../../models/sport_match.dart';
 import '../../providers/auth_provider.dart';
@@ -284,13 +285,13 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
   }
 
   Widget _buildActionButtons(AppThemeColors t, SportMatch match) {
-    final actions = [
-      _EventAction(MatchEventType.goal, AppColors.success, Icons.sports_soccer_rounded),
-      _EventAction(MatchEventType.assist, AppColors.primary, Icons.handshake_rounded),
-      _EventAction(MatchEventType.save, AppColors.accent, Icons.sports_handball_rounded),
-      _EventAction(MatchEventType.foul, AppColors.warning, Icons.warning_amber_rounded),
-      _EventAction(MatchEventType.ownGoal, AppColors.error, Icons.gpp_bad_rounded),
-    ];
+    // Get sport-specific event types
+    final sportEvents = eventTypesForSport(match.category);
+    final actions = sportEvents.map((et) => _EventAction(
+      et,
+      _colorForType(et),
+      _iconForType(et),
+    )).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -651,6 +652,42 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
       case MatchEventType.save: return AppColors.accent;
       case MatchEventType.foul: return AppColors.warning;
       case MatchEventType.ownGoal: return AppColors.error;
+      // Hockey
+      case MatchEventType.block: return AppColors.accent;
+      case MatchEventType.penaltyMin: return AppColors.error;
+      // Tennis
+      case MatchEventType.ace: return AppColors.success;
+      case MatchEventType.winner: return AppColors.primary;
+      case MatchEventType.doubleFault: return AppColors.error;
+      case MatchEventType.breakPoint: return AppColors.warning;
+      // Esports
+      case MatchEventType.kill: return AppColors.success;
+      case MatchEventType.death: return AppColors.error;
+      case MatchEventType.clutch: return const Color(0xFFFF6D00);
+      case MatchEventType.mvpRound: return AppColors.primary;
+    }
+  }
+
+  IconData _iconForType(MatchEventType type) {
+    switch (type) {
+      case MatchEventType.goal: return Icons.sports_soccer_rounded;
+      case MatchEventType.assist: return Icons.handshake_rounded;
+      case MatchEventType.save: return Icons.sports_handball_rounded;
+      case MatchEventType.foul: return Icons.warning_amber_rounded;
+      case MatchEventType.ownGoal: return Icons.gpp_bad_rounded;
+      // Hockey
+      case MatchEventType.block: return Icons.shield_rounded;
+      case MatchEventType.penaltyMin: return Icons.timer_off_rounded;
+      // Tennis
+      case MatchEventType.ace: return Icons.bolt_rounded;
+      case MatchEventType.winner: return Icons.star_rounded;
+      case MatchEventType.doubleFault: return Icons.close_rounded;
+      case MatchEventType.breakPoint: return Icons.lock_open_rounded;
+      // Esports
+      case MatchEventType.kill: return Icons.gps_fixed_rounded;
+      case MatchEventType.death: return Icons.dangerous_rounded;
+      case MatchEventType.clutch: return Icons.workspace_premium_rounded;
+      case MatchEventType.mvpRound: return Icons.emoji_events_rounded;
     }
   }
 

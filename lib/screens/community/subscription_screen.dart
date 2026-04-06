@@ -409,7 +409,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: AppColors.of(context).borderLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -651,7 +651,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           ]
                         : [
                             AppColors.borderLight,
-                            Colors.black.withValues(alpha: 0.02)
+                            AppColors.of(context).surfaceBg
                           ],
                   ),
                   borderRadius: BorderRadius.circular(16),
@@ -900,7 +900,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       child: Column(
         children: [
           Icon(Icons.event_busy_rounded,
-              size: 48, color: Colors.black.withValues(alpha: 0.08)),
+              size: 48, color: AppColors.of(context).textHint.withValues(alpha: 0.3)),
           const SizedBox(height: 12),
           const Text(
             'Запись на абонемент не открыта',

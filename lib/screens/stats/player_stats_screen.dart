@@ -24,7 +24,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     final statsProv = context.watch<StatsProvider>();
     final user = auth.currentUser;
     final userId = user?.id ?? '';
-    final overall = statsProv.getPlayerStats(userId);
+    final overall = statsProv.getPlayerStatsForSport(userId, _selectedSport);
     final achievements =
         statsProv.getAchievementsForSport(userId, _selectedSport);
     final matchHistory = statsProv.getMatchHistoryRecords(userId);
@@ -77,12 +77,13 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                   _sportSelector(),
                   const SizedBox(height: 28),
 
-                  // FIFA Card centered
+                  // FIFA Card centered — sport-specific!
                   Center(
                     child: PlayerFifaCard(
                       playerName: user?.name ?? 'Игрок',
                       position: user?.position ?? 'НАП',
                       stats: overall,
+                      sport: _selectedSport,
                       isPremium: user?.isPremium ?? false,
                     ),
                   ),
@@ -251,7 +252,14 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
         children: SportCategory.values.map((sport) {
           final isSelected = _selectedSport == sport;
           return GestureDetector(
-            onTap: () => setState(() => _selectedSport = sport),
+            onTap: () {
+              setState(() => _selectedSport = sport);
+              // Load sport-specific stats
+              final uid = context.read<AuthProvider>().uid;
+              if (uid != null) {
+                context.read<StatsProvider>().loadPlayerStatsForSport(uid, sport);
+              }
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 10),

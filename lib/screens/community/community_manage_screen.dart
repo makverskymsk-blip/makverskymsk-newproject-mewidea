@@ -640,7 +640,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                   bankBalance >= 0
                       ? AppColors.accent.withValues(alpha: 0.12)
                       : AppColors.error.withValues(alpha: 0.12),
-                  Colors.black.withValues(alpha: 0.02),
+                  AppColors.of(context).surfaceBg,
                 ],
               ),
               borderRadius: BorderRadius.circular(14),
@@ -793,7 +793,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.1),
+                      color: AppColors.of(context).borderLight,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -832,7 +832,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                   decoration: InputDecoration(
                     hintText: '0',
                     hintStyle: TextStyle(
-                        color: Colors.black.withValues(alpha: 0.1)),
+                        color: AppColors.of(context).borderLight),
                     suffixText: '₽',
                     suffixStyle: TextStyle(
                         color: color, fontWeight: FontWeight.w700),

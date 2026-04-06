@@ -8,6 +8,7 @@ class AuthProvider extends ChangeNotifier {
   final SupabaseService _db = SupabaseService();
   UserProfile? _currentUser;
   bool _isLoading = true;
+  dynamic _userRealtimeChannel;
 
   UserProfile? get currentUser => _currentUser;
   bool get isLoggedIn => _supabase.auth.currentUser != null && _currentUser != null;
@@ -62,6 +63,10 @@ class AuthProvider extends ChangeNotifier {
         }
       } else {
         debugPrint('AUTH INIT: Profile loaded: ${_currentUser!.name}');
+      }
+      // Subscribe to realtime user profile changes
+      if (_currentUser != null) {
+        _subscribeToUserRealtime(_currentUser!.id);
       }
     } catch (e) {
       debugPrint('AUTH INIT ERROR: $e');
@@ -192,6 +197,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Update position for a specific sport
+  Future<void> updateSportPosition(String sportName, String position) async {
+    if (_currentUser != null) {
+      _currentUser!.setPositionForSport(sportName, position);
+      await _db.updateUser(_currentUser!.id, {
+        'position': _currentUser!.position,
+        'sportPositions': _currentUser!.sportPositions,
+      });
+      notifyListeners();
+    }
+  }
+
   Future<void> addCommunityToUser(String communityId) async {
     if (_currentUser != null && !_currentUser!.communityIds.contains(communityId)) {
       _currentUser!.communityIds.add(communityId);
@@ -231,9 +248,34 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _userRealtimeChannel?.unsubscribe();
+    _userRealtimeChannel = null;
     await _supabase.auth.signOut();
     _currentUser = null;
     notifyListeners();
+  }
+
+  /// Subscribe to Realtime changes for user profile
+  void _subscribeToUserRealtime(String userId) {
+    _userRealtimeChannel?.unsubscribe();
+    _userRealtimeChannel = _db.watchUserChannel(
+      userId,
+      onChanged: () => _refreshUserProfile(userId),
+    );
+  }
+
+  /// Refresh user profile from DB when realtime event fires
+  Future<void> _refreshUserProfile(String userId) async {
+    try {
+      final fresh = await _db.getUser(userId);
+      if (fresh != null && _currentUser != null) {
+        _currentUser = fresh;
+        debugPrint('REALTIME: User profile refreshed — balance=${fresh.balance}, communities=${fresh.communityIds.length}');
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('REALTIME: Failed to refresh user profile: $e');
+    }
   }
 
   String _mapAuthError(String message) {

@@ -24,6 +24,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     120, (i) => DateTime.now().add(Duration(days: i)),
   );
 
+  static const _monthsShort = [
+    '', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+    'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final matchesProv = context.watch<MatchesProvider>();
@@ -168,8 +173,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildDaySelector(DateTime selectedDate) {
+    final t = AppColors.of(context);
     return SizedBox(
-      height: 90,
+      height: 100,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -184,10 +190,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               width: 60,
               margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.borderLight.withValues(alpha: 0.5),
+                color: isSelected
+                    ? AppColors.primary
+                    : t.chipBg.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                  color: isSelected
+                      ? AppColors.primary
+                      : t.borderLight.withValues(alpha: 0.3),
                 ),
               ),
               child: Column(
@@ -196,18 +206,29 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   Text(
                     Helpers.formatDayOfWeek(day),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontSize: 12,
+                      color: isSelected ? Colors.white : t.textHint,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     day.day.toString(),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                      color: isSelected ? Colors.white : t.textPrimary,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _monthsShort[day.month],
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.7)
+                          : t.textHint,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -244,7 +265,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<SportCategory>(
-                    dropdownColor: Colors.white,
+                    dropdownColor: AppColors.of(context).dialogBg,
                     initialValue: selectedCat,
                     decoration: const InputDecoration(labelText: 'Категория'),
                     items: SportCategory.values
@@ -302,14 +323,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
                   InkWell(
                     onTap: () async {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
                       final date = await showDatePicker(
                         context: ctx,
                         initialDate: DateTime.now(),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
+                        locale: const Locale('ru', 'RU'),
                         builder: (_, child) => Theme(
-                          data: ThemeData.light().copyWith(
-                            colorScheme: const ColorScheme.light(primary: AppColors.primary),
+                          data: (isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
+                            colorScheme: isDark
+                                ? const ColorScheme.dark(
+                                    primary: AppColors.primary,
+                                    onPrimary: Colors.white,
+                                    surface: Color(0xFF1E1E24),
+                                    onSurface: Color(0xFFF0F0F0),
+                                  )
+                                : const ColorScheme.light(
+                                    primary: AppColors.primary,
+                                  ),
                           ),
                           child: child!,
                         ),
@@ -319,8 +351,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           context: ctx,
                           initialTime: TimeOfDay.now(),
                           builder: (_, child) => Theme(
-                            data: ThemeData.dark().copyWith(
-                              colorScheme: const ColorScheme.dark(primary: AppColors.primary),
+                            data: (isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
+                              colorScheme: isDark
+                                  ? const ColorScheme.dark(primary: AppColors.primary)
+                                  : const ColorScheme.light(primary: AppColors.primary),
                             ),
                             child: MediaQuery(
                               data: MediaQuery.of(ctx).copyWith(
@@ -344,7 +378,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
+                          bottom: BorderSide(color: AppColors.of(context).borderLight),
                         ),
                       ),
                       child: Row(
@@ -356,7 +390,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 ? 'Выберите дату и время'
                                 : Helpers.formatDateTime(selectedDT!),
                             style: TextStyle(
-                              color: selectedDT == null ? AppColors.textHint : AppColors.textPrimary,
+                              color: selectedDT == null
+                                  ? AppColors.of(context).textHint
+                                  : AppColors.of(context).textPrimary,
                             ),
                           ),
                         ],

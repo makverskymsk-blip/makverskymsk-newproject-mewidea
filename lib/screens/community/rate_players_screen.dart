@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/enums.dart';
 import '../../models/sport_match.dart';
 import '../../providers/matches_provider.dart';
 import '../../providers/stats_provider.dart';
@@ -26,6 +27,8 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
 
   // Per-player data: playerId -> _PlayerRating
   final Map<String, _PlayerRating> _ratings = {};
+
+  SportCategory get _sport => widget.match.category;
 
   @override
   void initState() {
@@ -73,7 +76,6 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     final match = widget.match;
     // Determine win/draw/loss for each player based on standings
     final standings = match.getStandings();
-    final winnerTeamIndex = standings.isNotEmpty ? standings.first.teamIndex : -1;
     final topPoints = standings.isNotEmpty ? standings.first.points : 0;
     // Multiple teams could tie for first
     final winnerIndices = standings
@@ -81,6 +83,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
         .map((s) => s.teamIndex)
         .toSet();
     final isDraw = winnerIndices.length > 1;
+    final winnerTeamIndex = standings.isNotEmpty ? standings.first.teamIndex : -1;
 
     for (int i = 0; i < match.registeredPlayerIds.length; i++) {
       final pid = match.registeredPlayerIds[i];
@@ -115,6 +118,10 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     }
   }
 
+  // ============ SPORT-SPECIFIC LABELS ============
+
+  _SportConfig get _config => _SportConfig.forSport(_sport);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -140,16 +147,36 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Оценка игроков',
+                        const Text('Оценка игроков',
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w800)),
                         Text('Выставьте оценки каждому участнику',
                             style: TextStyle(
-                                color: AppColors.textHint, fontSize: 12)),
+                                color: AppColors.of(context).textHint, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  // Sport badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_sport.icon, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Text(_sport.displayName,
+                            style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary)),
                       ],
                     ),
                   ),
@@ -218,6 +245,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
         ? 'Победа'
         : (rating.isDraw ? 'Ничья' : 'Поражение');
     final isMvp = _mvpPlayerId == playerId;
+    final cfg = _config;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -231,7 +259,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.of(context).shadowColor,
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -342,26 +370,26 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                     fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 8),
                   if (rating.goals > 0)
-                    _liveStatBadge('⚽', rating.goals),
+                    _liveStatBadge(cfg.goalEmoji, rating.goals),
                   if (rating.assists > 0)
-                    _liveStatBadge('🅰️', rating.assists),
+                    _liveStatBadge(cfg.assistEmoji, rating.assists),
                   if (rating.saves > 0)
-                    _liveStatBadge('🧤', rating.saves),
+                    _liveStatBadge(cfg.saveEmoji, rating.saves),
                 ],
               ),
             ),
 
-          // Counters: Goals, Assists, Saves — dynamic by position
-          _buildCountersForPosition(rating),
+          // Counters: sport-specific
+          _buildCounters(rating, cfg),
 
           const SizedBox(height: 14),
 
-          // Sliders: Attack, Defense, Speed
-          _sliderRow('Атака', rating.attackRating, const Color(0xFFE53935),
+          // Sliders: sport-specific
+          _sliderRow(cfg.slider1Label, rating.attackRating, cfg.slider1Color,
               (v) => setState(() => rating.attackRating = v)),
-          _sliderRow('Защита', rating.defenseRating, const Color(0xFF1E88E5),
+          _sliderRow(cfg.slider2Label, rating.defenseRating, cfg.slider2Color,
               (v) => setState(() => rating.defenseRating = v)),
-          _sliderRow('Скорость', rating.speedRating, const Color(0xFF43A047),
+          _sliderRow(cfg.slider3Label, rating.speedRating, cfg.slider3Color,
               (v) => setState(() => rating.speedRating = v)),
 
           const SizedBox(height: 6),
@@ -391,6 +419,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       ),
     );
   }
+
   /// Badge for live event stat display
   Widget _liveStatBadge(String emoji, int count) {
     return Container(
@@ -404,45 +433,20 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     );
   }
 
-  /// Dynamic counters based on player position
-  Widget _buildCountersForPosition(_PlayerRating rating) {
-    final pos = rating.position;
-
-    if (pos == 'Вратарь') {
-      // GK: Saves first, no goals
-      return Row(
-        children: [
-          _counterWidget('🧤', 'Сейвы', rating.saves,
-              (v) => setState(() => rating.saves = v)),
-          const SizedBox(width: 12),
-          _counterWidget('🅰️', 'Ассисты', rating.assists,
-              (v) => setState(() => rating.assists = v)),
-        ],
-      );
-    }
-    if (pos == 'Нападающий') {
-      // ST: Goals + Assists, no saves
-      return Row(
-        children: [
-          _counterWidget('⚽', 'Голы', rating.goals,
-              (v) => setState(() => rating.goals = v)),
-          const SizedBox(width: 12),
-          _counterWidget('🅰️', 'Ассисты', rating.assists,
-              (v) => setState(() => rating.assists = v)),
-        ],
-      );
-    }
-    // Default (DF, MF, UNI): all three
+  /// Sport-specific counters
+  Widget _buildCounters(_PlayerRating rating, _SportConfig cfg) {
     return Row(
       children: [
-        _counterWidget('⚽', 'Голы', rating.goals,
+        _counterWidget(cfg.goalEmoji, cfg.goalLabel, rating.goals,
             (v) => setState(() => rating.goals = v)),
         const SizedBox(width: 12),
-        _counterWidget('🅰️', 'Ассисты', rating.assists,
+        _counterWidget(cfg.assistEmoji, cfg.assistLabel, rating.assists,
             (v) => setState(() => rating.assists = v)),
-        const SizedBox(width: 12),
-        _counterWidget('🧤', 'Сейвы', rating.saves,
-            (v) => setState(() => rating.saves = v)),
+        if (cfg.showSaves) ...[
+          const SizedBox(width: 12),
+          _counterWidget(cfg.saveEmoji, cfg.saveLabel, rating.saves,
+              (v) => setState(() => rating.saves = v)),
+        ],
       ],
     );
   }
@@ -562,6 +566,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     try {
       final match = widget.match;
       final communityId = match.communityId ?? '';
+      final sportStr = _sport.name;
       final statsList = <Map<String, dynamic>>[];
 
       for (final entry in _ratings.entries) {
@@ -583,6 +588,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
           'is_win': r.isWin,
           'is_draw': r.isDraw,
           'is_mvp': _mvpPlayerId == pid,
+          'sport_category': sportStr,
         });
       }
 
@@ -645,4 +651,79 @@ class _PlayerRating {
 
   double get overallRating =>
       (attackRating + defenseRating + speedRating) / 3;
+}
+
+/// Sport-specific labels/emojis for rate screen
+class _SportConfig {
+  final String goalLabel;
+  final String goalEmoji;
+  final String assistLabel;
+  final String assistEmoji;
+  final String saveLabel;
+  final String saveEmoji;
+  final bool showSaves;
+
+  final String slider1Label;
+  final Color slider1Color;
+  final String slider2Label;
+  final Color slider2Color;
+  final String slider3Label;
+  final Color slider3Color;
+
+  const _SportConfig({
+    required this.goalLabel,
+    required this.goalEmoji,
+    required this.assistLabel,
+    required this.assistEmoji,
+    this.saveLabel = 'Сейвы',
+    this.saveEmoji = '🧤',
+    this.showSaves = true,
+    required this.slider1Label,
+    required this.slider1Color,
+    required this.slider2Label,
+    required this.slider2Color,
+    required this.slider3Label,
+    required this.slider3Color,
+  });
+
+  static _SportConfig forSport(SportCategory sport) {
+    switch (sport) {
+      case SportCategory.football:
+        return const _SportConfig(
+          goalLabel: 'Голы', goalEmoji: '⚽',
+          assistLabel: 'Ассисты', assistEmoji: '🅰️',
+          saveLabel: 'Сейвы', saveEmoji: '🧤',
+          slider1Label: 'Атака', slider1Color: Color(0xFFE53935),
+          slider2Label: 'Защита', slider2Color: Color(0xFF1E88E5),
+          slider3Label: 'Скорость', slider3Color: Color(0xFF43A047),
+        );
+      case SportCategory.hockey:
+        return const _SportConfig(
+          goalLabel: 'Шайбы', goalEmoji: '🏒',
+          assistLabel: 'Передачи', assistEmoji: '🅰️',
+          saveLabel: 'Блоки', saveEmoji: '🛡️',
+          slider1Label: 'Бросок', slider1Color: Color(0xFFE53935),
+          slider2Label: 'Защита', slider2Color: Color(0xFF1E88E5),
+          slider3Label: 'Катание', slider3Color: Color(0xFF43A047),
+        );
+      case SportCategory.tennis:
+        return const _SportConfig(
+          goalLabel: 'Эйсы', goalEmoji: '🎾',
+          assistLabel: 'Виннеры', assistEmoji: '💥',
+          showSaves: false,
+          slider1Label: 'Подача', slider1Color: Color(0xFFE53935),
+          slider2Label: 'Приём', slider2Color: Color(0xFF1E88E5),
+          slider3Label: 'Выносл.', slider3Color: Color(0xFF43A047),
+        );
+      case SportCategory.esports:
+        return const _SportConfig(
+          goalLabel: 'Киллы', goalEmoji: '🎯',
+          assistLabel: 'Ассисты', assistEmoji: '🤝',
+          saveLabel: 'Клатчи', saveEmoji: '👑',
+          slider1Label: 'Аим', slider1Color: Color(0xFFE53935),
+          slider2Label: 'IGL', slider2Color: Color(0xFF1E88E5),
+          slider3Label: 'Утилити', slider3Color: Color(0xFF43A047),
+        );
+    }
+  }
 }

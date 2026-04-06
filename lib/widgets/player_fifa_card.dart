@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/enums.dart';
 import '../models/match_stats.dart';
 import '../theme/app_colors.dart';
 import 'radar_chart.dart';
@@ -8,6 +9,7 @@ class PlayerFifaCard extends StatefulWidget {
   final String position;
   final String positionFull;
   final PlayerOverallStats stats;
+  final SportCategory sport;
   final bool isPremium;
   final VoidCallback? onTap;
 
@@ -17,6 +19,7 @@ class PlayerFifaCard extends StatefulWidget {
     required this.position,
     this.positionFull = '',
     required this.stats,
+    this.sport = SportCategory.football,
     this.isPremium = false,
     this.onTap,
   });
@@ -28,8 +31,10 @@ class PlayerFifaCard extends StatefulWidget {
 class _PlayerFifaCardState extends State<PlayerFifaCard> {
   bool _pressed = false;
 
+  SportMetrics get _metrics => widget.stats.getMetrics(widget.sport);
+
   CardTier get _tier {
-    final o = widget.stats.overallRating;
+    final o = _metrics.overallRating;
     if (widget.isPremium) return CardTier.legendary;
     if (o >= 85) return CardTier.top;
     if (o >= 70) return CardTier.strong;
@@ -40,28 +45,21 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
   @override
   Widget build(BuildContext context) {
     final tier = _tier;
-    final overall = widget.stats.overallRating;
+    final metrics = _metrics;
+    final overall = metrics.overallRating;
     final stats = widget.stats;
 
-    // Position-based main stat
-    final mainStat = _mainStatForPosition(widget.position);
+    // Position-based main stat (sport-aware)
+    final mainStat = metrics.mainStatForPosition(widget.position);
 
-    final radarEntries = [
-      RadarEntry(label: 'ATK', value: stats.attackRating),
-      RadarEntry(label: 'PAS', value: stats.passRating),
-      RadarEntry(label: 'DEF', value: stats.defenseRating),
-      RadarEntry(label: 'SPD', value: stats.staminaRating),
-      RadarEntry(label: 'SKL', value: stats.skillRating),
-    ];
+    final radarEntries = metrics.radarEntries;
 
     // Mock deltas for visual demo
-    final deltas = {
-      'ATK': 2,
-      'PAS': -1,
-      'DEF': 3,
-      'SPD': 0,
-      'SKL': 1,
-    };
+    final labels = metrics.statLabels;
+    final deltas = <String, int>{};
+    for (int i = 0; i < labels.length; i++) {
+      deltas[labels[i]] = [2, -1, 3, 0, 1][i % 5];
+    }
 
     // Progress to next tier
     final nextTier = tier.nextTier;
@@ -173,14 +171,22 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
                                   color:
                                       tier.accentColor.withValues(alpha: 0.2)),
                             ),
-                            child: Text(
-                              tier.label,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.5,
-                                color: tier.accentColor,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(widget.sport.icon, size: 12,
+                                    color: tier.accentColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  tier.label,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.5,
+                                    color: tier.accentColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -305,7 +311,7 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
                     Row(
                       children: [
                         _metricChip(
-                          Icons.sports_soccer_rounded,
+                          _sportMetricIcon(widget.sport),
                           'Игры',
                           stats.totalGames.toString(),
                           tier,
@@ -337,7 +343,7 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
 
                     const SizedBox(height: 12),
 
-                    // Stat deltas row
+                    // Stat deltas row (sport-specific labels!)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: radarEntries.map((e) {
@@ -375,6 +381,15 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
         ),
       ),
     );
+  }
+
+  IconData _sportMetricIcon(SportCategory sport) {
+    switch (sport) {
+      case SportCategory.football: return Icons.sports_soccer_rounded;
+      case SportCategory.hockey: return Icons.sports_hockey_rounded;
+      case SportCategory.tennis: return Icons.sports_tennis_rounded;
+      case SportCategory.esports: return Icons.sports_esports_rounded;
+    }
   }
 
   Widget _metricChip(
@@ -510,17 +525,6 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
         return Icons.sports_handball_rounded;
       default:
         return Icons.person_rounded;
-    }
-  }
-
-  /// Returns the primary stat label for a position
-  String _mainStatForPosition(String pos) {
-    switch (pos) {
-      case 'ST': return 'ATK';
-      case 'DF': return 'DEF';
-      case 'MF': return 'PAS';
-      case 'GK': return 'DEF';
-      default:   return 'SKL';
     }
   }
 }

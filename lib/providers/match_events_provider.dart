@@ -21,14 +21,11 @@ class MatchEventsProvider extends ChangeNotifier {
       if (e.innerMatchId != innerMatchId) continue;
       if (e.teamIndex == null) continue;
 
-      if (e.eventType == MatchEventType.goal) {
-        scores[e.teamIndex!] = (scores[e.teamIndex!] ?? 0) + 1;
-      } else if (e.eventType == MatchEventType.ownGoal) {
-        // Own goal counts for the opposite team — we need to figure out
-        // which teams are in this inner match. For simplicity, we add +1
-        // to *all other* team indices present in this match.
-        // In practice with 2 teams, we just don't add to own team.
-        // We'll handle this in the UI by passing the opponent's teamIndex.
+      // Universal scoring: goal, own_goal, ace (tennis), kill (esports)
+      if (e.eventType == MatchEventType.goal ||
+          e.eventType == MatchEventType.ownGoal ||
+          e.eventType == MatchEventType.ace ||
+          e.eventType == MatchEventType.kill) {
         scores[e.teamIndex!] = (scores[e.teamIndex!] ?? 0) + 1;
       }
     }
@@ -37,28 +34,21 @@ class MatchEventsProvider extends ChangeNotifier {
 
   /// Aggregate stats for a player across all events in this match
   Map<String, int> getPlayerEventStats(String playerId) {
-    int goals = 0, assists = 0, saves = 0, fouls = 0, ownGoals = 0;
+    final counts = <String, int>{};
     for (final e in _events) {
       if (e.playerId != playerId) continue;
-      switch (e.eventType) {
-        case MatchEventType.goal:
-          goals++;
-        case MatchEventType.assist:
-          assists++;
-        case MatchEventType.save:
-          saves++;
-        case MatchEventType.foul:
-          fouls++;
-        case MatchEventType.ownGoal:
-          ownGoals++;
-      }
+      final key = e.eventType.value;
+      counts[key] = (counts[key] ?? 0) + 1;
     }
+    // Always include legacy keys for backward compat
     return {
-      'goals': goals,
-      'assists': assists,
-      'saves': saves,
-      'fouls': fouls,
-      'ownGoals': ownGoals,
+      'goals': (counts['goal'] ?? 0) + (counts['kill'] ?? 0) + (counts['ace'] ?? 0),
+      'assists': (counts['assist'] ?? 0) + (counts['winner'] ?? 0),
+      'saves': (counts['save'] ?? 0) + (counts['block'] ?? 0),
+      'fouls': (counts['foul'] ?? 0) + (counts['penalty_min'] ?? 0) + (counts['double_fault'] ?? 0),
+      'ownGoals': counts['own_goal'] ?? 0,
+      // Sport-specific raw counts
+      ...counts,
     };
   }
 

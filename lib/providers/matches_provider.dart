@@ -189,6 +189,7 @@ class MatchesProvider extends ChangeNotifier {
       name: teamColorNames[idx],
       colorValue: teamColors[idx],
     ));
+    _syncEventTeams(match);
     notifyListeners();
     return true;
   }
@@ -207,6 +208,8 @@ class MatchesProvider extends ChangeNotifier {
     // При удалении команды безопаснее удалить все матчи (индексы сбиваются)
     match.innerMatches.clear();
     match.eventTeams.removeAt(teamIdx);
+    _syncEventTeams(match);
+    _syncInnerMatches(match);
     notifyListeners();
   }
 
@@ -224,6 +227,7 @@ class MatchesProvider extends ChangeNotifier {
     final team =
         match.eventTeams.where((t) => t.id == teamId).firstOrNull;
     team?.addPlayer(playerId, playerName);
+    _syncEventTeams(match);
     notifyListeners();
   }
 
@@ -235,6 +239,7 @@ class MatchesProvider extends ChangeNotifier {
     final team =
         match.eventTeams.where((t) => t.id == teamId).firstOrNull;
     team?.removePlayer(playerId);
+    _syncEventTeams(match);
     notifyListeners();
   }
 
@@ -258,6 +263,7 @@ class MatchesProvider extends ChangeNotifier {
       match.eventTeams[teamIdx]
           .addPlayer(match.registeredPlayerIds[i], name);
     }
+    _syncEventTeams(match);
     notifyListeners();
   }
 
@@ -277,6 +283,7 @@ class MatchesProvider extends ChangeNotifier {
       team1Index: team1Index,
       team2Index: team2Index,
     ));
+    _syncInnerMatches(match);
     notifyListeners();
     return true;
   }
@@ -292,6 +299,7 @@ class MatchesProvider extends ChangeNotifier {
     if (im == null) return;
     im.team1Score = score1;
     im.team2Score = score2;
+    _syncInnerMatches(match);
     notifyListeners();
   }
 
@@ -304,6 +312,7 @@ class MatchesProvider extends ChangeNotifier {
         .firstOrNull;
     if (im == null) return;
     im.isCompleted = true;
+    _syncInnerMatches(match);
     notifyListeners();
   }
 
@@ -312,7 +321,28 @@ class MatchesProvider extends ChangeNotifier {
     final match = getById(matchId);
     if (match == null) return;
     match.innerMatches.removeWhere((m) => m.id == innerMatchId);
+    _syncInnerMatches(match);
     notifyListeners();
+  }
+
+  // ============================================================
+  // СИНХРОНИЗАЦИЯ С БД
+  // ============================================================
+
+  /// Сохранить event_teams в БД
+  void _syncEventTeams(SportMatch match) {
+    final communityId = match.communityId ?? _currentCommunityId ?? '';
+    _db.updateMatch(communityId, match.id, {
+      'eventTeams': match.eventTeams.map((t) => t.toJson()).toList(),
+    });
+  }
+
+  /// Сохранить inner_matches в БД
+  void _syncInnerMatches(SportMatch match) {
+    final communityId = match.communityId ?? _currentCommunityId ?? '';
+    _db.updateMatch(communityId, match.id, {
+      'innerMatches': match.innerMatches.map((m) => m.toJson()).toList(),
+    });
   }
 
   // ============================================================

@@ -491,7 +491,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: AppColors.of(context).borderLight,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

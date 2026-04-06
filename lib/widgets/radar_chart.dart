@@ -15,6 +15,7 @@ class RadarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
     return SizedBox(
       width: size,
       height: size,
@@ -22,6 +23,7 @@ class RadarChart extends StatelessWidget {
         painter: _RadarChartPainter(
           entries: entries,
           color: color,
+          bgColor: scaffoldBg,
         ),
       ),
     );
@@ -45,10 +47,12 @@ class RadarEntry {
 class _RadarChartPainter extends CustomPainter {
   final List<RadarEntry> entries;
   final Color color;
+  final Color bgColor;
 
   _RadarChartPainter({
     required this.entries,
     required this.color,
+    required this.bgColor,
   });
 
   @override
@@ -139,7 +143,7 @@ class _RadarChartPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(x, y),
         1.5,
-        Paint()..color = Colors.white,
+        Paint()..color = bgColor,
       );
     }
 

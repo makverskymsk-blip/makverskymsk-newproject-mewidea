@@ -605,11 +605,16 @@ class _MembersScreenState extends State<MembersScreen>
                   currentBalance: user.balance,
                 );
                 if (ok) {
-                  user.balance = 0;
+                  // Immediately update local state so UI reflects change
+                  setState(() {
+                    user.balance = 0;
+                  });
+                  // Refresh auth balance if settling own debt
                   if (user.id == auth.uid) {
-                    await auth.updateBalance(user.balance.abs());
+                    await auth.refreshBalance();
                   }
-                  _loadMembers();
+                  // Reload fresh data from DB
+                  await _loadMembers();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -1121,12 +1126,12 @@ class _MembersScreenState extends State<MembersScreen>
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
                 autofocus: true,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 22),
+                style: TextStyle(
+                    color: AppColors.of(context).textPrimary, fontSize: 22),
                 decoration: InputDecoration(
                   hintText: '0',
                   hintStyle: TextStyle(
-                      color: Colors.black.withValues(alpha: 0.1)),
+                      color: AppColors.of(context).textHint),
                   suffixText: '₽',
                   suffixStyle: TextStyle(
                       color: color, fontWeight: FontWeight.w700),

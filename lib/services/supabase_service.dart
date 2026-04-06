@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/community.dart';
@@ -9,6 +10,31 @@ import '../models/transaction.dart' as app_tx;
 
 class SupabaseService {
   final SupabaseClient _supabase = Supabase.instance.client;
+
+  // ===== AVATAR UPLOAD =====
+
+  /// Upload avatar image and return public URL
+  Future<String?> uploadAvatar(String userId, Uint8List bytes, String ext) async {
+    try {
+      final path = 'avatars/$userId.$ext';
+      await _supabase.storage.from('avatars').uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(
+          contentType: 'image/$ext',
+          upsert: true,
+        ),
+      );
+      final url = _supabase.storage.from('avatars').getPublicUrl(path);
+      // Add cache buster to force reload
+      final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('AVATAR: Uploaded to $publicUrl');
+      return publicUrl;
+    } catch (e) {
+      debugPrint('AVATAR ERROR: $e');
+      return null;
+    }
+  }
 
   // ===== USERS =====
 
@@ -24,6 +50,7 @@ class SupabaseService {
       'is_premium': user.isPremium,
       'games_played': user.gamesPlayed,
       'goals_scored': user.goalsScored,
+      'sport_positions': user.sportPositions,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -48,6 +75,9 @@ class SupabaseService {
       isPremium: response['is_premium'] ?? false,
       gamesPlayed: response['games_played'] ?? 0,
       goalsScored: response['goals_scored'] ?? 0,
+      sportPositions: response['sport_positions'] != null
+          ? Map<String, String>.from(response['sport_positions'])
+          : {},
     );
   }
 
@@ -60,6 +90,7 @@ class SupabaseService {
       else if (key == 'gamesPlayed') mappedData['games_played'] = value;
       else if (key == 'goalsScored') mappedData['goals_scored'] = value;
       else if (key == 'avatarUrl') mappedData['avatar_url'] = value;
+      else if (key == 'sportPositions') mappedData['sport_positions'] = value;
       else mappedData[key] = value;
     });
 
@@ -385,6 +416,8 @@ class SupabaseService {
                 registeredPlayerNames:
                     List<String>.from(d['registered_player_names'] ?? []),
                 isCompleted: d['is_completed'] ?? false,
+                eventTeams: _parseEventTeams(d['event_teams']),
+                innerMatches: _parseInnerMatches(d['inner_matches']),
               );
             })
         .toList();
@@ -412,6 +445,8 @@ class SupabaseService {
                     registeredPlayerNames:
                         List<String>.from(d['registered_player_names'] ?? []),
                     isCompleted: d['is_completed'] ?? false,
+                    eventTeams: _parseEventTeams(d['event_teams']),
+                    innerMatches: _parseInnerMatches(d['inner_matches']),
                   );
                 })
             .toList()
@@ -460,6 +495,48 @@ class SupabaseService {
     return channel;
   }
 
+  /// Subscribe to Realtime changes on a specific community row
+  dynamic watchCommunityChannel(String communityId, {required VoidCallback onChanged}) {
+    final channel = _supabase.channel('community_$communityId')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'communities',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: communityId,
+        ),
+        callback: (payload) {
+          debugPrint('REALTIME: community changed — ${payload.eventType}');
+          onChanged();
+        },
+      )
+      .subscribe();
+    return channel;
+  }
+
+  /// Subscribe to Realtime changes on a specific user row
+  dynamic watchUserChannel(String userId, {required VoidCallback onChanged}) {
+    final channel = _supabase.channel('user_$userId')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'users',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'id',
+          value: userId,
+        ),
+        callback: (payload) {
+          debugPrint('REALTIME: user profile changed — ${payload.eventType}');
+          onChanged();
+        },
+      )
+      .subscribe();
+    return channel;
+  }
+
   Future<void> updateMatch(
       String communityId, String matchId, Map<String, dynamic> data) async {
     final mappedData = <String, dynamic>{};
@@ -470,10 +547,36 @@ class SupabaseService {
       else if (key == 'registeredPlayerIds') mappedData['registered_player_ids'] = value;
       else if (key == 'registeredPlayerNames') mappedData['registered_player_names'] = value;
       else if (key == 'isCompleted') mappedData['is_completed'] = value;
+      else if (key == 'eventTeams') mappedData['event_teams'] = value;
+      else if (key == 'innerMatches') mappedData['inner_matches'] = value;
       else mappedData[key] = value;
     });
 
     await _supabase.from('matches').update(mappedData).eq('id', matchId);
+  }
+
+  // ===== HELPERS =====
+
+  List<EventTeam> _parseEventTeams(dynamic json) {
+    if (json == null) return [];
+    try {
+      final list = json is List ? json : [];
+      return list.map((e) => EventTeam.fromJson(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      debugPrint('PARSE: Failed to parse event_teams: $e');
+      return [];
+    }
+  }
+
+  List<InnerMatch> _parseInnerMatches(dynamic json) {
+    if (json == null) return [];
+    try {
+      final list = json is List ? json : [];
+      return list.map((e) => InnerMatch.fromJson(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      debugPrint('PARSE: Failed to parse inner_matches: $e');
+      return [];
+    }
   }
 
   // ===== TRANSACTIONS =====
@@ -522,14 +625,22 @@ class SupabaseService {
     debugPrint('STATS: Saved ${statsList.length} player stats records');
   }
 
-  /// Get aggregated stats for a player (all-time)
-  Future<Map<String, dynamic>?> getPlayerAggregateStats(String userId) async {
+  /// Get aggregated stats for a player (all-time or filtered by sport)
+  Future<Map<String, dynamic>?> getPlayerAggregateStats(
+    String userId, {
+    String? sportCategory,
+  }) async {
     try {
-      final data = await _supabase
+      var query = _supabase
           .from('match_player_stats')
           .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+          .eq('user_id', userId);
+
+      if (sportCategory != null) {
+        query = query.eq('sport_category', sportCategory);
+      }
+
+      final data = await query.order('created_at', ascending: false);
 
       if (data.isEmpty) return null;
 
@@ -575,14 +686,53 @@ class SupabaseService {
     }
   }
 
-  /// Get recent match history for a player
-  Future<List<Map<String, dynamic>>> getPlayerMatchHistory(
-      String userId, {int limit = 10}) async {
+  /// Get aggregated stats via RPC (server-side, faster)
+  Future<Map<String, dynamic>?> getPlayerStatsBySportRpc(
+    String userId, {
+    String? sportCategory,
+  }) async {
     try {
-      final data = await _supabase
+      final result = await _supabase.rpc('get_player_stats_by_sport', params: {
+        'p_user_id': userId,
+        'p_sport_category': sportCategory,
+      });
+
+      if (result == null || (result is List && result.isEmpty)) return null;
+
+      final row = result is List ? result.first : result;
+      return {
+        'total_games': row['total_games'] ?? 0,
+        'total_goals': row['total_goals'] ?? 0,
+        'total_assists': row['total_assists'] ?? 0,
+        'total_saves': row['total_saves'] ?? 0,
+        'total_mvp': row['total_mvp'] ?? 0,
+        'avg_rating': (row['avg_rating'] ?? 0.0).toDouble(),
+        'win_count': row['win_count'] ?? 0,
+        'draw_count': row['draw_count'] ?? 0,
+        'loss_count': row['loss_count'] ?? 0,
+        'total_distance': (row['total_distance'] ?? 0.0).toDouble(),
+      };
+    } catch (e) {
+      debugPrint('STATS RPC ERROR: $e');
+      // Fallback to client-side aggregation
+      return getPlayerAggregateStats(userId, sportCategory: sportCategory);
+    }
+  }
+
+  /// Get recent match history for a player (optionally filtered by sport)
+  Future<List<Map<String, dynamic>>> getPlayerMatchHistory(
+      String userId, {int limit = 10, String? sportCategory}) async {
+    try {
+      var query = _supabase
           .from('match_player_stats')
           .select()
-          .eq('user_id', userId)
+          .eq('user_id', userId);
+
+      if (sportCategory != null) {
+        query = query.eq('sport_category', sportCategory);
+      }
+
+      final data = await query
           .order('created_at', ascending: false)
           .limit(limit);
       return List<Map<String, dynamic>>.from(data);
@@ -594,7 +744,7 @@ class SupabaseService {
 
   // ===== MATCH EVENTS (LIVE) =====
 
-  /// Add a live match event (goal, assist, save, foul, own_goal)
+  /// Add a live match event (goal, assist, save, foul, own_goal, etc.)
   Future<void> addMatchEvent(Map<String, dynamic> eventData) async {
     await _supabase.from('match_events').insert(eventData);
   }
@@ -638,7 +788,12 @@ class SupabaseService {
   // ===== PLAYER DISTANCE =====
 
   /// Save distance for a specific match+player
-  Future<void> savePlayerDistance(String matchId, String userId, double km) async {
+  Future<void> savePlayerDistance(
+    String matchId,
+    String userId,
+    double km, {
+    String sportCategory = 'football',
+  }) async {
     // Check if record exists
     final existing = await _supabase
         .from('match_player_stats')
@@ -651,7 +806,10 @@ class SupabaseService {
       // Update existing
       await _supabase
           .from('match_player_stats')
-          .update({'distance_km': km})
+          .update({
+            'distance_km': km,
+            'sport_category': sportCategory,
+          })
           .eq('match_id', matchId)
           .eq('user_id', userId);
     } else {
@@ -660,6 +818,7 @@ class SupabaseService {
         'match_id': matchId,
         'user_id': userId,
         'distance_km': km,
+        'sport_category': sportCategory,
       });
     }
   }
@@ -679,13 +838,19 @@ class SupabaseService {
     }
   }
 
-  /// Get total distance across all matches for a player
-  Future<double> getPlayerTotalDistance(String userId) async {
+  /// Get total distance across all matches for a player (optionally by sport)
+  Future<double> getPlayerTotalDistance(String userId, {String? sportCategory}) async {
     try {
-      final data = await _supabase
+      var query = _supabase
           .from('match_player_stats')
           .select('distance_km')
           .eq('user_id', userId);
+
+      if (sportCategory != null) {
+        query = query.eq('sport_category', sportCategory);
+      }
+
+      final data = await query;
       double total = 0;
       for (final row in data) {
         total += (row['distance_km'] ?? 0.0).toDouble();
