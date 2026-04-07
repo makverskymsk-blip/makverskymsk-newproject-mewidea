@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/avatar_viewer.dart';
 
 
 class MembersScreen extends StatefulWidget {
@@ -404,39 +405,54 @@ class _MembersScreenState extends State<MembersScreen>
         child: Row(
           children: [
             // Avatar
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    warningRed.withValues(alpha: 0.3),
-                    warningRed.withValues(alpha: 0.1),
-                  ],
-                ),
-                border:
-                    Border.all(color: warningRed.withValues(alpha: 0.4), width: 1.5),
-              ),
-              child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                  ? ClipOval(
-                      child: Image.network(
-                        user.avatarUrl!,
-                        width: 50, height: 50, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
+            GestureDetector(
+              onTap: () {
+                if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+                  openAvatarViewer(
+                    context,
+                    avatarUrl: user.avatarUrl!,
+                    heroTag: 'debtor_avatar_${user.id}',
+                    userName: user.name,
+                  );
+                }
+              },
+              child: Hero(
+                tag: 'debtor_avatar_${user.id}',
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        warningRed.withValues(alpha: 0.3),
+                        warningRed.withValues(alpha: 0.1),
+                      ],
+                    ),
+                    border:
+                        Border.all(color: warningRed.withValues(alpha: 0.4), width: 1.5),
+                  ),
+                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.avatarUrl!,
+                            width: 50, height: 50, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
                           child: Text(
                             user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                             style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
                           ),
                         ),
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                        style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                    ),
+                ),
+              ),
             ),
             const SizedBox(width: 14),
 
@@ -739,35 +755,50 @@ class _MembersScreenState extends State<MembersScreen>
             Row(
               children: [
                 // Avatar
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: roleColor.withValues(alpha: 0.1),
-                    border: Border.all(
-                      color: roleColor.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                      ? ClipOval(
-                          child: Image.network(
-                            user.avatarUrl!,
-                            width: 44, height: 44, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                GestureDetector(
+                  onTap: () {
+                    if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+                      openAvatarViewer(
+                        context,
+                        avatarUrl: user.avatarUrl!,
+                        heroTag: 'member_avatar_${user.id}',
+                        userName: user.name,
+                      );
+                    }
+                  },
+                  child: Hero(
+                    tag: 'member_avatar_${user.id}',
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: roleColor.withValues(alpha: 0.1),
+                        border: Border.all(
+                          color: roleColor.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                user.avatarUrl!,
+                                width: 44, height: 44, fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Text(
+                                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                    style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Center(
                               child: Text(
                                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                                 style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
                               ),
                             ),
-                          ),
-                        )
-                      : Center(
-                          child: Text(
-                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                            style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
-                          ),
-                        ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
 

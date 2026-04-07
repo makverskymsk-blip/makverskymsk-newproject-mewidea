@@ -16,8 +16,10 @@ import '../community/community_manage_screen.dart';
 import '../../models/enums.dart';
 import '../../models/achievement.dart';
 import '../community/members_screen.dart';
-import '../../services/supabase_service.dart';
 import '../../providers/matches_provider.dart';
+import '../../widgets/avatar_viewer.dart';
+import '../wallet/wallet_screen.dart';
+import 'gender_selector_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -86,6 +88,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _statsLoaded = false;
   SportCategory _selectedSport = SportCategory.football;
+  bool _isTrainingMode = false;
 
   @override
   void didChangeDependencies() {
@@ -137,29 +140,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSportSelector(),
               const SizedBox(height: 20),
 
-              // ─── Stats Card (sport-aware) ───
-              PlayerFifaCard(
-                playerName: user?.name ?? 'Игрок',
-                position: posAbbr,
-                positionFull: posFull,
-                stats: overall,
-                sport: _selectedSport,
-                isPremium: user?.isPremium ?? false,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PlayerStatsScreen()),
+              // ─── Content depends on mode ───
+              if (_isTrainingMode) ...[
+                // Training Athlete Card placeholder (Sprint 3)
+                _buildTrainingCard(user),
+                const SizedBox(height: 16),
+              ] else ...[
+                // ─── Stats Card (sport-aware) ───
+                PlayerFifaCard(
+                  playerName: user?.name ?? 'Игрок',
+                  position: posAbbr,
+                  positionFull: posFull,
+                  stats: overall,
+                  sport: _selectedSport,
+                  isPremium: user?.isPremium ?? false,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PlayerStatsScreen()),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // ─── Last Matches (sport-specific) ───
-              _buildLastMatches(
-                statsProv.getMatchHistoryForSport(user?.id ?? '', _selectedSport)),
-              const SizedBox(height: 16),
+                // ─── Last Matches (sport-specific) ───
+                _buildLastMatches(
+                  statsProv.getMatchHistoryForSport(user?.id ?? '', _selectedSport)),
+                const SizedBox(height: 16),
 
-              // ─── Achievements (sport-specific) ───
-              _buildAchievements(achievements, unlockedCount),
-              const SizedBox(height: 16),
+                // ─── Achievements (sport-specific) ───
+                _buildAchievements(achievements, unlockedCount),
+                const SizedBox(height: 16),
+              ],
 
               // ─── Balance ───
               _buildBalance(user?.balance ?? 0),
@@ -195,32 +205,85 @@ class _ProfileScreenState extends State<ProfileScreen> {
       height: 46,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        children: SportCategory.values.map((sport) {
-          final isSelected = _selectedSport == sport;
-          return GestureDetector(
-            onTap: () {
-              setState(() => _selectedSport = sport);
-              // Load sport-specific stats
-              final uid = context.read<AuthProvider>().uid;
-              if (uid != null) {
-                context.read<StatsProvider>().loadPlayerStatsForSport(uid, sport);
-              }
-            },
+        children: [
+          // Sport categories
+          ...SportCategory.values.map((sport) {
+            final isSelected = !_isTrainingMode && _selectedSport == sport;
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isTrainingMode = false;
+                  _selectedSport = sport;
+                });
+                final uid = context.read<AuthProvider>().uid;
+                if (uid != null) {
+                  context.read<StatsProvider>().loadPlayerStatsForSport(uid, sport);
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: isSelected ? AppColors.primaryGradient : null,
+                  color: isSelected ? null : t.cardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected ? Colors.transparent : t.borderLight,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      sport.icon,
+                      size: 16,
+                      color: isSelected ? Colors.white : t.textHint,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      sport.displayName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: isSelected ? Colors.white : t.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          // Training tab
+          GestureDetector(
+            onTap: () => setState(() => _isTrainingMode = true),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                gradient: isSelected ? AppColors.primaryGradient : null,
-                color: isSelected ? null : t.cardBg,
+                gradient: _isTrainingMode
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)],
+                      )
+                    : null,
+                color: _isTrainingMode ? null : t.cardBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? Colors.transparent : t.borderLight,
+                  color: _isTrainingMode ? Colors.transparent : t.borderLight,
                 ),
-                boxShadow: isSelected
+                boxShadow: _isTrainingMode
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
+                          color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -230,24 +293,181 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 children: [
                   Icon(
-                    sport.icon,
+                    Icons.fitness_center_rounded,
                     size: 16,
-                    color: isSelected ? Colors.white : t.textHint,
+                    color: _isTrainingMode ? Colors.white : t.textHint,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    sport.displayName,
+                    'Тренировка',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
-                      color: isSelected ? Colors.white : t.textSecondary,
+                      color: _isTrainingMode ? Colors.white : t.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-          );
-        }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────── TRAINING CARD (Sprint 3 placeholder) ───────────
+
+  Widget _buildTrainingCard(dynamic user) {
+    final t = AppColors.of(context);
+    final level = user?.trainingLevel ?? 1;
+    final xp = user?.trainingXp ?? 0;
+    final rank = user?.trainingRank ?? 'Новичок';
+    final xpNeeded = user?.xpForNextLevel ?? 500;
+    final progress = user?.xpProgress ?? 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1A1A2E),
+            const Color(0xFF16213E),
+            const Color(0xFF0F3460).withValues(alpha: 0.9),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6B35).withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Level + XP header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'LVL $level',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                rank.toUpperCase(),
+                style: const TextStyle(
+                  color: Color(0xFFFFD700),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'XP $xp / $xpNeeded',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // XP progress bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FF88)),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Radar chart placeholder
+          Container(
+            height: 180,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.radar_rounded,
+                      size: 48,
+                      color: const Color(0xFF00FF88).withValues(alpha: 0.4)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Radar Chart',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    'Спринт 3',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Body heatmap placeholder
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.accessibility_new_rounded,
+                      size: 40,
+                      color: const Color(0xFFFF6B35).withValues(alpha: 0.4)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Body Heatmap',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -344,43 +564,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         // Avatar
-        GestureDetector(
-          onTap: () => _pickAndUploadAvatar(context),
-          child: Stack(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: posColor.withValues(alpha: 0.1),
-                  border: Border.all(color: posColor.withValues(alpha: 0.3)),
-                ),
-                child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          user.avatarUrl!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(
-                            child: Text(
-                              (user.name).substring(0, 1).toUpperCase(),
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+        Stack(
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) {
+                  openAvatarViewer(
+                    context,
+                    avatarUrl: user.avatarUrl!,
+                    heroTag: 'profile_avatar_${user.id}',
+                    userName: user.name,
+                  );
+                } else {
+                  _pickAndUploadAvatar(context);
+                }
+              },
+              child: Hero(
+                tag: 'profile_avatar_${user?.id ?? 'none'}',
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: posColor.withValues(alpha: 0.1),
+                    border: Border.all(color: posColor.withValues(alpha: 0.3)),
+                  ),
+                  child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.avatarUrl!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                (user.name).substring(0, 1).toUpperCase(),
+                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+                              ),
                             ),
                           ),
+                        )
+                      : Center(
+                          child: Text(
+                            (user?.name ?? 'И').substring(0, 1).toUpperCase(),
+                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+                          ),
                         ),
-                      )
-                    : Center(
-                        child: Text(
-                          (user?.name ?? 'И').substring(0, 1).toUpperCase(),
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
-                        ),
-                      ),
+                ),
               ),
-              Positioned(
-                right: 0,
-                bottom: 0,
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: () => _pickAndUploadAvatar(context),
                 child: Container(
                   width: 20,
                   height: 20,
@@ -392,8 +629,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Icon(Icons.camera_alt, size: 10, color: Colors.white),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(width: 12),
         // Name + ID
@@ -950,6 +1187,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             () => _showJoinDialog(context)),
         _menuTile(Icons.directions_run_rounded, 'Моя дистанция',
             () => _showDistanceSheet(context)),
+        _menuTile(Icons.account_balance_wallet_rounded, 'Кошелёк',
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const WalletScreen()))),
+        _menuTile(Icons.person_outline_rounded, 'Физические данные',
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const GenderSelectorScreen()))),
         _menuTile(Icons.notifications_none_rounded, 'Уведомления', () {}),
         Divider(
             color: t.borderLight.withValues(alpha: 0.5), height: 24),

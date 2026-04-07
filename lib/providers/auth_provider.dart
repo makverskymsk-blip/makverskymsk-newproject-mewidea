@@ -229,6 +229,28 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update a single field on the user profile (e.g. gender, height_cm, weight_kg, age)
+  Future<void> updateUserField(String field, dynamic value) async {
+    if (_currentUser == null) return;
+    // Update local model
+    switch (field) {
+      case 'gender':
+        _currentUser!.gender = value as String?;
+        break;
+      case 'height_cm':
+        _currentUser!.heightCm = value as int?;
+        break;
+      case 'weight_kg':
+        _currentUser!.weightKg = (value as num?)?.toDouble();
+        break;
+      case 'age':
+        _currentUser!.age = value as int?;
+        break;
+    }
+    await _db.updateUser(_currentUser!.id, {field: value});
+    notifyListeners();
+  }
+
   Future<void> updateAvatar(String url) async {
     if (_currentUser != null) {
       _currentUser!.avatarUrl = url;

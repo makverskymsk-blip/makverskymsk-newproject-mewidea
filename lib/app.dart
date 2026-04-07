@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/community_provider.dart';
 import 'providers/matches_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/training_provider.dart';
 import 'screens/auth/login_screen.dart';
 
 import 'screens/main_navigation.dart';
@@ -64,6 +65,12 @@ class SportsClubApp extends StatelessWidget {
 
           // Logged in — load communities
           if (auth.currentUser!.communityIds.isEmpty) {
+            // Init training provider even without community
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final tp = context.read<TrainingProvider>();
+              final user = auth.currentUser!;
+              tp.init(user.id, initialXp: user.trainingXp, initialLevel: user.trainingLevel);
+            });
             return MainNavigation(inviteCode: inviteCode);
           }
 
@@ -123,6 +130,17 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
           matchesProv.loadMatches(cid).timeout(const Duration(seconds: 5)),
           communityProv.loadSubscriptions(cid).timeout(const Duration(seconds: 5)),
         ]);
+      }
+
+      // Init training provider
+      final trainingProv = context.read<TrainingProvider>();
+      final user = authProv.currentUser;
+      if (user != null) {
+        await trainingProv.init(
+          user.id,
+          initialXp: user.trainingXp,
+          initialLevel: user.trainingLevel,
+        );
       }
     } catch (e) {
       debugPrint('LOAD ERROR: $e');

@@ -248,3 +248,72 @@ lib/
 - [ ] **Persistence темы** — сохранять в shared_preferences
 - [ ] **Web deploy** — обновить `flutter build web` → `/docs`
 - [ ] **Linting warnings** — `use_build_context_synchronously`
+
+---
+
+## Работа 7-8 апреля 2026 — Модуль «Тренировка» (Sprint 1 + Sprint 2)
+
+### Sprint 1: Навигация + Каркас (завершён ✅)
+
+#### Навигация
+- **BottomNavBar** — убрана вкладка «Кошелёк», на её месте «Тренировка» (`Icons.fitness_center_rounded`)
+- **MainNavigation** — `WalletScreen` → `TrainingHubScreen`
+- **Профиль** — sport selector теперь включает «Тренировка» (5-я кнопка)
+- **Профиль** → Меню: добавлены «Кошелёк» и «Физические данные»
+
+#### Модели
+- `user_profile.dart` — новые поля: `gender`, `heightCm`, `weightKg`, `age`, `trainingXp`, `trainingLevel`
+- XP-система: `xpForNextLevel = 500 × L^1.5`, ранги: Новичок → Любитель → Продвинутый → Ветеран → Элита → Легенда
+- `enums.dart` — Gender, TrainingGoal, MuscleGroup
+
+#### Инфраструктура
+- `auth_provider.dart` — `updateUserField()` для сохранения пола/роста/веса/возраста
+- `supabase_service.dart` — createUser/getUser/updateUser включают training-поля
+- `main.dart` — `TrainingProvider` зарегистрирован в MultiProvider
+
+#### SQL Миграция (выполнена в Supabase)
+- Файл: `supabase/training_schema.sql`
+- Sprint 1: 6 новых колонок в `users`
+- Sprint 2: 6 новых таблиц + индексы + RLS
+
+### Sprint 2: Логика тренировок (завершён ✅)
+
+#### Новые файлы
+| Файл | Назначение |
+|------|-----------|
+| `lib/models/exercise.dart` | Модель упражнения (Exercise) |
+| `lib/models/workout_session.dart` | Модель сессии (WorkoutSession) + подхода (WorkoutSet) |
+| `lib/screens/training/active_workout_screen.dart` | Экран активной тренировки |
+| `lib/screens/training/exercise_library_screen.dart` | Библиотека упражнений |
+| `lib/screens/training/training_analytics_tab.dart` | Аналитика с 4 графиками |
+
+#### TrainingProvider (полная логика)
+- **init()** — загрузка упражнений + история сессий
+- **userId getter** — автоматически берёт из Supabase Auth если init() не вызвался
+- **Упражнения**: add/remove/filterByMuscle
+- **Тренировки**: startWorkout → addSet → finishWorkout / cancelWorkout
+- **XP**: base (10/подход) + duration (1/мин) + tonnage (1/100кг) × consistency multiplier
+- **Левелинг**: while-loop level-up, persist в Supabase
+- **Аналитика**: tonnageHistory, sessionsPerWeekday, muscleGroupDistribution, xpHistory, avgDuration, avgTonnage, bestSession, currentStreak
+
+#### SupabaseService — новые методы
+- Exercises: `getExercises`, `createExercise`, `updateExercise`, `deleteExercise`
+- Sessions: `createWorkoutSession`, `getWorkoutSessions`, `updateWorkoutSession`
+- Sets: `createWorkoutSet`, `getWorkoutSets`, `updateWorkoutSet`, `deleteWorkoutSet`
+- User: `updateTrainingXpAndLevel`
+
+#### Экраны
+- **TrainingHubScreen** — Dashboard (XP-карточка, 4 stat-карточки, библиотека, баннер активной тренировки), Журнал, Аналитика
+- **ActiveWorkoutScreen** — running stats bar, exercise picker (bottom sheet), weight/reps ввод, swipe-to-delete, finish с XP-диалогом
+- **ExerciseLibraryScreen** — горизонтальный фильтр по мышцам, add dialog, swipe-to-delete
+- **TrainingAnalyticsTab** — 4 графика (fl_chart): линейный тоннаж (даты DD/MM/YY), столбчатый по дням недели, pie мышечных групп, линейный XP + карточка лучшей тренировки
+
+### Баги / Решения
+- **_userId null** — решено через getter с fallback на `Supabase.instance.client.auth.currentUser?.id`
+- **app.dart init** — TrainingProvider.init() вызывается и при наличии community, и без
+
+### Следующий спринт (Sprint 3)
+- [ ] AI Lab — конструктор тренировок на Gemini
+- [ ] Body Heatmap — тепловая карта нагрузки мышц (силуэт)
+- [ ] Athlete Card — полноценная карточка в профиле (при выборе «Тренировка»)
+- [ ] Radar Chart для тренировок (сила/выносливость/объём/частота)

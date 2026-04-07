@@ -59,3 +59,44 @@ enum TransactionStatus {
 }
 
 enum SubscriptionPaymentStatus { notPaid, pending, paid, overdue }
+
+// ─── Training Module Enums ───
+
+enum Gender {
+  male('Мужской'),
+  female('Женский');
+
+  final String displayName;
+  const Gender(this.displayName);
+}
+
+enum TrainingGoal {
+  strength('Сила', Icons.fitness_center_rounded),
+  hypertrophy('Гипертрофия', Icons.trending_up_rounded),
+  endurance('Выносливость', Icons.timer_rounded),
+  fatLoss('Жиросжигание', Icons.local_fire_department_rounded),
+  fullBody('Фулбоди', Icons.accessibility_new_rounded);
+
+  final String displayName;
+  final IconData icon;
+  const TrainingGoal(this.displayName, this.icon);
+}
+
+enum MuscleGroup {
+  chest('Грудь', 'chest'),
+  back('Спина', 'back'),
+  shoulders('Плечи', 'shoulders'),
+  biceps('Бицепс', 'biceps'),
+  triceps('Трицепс', 'triceps'),
+  forearms('Предплечья', 'forearms'),
+  abs('Пресс', 'abs'),
+  quads('Квадрицепс', 'quads'),
+  hamstrings('Бицепс бедра', 'hamstrings'),
+  glutes('Ягодицы', 'glutes'),
+  calves('Икры', 'calves'),
+  traps('Трапеция', 'traps');
+
+  final String displayName;
+  final String key;
+  const MuscleGroup(this.displayName, this.key);
+}

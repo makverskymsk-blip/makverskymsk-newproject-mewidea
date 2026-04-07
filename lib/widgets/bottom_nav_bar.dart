@@ -52,8 +52,8 @@ class BottomNavBar extends StatelessWidget {
                 label: 'Игры',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.account_balance_wallet_rounded),
-                label: 'Кошелек',
+                icon: Icon(Icons.fitness_center_rounded),
+                label: 'Тренировка',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.person_rounded),

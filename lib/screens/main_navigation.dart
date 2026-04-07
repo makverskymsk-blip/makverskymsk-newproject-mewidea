@@ -7,7 +7,7 @@ import '../providers/matches_provider.dart';
 import '../theme/app_colors.dart';
 import 'home/home_screen.dart';
 import 'schedule/schedule_screen.dart';
-import 'wallet/wallet_screen.dart';
+import 'training/training_hub_screen.dart';
 import 'profile/profile_screen.dart';
 import '../widgets/bottom_nav_bar.dart';
 
@@ -26,7 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = const [
     HomeScreen(),
     ScheduleScreen(),
-    WalletScreen(),
+    TrainingHubScreen(),
     ProfileScreen(),
   ];
 

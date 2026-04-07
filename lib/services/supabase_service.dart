@@ -51,6 +51,12 @@ class SupabaseService {
       'games_played': user.gamesPlayed,
       'goals_scored': user.goalsScored,
       'sport_positions': user.sportPositions,
+      'gender': user.gender,
+      'height_cm': user.heightCm,
+      'weight_kg': user.weightKg,
+      'age': user.age,
+      'training_xp': user.trainingXp,
+      'training_level': user.trainingLevel,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -79,6 +85,12 @@ class SupabaseService {
       sportPositions: response['sport_positions'] != null
           ? Map<String, String>.from(response['sport_positions'])
           : {},
+      gender: response['gender'],
+      heightCm: response['height_cm'],
+      weightKg: (response['weight_kg'] as num?)?.toDouble(),
+      age: response['age'],
+      trainingXp: response['training_xp'] ?? 0,
+      trainingLevel: response['training_level'] ?? 1,
     );
   }
 
@@ -92,6 +104,10 @@ class SupabaseService {
       else if (key == 'goalsScored') mappedData['goals_scored'] = value;
       else if (key == 'avatarUrl') mappedData['avatar_url'] = value;
       else if (key == 'sportPositions') mappedData['sport_positions'] = value;
+      else if (key == 'heightCm') mappedData['height_cm'] = value;
+      else if (key == 'weightKg') mappedData['weight_kg'] = value;
+      else if (key == 'trainingXp') mappedData['training_xp'] = value;
+      else if (key == 'trainingLevel') mappedData['training_level'] = value;
       else mappedData[key] = value;
     });
 
@@ -861,5 +877,96 @@ class SupabaseService {
     } catch (_) {
       return 0.0;
     }
+  }
+
+  // ===== TRAINING MODULE =====
+
+  // --- Exercises ---
+
+  Future<List<Map<String, dynamic>>> getExercises(String userId) async {
+    final data = await _supabase
+        .from('exercises')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  Future<Map<String, dynamic>> createExercise(Map<String, dynamic> exercise) async {
+    final result = await _supabase
+        .from('exercises')
+        .insert(exercise)
+        .select()
+        .single();
+    return result;
+  }
+
+  Future<void> updateExercise(String id, Map<String, dynamic> data) async {
+    await _supabase.from('exercises').update(data).eq('id', id);
+  }
+
+  Future<void> deleteExercise(String id) async {
+    await _supabase.from('exercises').delete().eq('id', id);
+  }
+
+  // --- Workout Sessions ---
+
+  Future<Map<String, dynamic>> createWorkoutSession(Map<String, dynamic> session) async {
+    final result = await _supabase
+        .from('workout_sessions')
+        .insert(session)
+        .select()
+        .single();
+    return result;
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkoutSessions(String userId, {int limit = 50}) async {
+    final data = await _supabase
+        .from('workout_sessions')
+        .select()
+        .eq('user_id', userId)
+        .order('started_at', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  Future<void> updateWorkoutSession(String id, Map<String, dynamic> data) async {
+    await _supabase.from('workout_sessions').update(data).eq('id', id);
+  }
+
+  // --- Workout Sets ---
+
+  Future<Map<String, dynamic>> createWorkoutSet(Map<String, dynamic> setData) async {
+    final result = await _supabase
+        .from('workout_sets')
+        .insert(setData)
+        .select()
+        .single();
+    return result;
+  }
+
+  Future<List<Map<String, dynamic>>> getWorkoutSets(String sessionId) async {
+    final data = await _supabase
+        .from('workout_sets')
+        .select()
+        .eq('session_id', sessionId)
+        .order('set_order', ascending: true);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
+  Future<void> updateWorkoutSet(String id, Map<String, dynamic> data) async {
+    await _supabase.from('workout_sets').update(data).eq('id', id);
+  }
+
+  Future<void> deleteWorkoutSet(String id) async {
+    await _supabase.from('workout_sets').delete().eq('id', id);
+  }
+
+  /// Update user training XP and level
+  Future<void> updateTrainingXpAndLevel(String userId, int xp, int level) async {
+    await _supabase.from('users').update({
+      'training_xp': xp,
+      'training_level': level,
+    }).eq('id', userId);
   }
 }
