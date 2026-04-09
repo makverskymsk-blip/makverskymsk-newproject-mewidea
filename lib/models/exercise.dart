@@ -9,6 +9,15 @@ class Exercise {
   String notes;
   final DateTime createdAt;
 
+  /// True for cardio exercises where duration/distance matter, not weight/reps
+  bool get isCardio => muscleGroup == 'Кардио';
+
+  /// True for bodyweight / isometric exercises (Планка, etc.)
+  bool get isTimeBased {
+    final n = name.toLowerCase();
+    return n.contains('планка') || n.contains('plank');
+  }
+
   Exercise({
     required this.id,
     required this.userId,

@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/community.dart';
@@ -97,18 +96,20 @@ class SupabaseService {
   Future<void> updateUser(String uid, Map<String, dynamic> data) async {
     // Map Firestore names to Supabase names (camelCase to snake_case)
     final mappedData = <String, dynamic>{};
+    const keyMap = {
+      'communityIds': 'community_ids',
+      'isPremium': 'is_premium',
+      'gamesPlayed': 'games_played',
+      'goalsScored': 'goals_scored',
+      'avatarUrl': 'avatar_url',
+      'sportPositions': 'sport_positions',
+      'heightCm': 'height_cm',
+      'weightKg': 'weight_kg',
+      'trainingXp': 'training_xp',
+      'trainingLevel': 'training_level',
+    };
     data.forEach((key, value) {
-      if (key == 'communityIds') mappedData['community_ids'] = value;
-      else if (key == 'isPremium') mappedData['is_premium'] = value;
-      else if (key == 'gamesPlayed') mappedData['games_played'] = value;
-      else if (key == 'goalsScored') mappedData['goals_scored'] = value;
-      else if (key == 'avatarUrl') mappedData['avatar_url'] = value;
-      else if (key == 'sportPositions') mappedData['sport_positions'] = value;
-      else if (key == 'heightCm') mappedData['height_cm'] = value;
-      else if (key == 'weightKg') mappedData['weight_kg'] = value;
-      else if (key == 'trainingXp') mappedData['training_xp'] = value;
-      else if (key == 'trainingLevel') mappedData['training_level'] = value;
-      else mappedData[key] = value;
+      mappedData[keyMap[key] ?? key] = value;
     });
 
     await _supabase.from('users').update(mappedData).eq('id', uid);
@@ -558,16 +559,22 @@ class SupabaseService {
   Future<void> updateMatch(
       String communityId, String matchId, Map<String, dynamic> data) async {
     final mappedData = <String, dynamic>{};
+    const keyMap = {
+      'dateTime': 'date_time',
+      'totalCapacity': 'total_capacity',
+      'currentPlayers': 'current_players',
+      'registeredPlayerIds': 'registered_player_ids',
+      'registeredPlayerNames': 'registered_player_names',
+      'isCompleted': 'is_completed',
+      'eventTeams': 'event_teams',
+      'innerMatches': 'inner_matches',
+    };
     data.forEach((key, value) {
-      if (key == 'dateTime') mappedData['date_time'] = (value as DateTime).toIso8601String();
-      else if (key == 'totalCapacity') mappedData['total_capacity'] = value;
-      else if (key == 'currentPlayers') mappedData['current_players'] = value;
-      else if (key == 'registeredPlayerIds') mappedData['registered_player_ids'] = value;
-      else if (key == 'registeredPlayerNames') mappedData['registered_player_names'] = value;
-      else if (key == 'isCompleted') mappedData['is_completed'] = value;
-      else if (key == 'eventTeams') mappedData['event_teams'] = value;
-      else if (key == 'innerMatches') mappedData['inner_matches'] = value;
-      else mappedData[key] = value;
+      if (key == 'dateTime') {
+        mappedData['date_time'] = (value as DateTime).toIso8601String();
+      } else {
+        mappedData[keyMap[key] ?? key] = value;
+      }
     });
 
     await _supabase.from('matches').update(mappedData).eq('id', matchId);
@@ -960,6 +967,13 @@ class SupabaseService {
 
   Future<void> deleteWorkoutSet(String id) async {
     await _supabase.from('workout_sets').delete().eq('id', id);
+  }
+
+  /// Delete a workout session and all its sets
+  Future<void> deleteWorkoutSession(String sessionId) async {
+    // Delete sets first (cascade)
+    await _supabase.from('workout_sets').delete().eq('session_id', sessionId);
+    await _supabase.from('workout_sessions').delete().eq('id', sessionId);
   }
 
   /// Update user training XP and level

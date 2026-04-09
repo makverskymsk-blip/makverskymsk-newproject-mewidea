@@ -318,7 +318,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── TRAINING CARD (Sprint 3 placeholder) ───────────
 
   Widget _buildTrainingCard(dynamic user) {
-    final t = AppColors.of(context);
+    final t = AppColors.of(context); // ignore: unused_local_variable
     final level = user?.trainingLevel ?? 1;
     final xp = user?.trainingXp ?? 0;
     final rank = user?.trainingRank ?? 'Новичок';
@@ -475,9 +475,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── AVATAR UPLOAD ───────────
 
   Future<void> _pickAndUploadAvatar(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final auth = context.read<AuthProvider>();
+    final cardBg = AppColors.of(context).cardBg;
+    final textPrimary = AppColors.of(context).textPrimary;
+
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: AppColors.of(context).cardBg,
+      backgroundColor: cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -497,17 +502,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Text('Выберите фото', style: TextStyle(
                 fontSize: 18, fontWeight: FontWeight.w700,
-                color: AppColors.of(context).textPrimary,
+                color: textPrimary,
               )),
               const SizedBox(height: 16),
               ListTile(
                 leading: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
-                title: Text('Камера', style: TextStyle(color: AppColors.of(context).textPrimary)),
+                title: Text('Камера', style: TextStyle(color: textPrimary)),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-                title: Text('Галерея', style: TextStyle(color: AppColors.of(context).textPrimary)),
+                title: Text('Галерея', style: TextStyle(color: textPrimary)),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
             ],
@@ -523,8 +528,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final picked = await picker.pickImage(source: source, maxWidth: 512, maxHeight: 512, imageQuality: 85);
       if (picked == null) return;
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('Загрузка аватара...')),
       );
 
@@ -532,27 +536,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final ext = picked.path.split('.').last.toLowerCase();
       final validExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
 
-      final auth = context.read<AuthProvider>();
       final userId = auth.currentUser?.id;
       if (userId == null) return;
 
       final db = SupabaseService();
       final url = await db.uploadAvatar(userId, bytes, validExt);
 
-      if (url != null && mounted) {
+      if (url != null) {
         await auth.updateAvatar(url);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
           const SnackBar(content: Text('Аватар обновлён! ✓'), backgroundColor: AppColors.success),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppColors.error),
-        );
-      }
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('Ошибка: $e'), backgroundColor: AppColors.error),
+      );
     }
   }
 
@@ -596,7 +597,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             width: 56,
                             height: 56,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (c1, e1, st1) => Center(
                               child: Text(
                                 (user.name).substring(0, 1).toUpperCase(),
                                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
@@ -739,7 +740,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${wins}В из $total',
+                  '${wins}В из $total', // ignore: unnecessary_brace_in_string_interps
                   style: const TextStyle(
                     color: Color(0xFF43A047), fontSize: 11, fontWeight: FontWeight.w700,
                   ),
@@ -859,7 +860,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: achievements.length.clamp(0, 16),
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (c, i) => const SizedBox(width: 10),
               itemBuilder: (_, i) {
                 final a = achievements[i];
                 final locked = !a.isUnlocked;
@@ -1512,7 +1513,7 @@ enum _MatchResult {
   const _MatchResult(this.letter, this.label, this.color);
 }
 
-class _NearAchievement {
+class _NearAchievement { // ignore: unused_element
   final String name;
   final IconData icon;
   final int progress;
@@ -1629,7 +1630,7 @@ class _DistanceSheetState extends State<_DistanceSheet> {
                     return ListView.separated(
                       controller: scrollCtrl,
                       itemCount: sorted.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (c, i) => const SizedBox(height: 10),
                       itemBuilder: (ctx, i) {
                         final match = sorted[i];
                         return _matchDistanceTile(t, match);

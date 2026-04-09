@@ -366,19 +366,18 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () async {
               final email = resetEmailController.text.trim();
               if (email.isEmpty) return;
-              Navigator.pop(ctx);
               final auth = context.read<AuthProvider>();
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(ctx);
               final error = await auth.resetPassword(email);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(error ??
-                        'Письмо отправлено на $email'),
-                    backgroundColor:
-                        error == null ? AppColors.success : AppColors.error,
-                  ),
-                );
-              }
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(error ??
+                      'Письмо отправлено на $email'),
+                  backgroundColor:
+                      error == null ? AppColors.success : AppColors.error,
+                ),
+              );
             },
             child: const Text('Отправить',
                 style: TextStyle(color: AppColors.primary)),

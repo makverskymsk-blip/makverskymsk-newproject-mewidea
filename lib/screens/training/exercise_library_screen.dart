@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/training_provider.dart';
 import '../../theme/app_colors.dart';
 
@@ -119,7 +118,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
       },
     );
 
-    if (result != null) {
+    if (result != null && mounted) {
       await context.read<TrainingProvider>().addExercise(
             name: result['name']!,
             muscleGroup: result['muscle']!,
@@ -205,7 +204,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
               },
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Exercise list
           Expanded(
@@ -236,62 +235,59 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                         direction: DismissDirection.endToStart,
                         background: Container(
                           alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
+                          padding: const EdgeInsets.only(right: 16),
                           decoration: BoxDecoration(
                             color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child:
-                              const Icon(Icons.delete_rounded, color: Colors.red),
+                              const Icon(Icons.delete_rounded, color: Colors.red, size: 18),
                         ),
                         onDismissed: (_) =>
                             training.removeExercise(ex.id),
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: t.cardBg,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: t.borderLight),
                           ),
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFF6B35)
                                       .withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(7),
                                 ),
                                 child: const Icon(
                                     Icons.fitness_center_rounded,
                                     color: Color(0xFFFF6B35),
-                                    size: 20),
+                                    size: 14),
                               ),
-                              const SizedBox(width: 14),
+                              const SizedBox(width: 10),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      ex.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: t.textPrimary,
-                                      ),
-                                    ),
-                                    Text(
-                                      ex.muscleGroup,
-                                      style: TextStyle(
-                                        color: t.textHint,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  ex.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: t.textPrimary,
+                                  ),
                                 ),
                               ),
+                              Text(
+                                ex.muscleGroup,
+                                style: TextStyle(
+                                  color: t.textHint,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
                               Icon(Icons.chevron_right_rounded,
-                                  color: t.textHint, size: 20),
+                                  color: t.textHint, size: 16),
                             ],
                           ),
                         ),

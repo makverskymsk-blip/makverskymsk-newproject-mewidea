@@ -5,7 +5,7 @@ import '../services/supabase_service.dart';
 class MatchEventsProvider extends ChangeNotifier {
   final SupabaseService _db = SupabaseService();
   final List<MatchEvent> _events = [];
-  String? _currentMatchId;
+  String? _currentMatchId; // ignore: unused_field
   dynamic _realtimeSubscription;
 
   List<MatchEvent> get events => _events;

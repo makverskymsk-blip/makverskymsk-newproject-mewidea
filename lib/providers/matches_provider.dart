@@ -107,7 +107,7 @@ class MatchesProvider extends ChangeNotifier {
     if (isCurrentlyRegistered) {
       match.currentPlayers--;
       match.isUserRegistered = false;
-      if (userId != null) {
+      if (userId != null) { // ignore: unnecessary_null_comparison
         final idx = match.registeredPlayerIds.indexOf(userId);
         if (idx != -1) {
           match.registeredPlayerIds.removeAt(idx);

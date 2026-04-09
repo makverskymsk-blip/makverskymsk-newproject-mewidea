@@ -125,6 +125,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
       // Load matches and subscriptions for the active community
       if (communityProv.activeCommunity != null) {
         final cid = communityProv.activeCommunity!.id;
+        if (!mounted) return;
         final matchesProv = context.read<MatchesProvider>();
         await Future.wait([
           matchesProv.loadMatches(cid).timeout(const Duration(seconds: 5)),
@@ -133,6 +134,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
       }
 
       // Init training provider
+      if (!mounted) return;
       final trainingProv = context.read<TrainingProvider>();
       final user = authProv.currentUser;
       if (user != null) {

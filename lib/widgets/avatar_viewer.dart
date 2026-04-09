@@ -185,7 +185,7 @@ class _AvatarViewerPageState extends State<_AvatarViewerPage> {
                                           ),
                                         );
                                       },
-                                      errorBuilder: (_, __, ___) => Container(
+                                      errorBuilder: (c1, e1, st1) => Container(
                                         width: MediaQuery.of(context).size.width * 0.85,
                                         height: MediaQuery.of(context).size.width * 0.85,
                                         color: t.cardBg,

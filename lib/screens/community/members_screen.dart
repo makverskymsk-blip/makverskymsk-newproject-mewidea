@@ -437,7 +437,7 @@ class _MembersScreenState extends State<MembersScreen>
                           child: Image.network(
                             user.avatarUrl!,
                             width: 50, height: 50, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Center(
+                            errorBuilder: (c1, e1, st1) => Center(
                               child: Text(
                                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                                 style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
@@ -783,7 +783,7 @@ class _MembersScreenState extends State<MembersScreen>
                               child: Image.network(
                                 user.avatarUrl!,
                                 width: 44, height: 44, fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Center(
+                                errorBuilder: (c2, e2, st2) => Center(
                                   child: Text(
                                     user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
                                     style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),

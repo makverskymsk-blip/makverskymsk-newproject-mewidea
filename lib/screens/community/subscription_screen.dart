@@ -142,17 +142,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         const SizedBox(width: 8),
                         GestureDetector(
                           onTap: () async {
-                            if (community != null) {
+                            if (community != null) { // ignore: unnecessary_null_comparison
+                              final messenger = ScaffoldMessenger.of(context);
                               await communityProv.loadSubscriptions(community.id);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Данные обновлены'),
-                                    backgroundColor: AppColors.success,
-                                    duration: Duration(seconds: 1),
-                                  ),
-                                );
-                              }
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Данные обновлены'),
+                                  backgroundColor: AppColors.success,
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
                             }
                           },
                           child: Container(
@@ -1652,6 +1651,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 if (ok && mounted) {
                   // Обновить локальный баланс
                   await auth.refreshBalance();
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(

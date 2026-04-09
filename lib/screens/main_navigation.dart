@@ -132,6 +132,7 @@ class _MainNavigationState extends State<MainNavigation> {
         // Загружаем матчи и подписки нового сообщества
         if (communityProv.activeCommunity != null) {
           final cid = communityProv.activeCommunity!.id;
+          if (!mounted) return;
           final matchesProv = context.read<MatchesProvider>();
           await Future.wait([
             matchesProv.loadMatches(cid),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../models/enums.dart';
 import '../../models/match_event.dart';
 import '../../models/sport_match.dart';
 import '../../providers/auth_provider.dart';
