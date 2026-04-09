@@ -19,13 +19,23 @@ class BottomNavBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: t.navBarBg,
         border: Border(
-          top: BorderSide(color: t.borderLight, width: 1),
+          top: BorderSide(color: t.borderLight.withValues(alpha: 0.4), width: 0.5),
         ),
         boxShadow: [
           BoxShadow(
-            color: t.shadowColor,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: t.isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+            spreadRadius: -2,
+          ),
+          BoxShadow(
+            color: t.isDark
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, -1),
           ),
         ],
       ),

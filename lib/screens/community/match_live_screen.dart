@@ -583,6 +583,16 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
         color: t.cardBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: t.isDark
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+            spreadRadius: -2,
+          ),
+        ],
       ),
       child: Row(
         children: [

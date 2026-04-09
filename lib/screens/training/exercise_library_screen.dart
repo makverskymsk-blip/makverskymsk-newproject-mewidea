@@ -182,6 +182,23 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                       border: Border.all(
                         color: isSelected ? Colors.transparent : t.borderLight,
                       ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFFF6B35).withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: t.isDark
+                                    ? Colors.black.withValues(alpha: 0.15)
+                                    : Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Row(
                       children: [
@@ -251,7 +268,17 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                           decoration: BoxDecoration(
                             color: t.cardBg,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: t.borderLight),
+                            border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: t.isDark
+                                    ? Colors.black.withValues(alpha: 0.15)
+                                    : Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                                spreadRadius: -2,
+                              ),
+                            ],
                           ),
                           child: Row(
                             children: [

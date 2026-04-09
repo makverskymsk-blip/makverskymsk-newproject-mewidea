@@ -39,6 +39,18 @@ class GlassButton extends StatelessWidget {
                   : btnColor.withValues(alpha: 0.4),
               width: isOutlined ? 1.5 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: isOutlined
+                    ? (t.isDark
+                        ? Colors.black.withValues(alpha: 0.15)
+                        : Colors.black.withValues(alpha: 0.04))
+                    : btnColor.withValues(alpha: 0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: -2,
+              ),
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -21,27 +21,42 @@ class MatchesProvider extends ChangeNotifier {
   final List<SportMatch> _matches = [];
   final List<SportMatch> _completedEvents = []; // архив завершённых
   String? _currentCommunityId;
+  List<String> _userCommunityIds = [];
   dynamic _realtimeSubscription;
 
   List<SportMatch> get matches => _matches;
   List<SportMatch> get completedEvents => _completedEvents;
 
-  /// Load matches from Supabase for a given community + subscribe to realtime
-  Future<void> loadMatches(String communityId) async {
+  /// Load matches: community events only for user's communities + personal events for all
+  Future<void> loadMatches([String? communityId, List<String>? userCommunityIds]) async {
     _currentCommunityId = communityId;
+    _userCommunityIds = userCommunityIds ?? (communityId != null ? [communityId] : []);
     try {
-      await _fetchMatches(communityId);
-      _subscribeToRealtime(communityId);
+      await _fetchAllMatches();
+      _subscribeToGlobalRealtime();
     } catch (e) {
       debugPrint('MATCHES ERROR: Failed to load matches: $e');
     }
   }
 
-  Future<void> _fetchMatches(String communityId) async {
-    final data = await _db.getMatches(communityId);
+  Future<void> _fetchAllMatches() async {
+    final data = await _db.getAllMatches();
     _matches.clear();
     _completedEvents.clear();
+    int skipped = 0;
     for (final match in data) {
+      // Filter: show only personal events (no community) + user's own community events
+      final cid = match.communityId;
+      final isPersonal = cid == null || cid.isEmpty || cid == 'null';
+      final isOwnCommunity = !isPersonal && _userCommunityIds.contains(cid);
+      if (!isPersonal && !isOwnCommunity) {
+        skipped++;
+        if (skipped <= 3) {
+          debugPrint('MATCHES SKIP: id=${match.id} communityId="$cid" isPersonal=$isPersonal isOwn=$isOwnCommunity');
+        }
+        continue; // skip other communities' events
+      }
+
       if (match.isCompleted) {
         _completedEvents.add(match);
       } else {
@@ -49,16 +64,14 @@ class MatchesProvider extends ChangeNotifier {
       }
     }
     notifyListeners();
-    debugPrint('MATCHES: Loaded ${_matches.length} active, ${_completedEvents.length} completed for $communityId');
+    debugPrint('MATCHES: Fetched ${data.length} total, kept ${_matches.length} active + ${_completedEvents.length} completed, skipped $skipped (userCommunities=$_userCommunityIds)');
   }
 
-  /// Subscribe to Supabase Realtime — auto-refresh on any DB change
-  void _subscribeToRealtime(String communityId) {
-    // Cancel previous subscription if any
+  /// Subscribe to Supabase Realtime — auto-refresh on any DB change (all matches)
+  void _subscribeToGlobalRealtime() {
     _realtimeSubscription?.unsubscribe();
-    _realtimeSubscription = _db.watchMatchesChannel(
-      communityId,
-      onChanged: () => _fetchMatches(communityId),
+    _realtimeSubscription = _db.watchAllMatchesChannel(
+      onChanged: () => _fetchAllMatches(),
     );
   }
 
@@ -99,10 +112,17 @@ class MatchesProvider extends ChangeNotifier {
   // РЕГИСТРАЦИЯ
   // ============================================================
 
-  void toggleRegistration(SportMatch match,
-      {String? userId, String? userName, bool isSubscriber = false}) {
+  /// Returns true if registration was toggled successfully
+  Future<bool> toggleRegistration(SportMatch match,
+      {String? userId, String? userName, bool isSubscriber = false}) async {
     // Use registeredPlayerIds as the source of truth, not the local isUserRegistered flag
     final isCurrentlyRegistered = userId != null && match.registeredPlayerIds.contains(userId);
+
+    // Save snapshot for rollback
+    final prevPlayers = match.currentPlayers;
+    final prevRegistered = match.isUserRegistered;
+    final prevIds = List<String>.from(match.registeredPlayerIds);
+    final prevNames = List<String>.from(match.registeredPlayerNames);
 
     if (isCurrentlyRegistered) {
       match.currentPlayers--;
@@ -117,7 +137,7 @@ class MatchesProvider extends ChangeNotifier {
         }
       }
     } else {
-      if (match.currentPlayers >= match.totalCapacity) return;
+      if (match.currentPlayers >= match.totalCapacity) return false;
       match.currentPlayers++;
       match.isUserRegistered = true;
       if (userId != null &&
@@ -126,13 +146,30 @@ class MatchesProvider extends ChangeNotifier {
         match.registeredPlayerNames.add(userName ?? 'Игрок');
       }
     }
+
     // Update in DB
-    _db.updateMatch(match.communityId ?? _currentCommunityId ?? '', match.id, {
-      'current_players': match.currentPlayers,
-      'registered_player_ids': match.registeredPlayerIds,
-      'registered_player_names': match.registeredPlayerNames,
-    });
-    notifyListeners();
+    try {
+      await _db.updateMatch(match.communityId ?? _currentCommunityId ?? '', match.id, {
+        'current_players': match.currentPlayers,
+        'registered_player_ids': match.registeredPlayerIds,
+        'registered_player_names': match.registeredPlayerNames,
+      });
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('MATCHES ERROR: toggleRegistration failed: $e');
+      // Rollback local state
+      match.currentPlayers = prevPlayers;
+      match.isUserRegistered = prevRegistered;
+      match.registeredPlayerIds
+        ..clear()
+        ..addAll(prevIds);
+      match.registeredPlayerNames
+        ..clear()
+        ..addAll(prevNames);
+      notifyListeners();
+      return false;
+    }
   }
 
   List<String> getRegisteredPlayers(String matchId) {
@@ -145,15 +182,26 @@ class MatchesProvider extends ChangeNotifier {
     return match?.registeredPlayerIds.contains(userId) ?? false;
   }
 
+  /// Route payment to event creator (for external/personal events)
+  Future<void> routePaymentToCreator(String creatorId, double amount) async {
+    try {
+      await _db.addToUserBalance(creatorId, amount);
+      debugPrint('PAYMENT: Routed ${amount.toInt()}₽ to creator $creatorId');
+    } catch (e) {
+      debugPrint('PAYMENT ERROR: Failed to route to creator: $e');
+    }
+  }
+
   /// Add a match — saves to Supabase and adds to local list
   Future<void> addMatch(SportMatch match) async {
-    final communityId = match.communityId ?? _currentCommunityId ?? '';
+    final communityId = match.communityId ?? _currentCommunityId;
     try {
       // Insert into Supabase and get back the generated UUID
       final response = await _db.createMatchAndReturn(communityId, match);
       final savedMatch = SportMatch(
         id: response['id'].toString(),
         communityId: communityId,
+        creatorId: match.creatorId,
         category: match.category,
         format: match.format,
         dateTime: match.dateTime,
@@ -326,6 +374,51 @@ class MatchesProvider extends ChangeNotifier {
   }
 
   // ============================================================
+  // КАПИТАНЫ
+  // ============================================================
+
+  /// Назначить капитана команды (макс 2)
+  bool setCaptain(String matchId, String teamId, String playerId, String playerName) {
+    final match = getById(matchId);
+    if (match == null) return false;
+    final team = match.eventTeams.where((t) => t.id == teamId).firstOrNull;
+    if (team == null) return false;
+    final ok = team.addCaptain(playerId, playerName);
+    if (ok) {
+      _syncEventTeams(match);
+      notifyListeners();
+    }
+    return ok;
+  }
+
+  /// Убрать капитана
+  void removeCaptainFromTeam(String matchId, String teamId, String playerId) {
+    final match = getById(matchId);
+    if (match == null) return;
+    final team = match.eventTeams.where((t) => t.id == teamId).firstOrNull;
+    if (team == null) return;
+    team.removeCaptain(playerId);
+    _syncEventTeams(match);
+    notifyListeners();
+  }
+
+  /// Пометить команду как оценённую капитаном
+  void markTeamRated(String matchId, String teamId) {
+    final match = getById(matchId);
+    if (match == null) return;
+    final team = match.eventTeams.where((t) => t.id == teamId).firstOrNull;
+    if (team == null) return;
+    team.ratingsSubmitted = true;
+    _syncEventTeams(match);
+    notifyListeners();
+    debugPrint('CAPTAIN: Team ${team.name} rated. allCaptainsRated=${match.allCaptainsRated}');
+    // Auto-complete if all teams rated
+    if (match.allCaptainsRated) {
+      completeEvent(matchId);
+    }
+  }
+
+  // ============================================================
   // СИНХРОНИЗАЦИЯ С БД
   // ============================================================
 
@@ -361,5 +454,6 @@ class MatchesProvider extends ChangeNotifier {
       'is_completed': true,
     });
     notifyListeners();
+    debugPrint('EVENT: Completed event $matchId');
   }
 }

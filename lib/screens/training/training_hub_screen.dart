@@ -211,31 +211,34 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                               curve: Curves.easeOutCubic,
                               height: 44,
                               decoration: BoxDecoration(
-                                color: isActive
-                                    ? AppColors.primary.withValues(alpha: 0.12)
-                                    : t.surfaceBg,
+                                gradient: isActive
+                                    ? AppColors.primaryGradient
+                                    : null,
+                                color: isActive ? null : t.cardBg,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isActive
-                                      ? AppColors.primary.withValues(alpha: 0.3)
-                                      : t.borderLight.withValues(alpha: 0.5),
+                                      ? Colors.transparent
+                                      : t.borderLight,
                                 ),
                                 boxShadow: isActive
                                     ? [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(alpha: 0.12),
+                                          color: AppColors.primary.withValues(alpha: 0.3),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
                                       ]
                                     : [
                                         BoxShadow(
-                                          color: t.shadowColor,
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
+                                          color: t.isDark
+                                              ? Colors.black.withValues(alpha: 0.15)
+                                              : Colors.black.withValues(alpha: 0.04),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
                                         ),
                                       ],
-                                ),
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -243,7 +246,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                                     _tabs[i].icon,
                                     size: 15,
                                     color: isActive
-                                        ? AppColors.primary
+                                        ? Colors.white
                                         : t.textHint,
                                   ),
                                   const SizedBox(width: 5),
@@ -253,7 +256,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: isActive
-                                            ? AppColors.primary
+                                            ? Colors.white
                                             : t.textSecondary,
                                         fontWeight: isActive
                                             ? FontWeight.w700

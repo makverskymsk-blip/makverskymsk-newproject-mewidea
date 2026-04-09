@@ -13,8 +13,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Капитан / админ выставляет оценки каждому участнику.
 class RatePlayersScreen extends StatefulWidget {
   final SportMatch match;
+  final String? teamId; // Если указан — оцениваем только эту команду
 
-  const RatePlayersScreen({super.key, required this.match});
+  const RatePlayersScreen({super.key, required this.match, this.teamId});
 
   @override
   State<RatePlayersScreen> createState() => _RatePlayersScreenState();
@@ -85,10 +86,22 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     final isDraw = winnerIndices.length > 1;
     final winnerTeamIndex = standings.isNotEmpty ? standings.first.teamIndex : -1;
 
-    for (int i = 0; i < match.registeredPlayerIds.length; i++) {
-      final pid = match.registeredPlayerIds[i];
-      final pname = i < match.registeredPlayerNames.length
-          ? match.registeredPlayerNames[i]
+    // If teamId is specified, only rate that team's players
+    final EventTeam? targetTeam = widget.teamId != null
+        ? match.eventTeams.where((t) => t.id == widget.teamId).firstOrNull
+        : null;
+
+    final playerIds = targetTeam != null
+        ? targetTeam.playerIds
+        : match.registeredPlayerIds;
+    final playerNames = targetTeam != null
+        ? targetTeam.playerNames
+        : match.registeredPlayerNames;
+
+    for (int i = 0; i < playerIds.length; i++) {
+      final pid = playerIds[i];
+      final pname = i < playerNames.length
+          ? playerNames[i]
           : 'Игрок';
 
       // Find which team this player is on
@@ -154,7 +167,10 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                         const Text('Оценка игроков',
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.w800)),
-                        Text('Выставьте оценки каждому участнику',
+                        Text(
+                            widget.teamId != null
+                                ? 'Оцените игроков команды'
+                                : 'Выставьте оценки каждому участнику',
                             style: TextStyle(
                                 color: AppColors.of(context).textHint, fontSize: 12)),
                       ],
@@ -218,14 +234,17 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                           height: 22,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.save_rounded, size: 20),
-                            SizedBox(width: 8),
-                            Text('Сохранить и завершить',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 15)),
+                            const Icon(Icons.save_rounded, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.teamId != null
+                                  ? 'Сохранить оценки команды'
+                                  : 'Сохранить и завершить',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 15)),
                           ],
                         ),
                 ),
@@ -595,25 +614,47 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       // Save to Supabase
       await _db.saveMatchPlayerStats(statsList);
 
-      // Complete the event
       if (mounted) {
         final matchesProv = context.read<MatchesProvider>();
-        matchesProv.completeEvent(match.id);
 
-        // Refresh stats for all players
-        final statsProv = context.read<StatsProvider>();
-        for (final pid in _ratings.keys) {
-          await statsProv.loadPlayerStatsFromDb(pid);
-        }
+        if (widget.teamId != null) {
+          // Per-team mode: mark team as rated (auto-completes if all teams done)
+          matchesProv.markTeamRated(match.id, widget.teamId!);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Статистика сохранена! Событие завершено.'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          Navigator.pop(context);
+          // Refresh stats for rated players
+          final statsProv = context.read<StatsProvider>();
+          for (final pid in _ratings.keys) {
+            await statsProv.loadPlayerStatsFromDb(pid);
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Оценки команды сохранены!'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            Navigator.pop(context);
+          }
+        } else {
+          // Old flow: complete entire event
+          matchesProv.completeEvent(match.id);
+
+          // Refresh stats for all players
+          final statsProv = context.read<StatsProvider>();
+          for (final pid in _ratings.keys) {
+            await statsProv.loadPlayerStatsFromDb(pid);
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Статистика сохранена! Событие завершено.'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            Navigator.pop(context);
+          }
         }
       }
     } catch (e) {

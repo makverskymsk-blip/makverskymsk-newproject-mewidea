@@ -109,7 +109,7 @@ class WalletScreen extends StatelessWidget {
             child: const Icon(Icons.sports_soccer, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 12),
-          const Text('SPORTS CLUB',
+          const Text('PERFORMANCE LAB',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
         ],
       );

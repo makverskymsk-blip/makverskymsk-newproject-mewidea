@@ -257,7 +257,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               decoration: BoxDecoration(
                 color: t.cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: t.borderLight),
+                border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: t.isDark
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                    spreadRadius: -3,
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -279,7 +289,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
               decoration: BoxDecoration(
                 color: t.cardBg,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: t.borderLight),
+                border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: t.isDark
+                        ? Colors.black.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                    spreadRadius: -3,
+                  ),
+                ],
               ),
               child: Column(
                 children: [
@@ -375,7 +395,17 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                             decoration: BoxDecoration(
                               color: t.cardBg,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: t.borderLight),
+                              border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: t.isDark
+                                      ? Colors.black.withValues(alpha: 0.15)
+                                      : Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                  spreadRadius: -2,
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [

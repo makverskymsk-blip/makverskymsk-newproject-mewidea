@@ -91,13 +91,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         ...dayMatches.map(
                           (match) {
                             final userId = authProv.uid ?? '';
-                            final isSubscriber =
+                            final userCommunityId = communityProv.activeCommunity?.id;
+                            final isOwnCommunity = match.communityId != null &&
+                                match.communityId == userCommunityId;
+                            final isSubscriber = isOwnCommunity &&
                                 communityProv.hasSubscriptionForEventDate(
                                     userId, match.dateTime);
                             final effectivePrice =
                                 isSubscriber ? 0.0 : match.price;
-                            // Check registration from persisted registeredPlayerIds, not the local flag
                             final isRegistered = match.registeredPlayerIds.contains(userId);
+                            final isExternal = !isOwnCommunity;
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: GameCard(
@@ -105,6 +108,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 time: Helpers.formatTime(match.dateTime),
                                 date: Helpers.getRelativeDate(match.dateTime),
                                 location: match.location,
+                                communityName: isOwnCommunity
+                                    ? communityProv.activeCommunity?.name
+                                    : (match.communityId != null ? 'Внешнее сообщество' : 'Личное событие'),
+                                isExternal: isExternal,
                                 price: isSubscriber
                                     ? 'Абонемент ✓'
                                     : Helpers.formatCurrency(match.price),
@@ -118,17 +125,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         EventManageScreen(matchId: match.id),
                                   ),
                                 ),
-                                onParticipate: () {
+                                onParticipate: () async {
                                   final wasRegistered = match.registeredPlayerIds.contains(userId);
-                                  matchesProv.toggleRegistration(match,
+                                  final success = await matchesProv.toggleRegistration(match,
                                       userId: authProv.uid,
                                       userName: authProv.currentUser?.name);
-                                  if (!wasRegistered) {
-                                    // Just registered → charge
-                                    authProv.updateBalance(-effectivePrice);
-                                  } else {
-                                    // Just unregistered → refund
-                                    authProv.updateBalance(effectivePrice);
+                                  if (success && effectivePrice > 0) {
+                                    if (!wasRegistered) {
+                                      authProv.updateBalance(-effectivePrice);
+                                      if (isOwnCommunity) {
+                                        communityProv.topUpCommunityBalance(
+                                          requesterId: 'system',
+                                          amount: effectivePrice,
+                                          description: 'Оплата за событие: ${match.format}',
+                                        );
+                                      } else if (match.creatorId != null) {
+                                        matchesProv.routePaymentToCreator(
+                                          match.creatorId!, effectivePrice);
+                                      }
+                                    } else {
+                                      authProv.updateBalance(effectivePrice);
+                                      if (isOwnCommunity) {
+                                        communityProv.deductCommunityBalance(
+                                          requesterId: 'system',
+                                          amount: effectivePrice,
+                                          description: 'Возврат за отмену: ${match.format}',
+                                        );
+                                      } else if (match.creatorId != null) {
+                                        matchesProv.routePaymentToCreator(
+                                          match.creatorId!, -effectivePrice);
+                                      }
+                                    }
                                   }
                                 },
                               ),
@@ -164,7 +191,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
           const SizedBox(width: 12),
           const Text(
-            'SPORTS CLUB',
+            'PERFORMANCE LAB',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2),
           ),
         ],
@@ -190,15 +217,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               width: 60,
               margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : t.chipBg.withValues(alpha: 0.6),
+                gradient: isSelected ? AppColors.primaryGradient : null,
+                color: isSelected ? null : t.cardBg,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.primary
-                      : t.borderLight.withValues(alpha: 0.3),
+                      ? Colors.transparent
+                      : t.borderLight,
                 ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: t.isDark
+                              ? Colors.black.withValues(alpha: 0.15)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -442,6 +485,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   await matchesProv.addMatch(SportMatch(
                     id: '', // UUID will be generated by Supabase
                     communityId: communityProv.activeCommunity?.id,
+                    creatorId: context.read<AuthProvider>().uid,
                     category: selectedCat,
                     format: selectedFormat,
                     dateTime: selectedDT!,

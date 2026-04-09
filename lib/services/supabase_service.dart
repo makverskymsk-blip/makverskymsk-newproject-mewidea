@@ -394,9 +394,10 @@ class SupabaseService {
 
   /// Insert match and return the generated row (with UUID id)
   Future<Map<String, dynamic>> createMatchAndReturn(
-      String communityId, SportMatch match) async {
+      String? communityId, SportMatch match) async {
     final response = await _supabase.from('matches').insert({
-      'community_id': communityId,
+      'community_id': (communityId != null && communityId.isNotEmpty) ? communityId : null,
+      if (match.creatorId != null) 'creator_id': match.creatorId,
       'category': match.category.index,
       'format': match.format,
       'date_time': match.dateTime.toIso8601String(),
@@ -418,28 +419,49 @@ class SupabaseService {
         .select()
         .eq('community_id', communityId)
         .order('date_time', ascending: true);
-    return (response as List)
-        .map((d) {
-              final playerIds = List<String>.from(d['registered_player_ids'] ?? []);
-              return SportMatch(
-                id: d['id'].toString(),
-                communityId: communityId,
-                category: SportCategory.values[d['category'] ?? 0],
-                format: d['format'] ?? '',
-                dateTime: DateTime.parse(d['date_time']),
-                location: d['location'] ?? '',
-                price: (d['price'] ?? 0).toDouble(),
-                totalCapacity: d['total_capacity'] ?? 20,
-                currentPlayers: playerIds.length,
-                registeredPlayerIds: playerIds,
-                registeredPlayerNames:
-                    List<String>.from(d['registered_player_names'] ?? []),
-                isCompleted: d['is_completed'] ?? false,
-                eventTeams: _parseEventTeams(d['event_teams']),
-                innerMatches: _parseInnerMatches(d['inner_matches']),
-              );
-            })
-        .toList();
+    return (response as List).map((d) => _parseMatch(d)).toList();
+  }
+
+  /// Get ALL active (non-completed) matches globally
+  Future<List<SportMatch>> getAllActiveMatches() async {
+    final response = await _supabase
+        .from('matches')
+        .select()
+        .eq('is_completed', false)
+        .order('date_time', ascending: true);
+    return (response as List).map((d) => _parseMatch(d)).toList();
+  }
+
+  /// Get ALL matches (active + completed) globally
+  Future<List<SportMatch>> getAllMatches() async {
+    final response = await _supabase
+        .from('matches')
+        .select()
+        .order('date_time', ascending: true);
+    return (response as List).map((d) => _parseMatch(d)).toList();
+  }
+
+  /// Parse a single match row into SportMatch
+  SportMatch _parseMatch(Map<String, dynamic> d) {
+    final playerIds = List<String>.from(d['registered_player_ids'] ?? []);
+    return SportMatch(
+      id: d['id'].toString(),
+      communityId: d['community_id']?.toString(),
+      creatorId: d['creator_id']?.toString(),
+      category: SportCategory.values[d['category'] ?? 0],
+      format: d['format'] ?? '',
+      dateTime: DateTime.parse(d['date_time']),
+      location: d['location'] ?? '',
+      price: (d['price'] ?? 0).toDouble(),
+      totalCapacity: d['total_capacity'] ?? 20,
+      currentPlayers: playerIds.length,
+      registeredPlayerIds: playerIds,
+      registeredPlayerNames:
+          List<String>.from(d['registered_player_names'] ?? []),
+      isCompleted: d['is_completed'] ?? false,
+      eventTeams: _parseEventTeams(d['event_teams']),
+      innerMatches: _parseInnerMatches(d['inner_matches']),
+    );
   }
 
   Stream<List<SportMatch>> watchMatches(String communityId) {
@@ -472,7 +494,23 @@ class SupabaseService {
           ..sort((a, b) => a.dateTime.compareTo(b.dateTime)));
   }
 
-  /// Subscribe to Realtime changes on matches table
+  /// Subscribe to Realtime changes on matches table (all matches globally)
+  dynamic watchAllMatchesChannel({required VoidCallback onChanged}) {
+    final channel = _supabase.channel('matches_global')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'matches',
+        callback: (payload) {
+          debugPrint('REALTIME: matches changed — ${payload.eventType}');
+          onChanged();
+        },
+      )
+      .subscribe();
+    return channel;
+  }
+
+  /// Subscribe to Realtime changes on matches table (community-specific, kept for backward compat)
   dynamic watchMatchesChannel(String communityId, {required VoidCallback onChanged}) {
     final channel = _supabase.channel('matches_$communityId')
       .onPostgresChanges(
@@ -491,6 +529,14 @@ class SupabaseService {
       )
       .subscribe();
     return channel;
+  }
+
+  /// RPC: Add amount to any user's balance atomically
+  Future<void> addToUserBalance(String userId, double amount) async {
+    await _supabase.rpc('add_to_user_balance', params: {
+      'target_user_id': userId,
+      'amount': amount,
+    });
   }
 
   /// Subscribe to Realtime changes on subscriptions table

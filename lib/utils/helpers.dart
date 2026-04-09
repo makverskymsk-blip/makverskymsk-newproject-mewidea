@@ -26,6 +26,11 @@ class Helpers {
     return days[date.weekday - 1];
   }
 
+  static const _monthsFull = [
+    '', 'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
+    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек',
+  ];
+
   static String getRelativeDate(DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -33,8 +38,7 @@ class Helpers {
     final diff = target.difference(today).inDays;
     if (diff == 0) return 'Сегодня';
     if (diff == 1) return 'Завтра';
-    if (diff < 7) return 'Через $diff дн.';
-    return formatDate(date);
+    return '${date.day} ${_monthsFull[date.month]}';
   }
 
   static int daysUntilSubscriptionDeadline() {

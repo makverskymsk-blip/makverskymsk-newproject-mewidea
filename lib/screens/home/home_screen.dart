@@ -76,13 +76,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   ...filteredMatches.map(
                     (match) {
                       final userId = user?.id ?? '';
-                      final isSubscriber =
+                      final userCommunityId = communityProv.activeCommunity?.id;
+                      final isOwnCommunity = match.communityId != null &&
+                          match.communityId == userCommunityId;
+                      final isSubscriber = isOwnCommunity &&
                           communityProv.hasSubscriptionForEventDate(
-                              userId, match.dateTime) &&
-                          communityProv.activeCommunity != null;
+                              userId, match.dateTime);
                       final effectivePrice =
                           isSubscriber ? 0.0 : match.price;
                       final isRegistered = match.registeredPlayerIds.contains(userId);
+                      final isExternal = !isOwnCommunity;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: GameCard(
@@ -90,6 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           time: Helpers.formatTime(match.dateTime),
                           date: Helpers.getRelativeDate(match.dateTime),
                           location: match.location,
+                          communityName: isOwnCommunity
+                              ? communityProv.activeCommunity?.name
+                              : (match.communityId != null ? 'Внешнее сообщество' : 'Личное событие'),
+                          isExternal: isExternal,
                           price: isSubscriber
                               ? 'Абонемент ✓'
                               : Helpers.formatCurrency(match.price),
@@ -103,15 +110,43 @@ class _HomeScreenState extends State<HomeScreen> {
                                   EventManageScreen(matchId: match.id),
                             ),
                           ),
-                          onParticipate: () {
+                          onParticipate: () async {
                             final wasRegistered = match.registeredPlayerIds.contains(userId);
-                            matchesProv.toggleRegistration(match,
+                            final success = await matchesProv.toggleRegistration(match,
                                 userId: user?.id,
                                 userName: user?.name);
-                            if (!wasRegistered) {
-                              authProv.updateBalance(-effectivePrice);
-                            } else {
-                              authProv.updateBalance(effectivePrice);
+                            if (success && effectivePrice > 0) {
+                              if (!wasRegistered) {
+                                // Registering — charge user
+                                authProv.updateBalance(-effectivePrice);
+                                // Route money to destination
+                                if (isOwnCommunity) {
+                                  // Own community → bank
+                                  communityProv.topUpCommunityBalance(
+                                    requesterId: 'system',
+                                    amount: effectivePrice,
+                                    description: 'Оплата за событие: ${match.format}',
+                                  );
+                                } else if (match.creatorId != null) {
+                                  // External/personal → creator wallet
+                                  matchesProv.routePaymentToCreator(
+                                    match.creatorId!, effectivePrice);
+                                }
+                              } else {
+                                // Unregistering — refund user
+                                authProv.updateBalance(effectivePrice);
+                                // Reverse routing
+                                if (isOwnCommunity) {
+                                  communityProv.deductCommunityBalance(
+                                    requesterId: 'system',
+                                    amount: effectivePrice,
+                                    description: 'Возврат за отмену: ${match.format}',
+                                  );
+                                } else if (match.creatorId != null) {
+                                  matchesProv.routePaymentToCreator(
+                                    match.creatorId!, -effectivePrice);
+                                }
+                              }
                             }
                           },
                         ),
@@ -134,6 +169,14 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+                spreadRadius: -2,
+              ),
+            ],
           ),
           child: const Icon(Icons.sports_soccer, color: Colors.white, size: 22),
         ),
@@ -143,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'SPORTS CLUB',
+                'PERFORMANCE LAB',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
@@ -221,6 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
         color: accentColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: accentColor.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+            spreadRadius: -3,
+          ),
+        ],
       ),
           child: Row(
             children: [
@@ -280,8 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategorySelector() {
+    final t = AppColors.of(context);
     return SizedBox(
-      height: 45,
+      height: 46,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: SportCategory.values.length,
@@ -293,27 +345,43 @@ class _HomeScreenState extends State<HomeScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary
-                    : Colors.white,
+                gradient: isSelected ? AppColors.primaryGradient : null,
+                color: isSelected ? null : t.cardBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                  color: isSelected ? Colors.transparent : t.borderLight,
                 ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: t.isDark
+                              ? Colors.black.withValues(alpha: 0.15)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Row(
                 children: [
-                  Icon(cat.icon, size: 17,
-                      color: isSelected ? Colors.white : AppColors.primary),
-                  const SizedBox(width: 7),
+                  Icon(cat.icon, size: 16,
+                      color: isSelected ? Colors.white : t.textHint),
+                  const SizedBox(width: 6),
                   Text(
                     cat.displayName,
                     style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: isSelected ? Colors.white : t.textSecondary,
                     ),
                   ),
                 ],

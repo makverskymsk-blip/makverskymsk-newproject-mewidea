@@ -131,11 +131,10 @@ class _MembersScreenState extends State<MembersScreen>
                 // ── Tab Bar ──
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AppColors.of(context).cardBg.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                        color: AppColors.of(context).borderLight.withValues(alpha: 0.5)),
                   ),
                   child: TabBar(
                     controller: _tabController,
@@ -144,7 +143,7 @@ class _MembersScreenState extends State<MembersScreen>
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFF6B35), Color(0xFFFFB800)],
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(11),
                     ),
                     dividerColor: Colors.transparent,
                     labelColor: Colors.white,

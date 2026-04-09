@@ -8,6 +8,8 @@ class GameCard extends StatelessWidget {
   final String time;
   final String date;
   final String location;
+  final String? communityName;
+  final bool isExternal;
   final String price;
   final int currentPlayers;
   final int totalCapacity;
@@ -21,6 +23,8 @@ class GameCard extends StatelessWidget {
     required this.time,
     required this.date,
     required this.location,
+    this.communityName,
+    this.isExternal = false,
     required this.price,
     required this.currentPlayers,
     required this.totalCapacity,
@@ -46,7 +50,30 @@ class GameCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTag(format),
+            Row(
+              children: [
+                _buildTag(format),
+                if (isExternal) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                    ),
+                    child: const Text(
+                      'Внешнее',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
               Text(
                 price,
                 style: const TextStyle(
@@ -77,6 +104,20 @@ class GameCard extends StatelessWidget {
               ),
             ],
           ),
+          if (communityName != null && communityName!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(Icons.groups_outlined,
+                    size: 14, color: t.textHint),
+                const SizedBox(width: 4),
+                Text(
+                  communityName!,
+                  style: TextStyle(color: t.textHint, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 20),
           Row(
             children: [

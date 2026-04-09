@@ -7,6 +7,9 @@ class EventTeam {
   final int colorValue; // Material color value
   final List<String> playerIds;
   final List<String> playerNames;
+  final List<String> captainIds;     // max 2 captains
+  final List<String> captainNames;
+  bool ratingsSubmitted; // капитан уже оценил команду
 
   EventTeam({
     required this.id,
@@ -14,10 +17,36 @@ class EventTeam {
     required this.colorValue,
     List<String>? playerIds,
     List<String>? playerNames,
+    List<String>? captainIds,
+    List<String>? captainNames,
+    this.ratingsSubmitted = false,
   })  : playerIds = playerIds ?? [],
-        playerNames = playerNames ?? [];
+        playerNames = playerNames ?? [],
+        captainIds = captainIds ?? [],
+        captainNames = captainNames ?? [];
 
   int get playerCount => playerIds.length;
+
+  bool isCaptain(String userId) => captainIds.contains(userId);
+
+  bool get hasCaptain => captainIds.isNotEmpty;
+
+  /// Добавить капитана (максимум 2)
+  bool addCaptain(String id, String name) {
+    if (captainIds.length >= 2 || captainIds.contains(id)) return false;
+    captainIds.add(id);
+    captainNames.add(name);
+    return true;
+  }
+
+  /// Убрать капитана
+  void removeCaptain(String id) {
+    final idx = captainIds.indexOf(id);
+    if (idx != -1) {
+      captainIds.removeAt(idx);
+      if (idx < captainNames.length) captainNames.removeAt(idx);
+    }
+  }
 
   void addPlayer(String id, String name) {
     if (!playerIds.contains(id)) {
@@ -32,6 +61,8 @@ class EventTeam {
       playerIds.removeAt(idx);
       if (idx < playerNames.length) playerNames.removeAt(idx);
     }
+    // Also remove as captain if they were one
+    removeCaptain(id);
   }
 
   bool hasPlayer(String id) => playerIds.contains(id);
@@ -42,6 +73,9 @@ class EventTeam {
     'colorValue': colorValue,
     'playerIds': playerIds,
     'playerNames': playerNames,
+    'captainIds': captainIds,
+    'captainNames': captainNames,
+    'ratingsSubmitted': ratingsSubmitted,
   };
 
   static EventTeam fromJson(Map<String, dynamic> json) => EventTeam(
@@ -50,6 +84,9 @@ class EventTeam {
     colorValue: json['colorValue'] ?? 0xFFE53935,
     playerIds: List<String>.from(json['playerIds'] ?? []),
     playerNames: List<String>.from(json['playerNames'] ?? []),
+    captainIds: List<String>.from(json['captainIds'] ?? []),
+    captainNames: List<String>.from(json['captainNames'] ?? []),
+    ratingsSubmitted: json['ratingsSubmitted'] ?? false,
   );
 }
 
@@ -123,6 +160,7 @@ class TeamStanding {
 class SportMatch {
   final String id;
   final String? communityId;
+  final String? creatorId;
   final SportCategory category;
   final String format;
   final DateTime dateTime;
@@ -141,6 +179,7 @@ class SportMatch {
   SportMatch({
     required this.id,
     this.communityId,
+    this.creatorId,
     required this.category,
     required this.format,
     required this.dateTime,
@@ -159,6 +198,10 @@ class SportMatch {
         registeredPlayerNames = registeredPlayerNames ?? [],
         eventTeams = eventTeams ?? [],
         innerMatches = innerMatches ?? [];
+
+  /// Все капитаны оценили свои команды?
+  bool get allCaptainsRated => eventTeams.isEmpty ||
+      eventTeams.every((t) => t.playerIds.isEmpty || t.ratingsSubmitted);
 
   /// Получить нераспределённых игроков (не в командах)
   List<MapEntry<String, String>> get unassignedPlayers {

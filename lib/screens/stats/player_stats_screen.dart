@@ -245,8 +245,9 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
   // ============ SPORT SELECTOR ============
 
   Widget _sportSelector() {
+    final t = AppColors.of(context);
     return SizedBox(
-      height: 50,
+      height: 46,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: SportCategory.values.map((sport) {
@@ -254,7 +255,6 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
           return GestureDetector(
             onTap: () {
               setState(() => _selectedSport = sport);
-              // Load sport-specific stats
               final uid = context.read<AuthProvider>().uid;
               if (uid != null) {
                 context.read<StatsProvider>().loadPlayerStatsForSport(uid, sport);
@@ -264,48 +264,53 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(
-                  horizontal: 18, vertical: 10),
+                  horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 gradient:
                     isSelected ? AppColors.primaryGradient : null,
-                color: isSelected
-                    ? null
-                    : AppColors.borderLight.withValues(alpha: 0.5),
+                color: isSelected ? null : t.cardBg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
-                      : AppColors.borderLight,
+                      : t.borderLight,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: AppColors.primary
-                              .withValues(alpha: 0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ]
-                    : null,
+                    : [
+                        BoxShadow(
+                          color: t.isDark
+                              ? Colors.black.withValues(alpha: 0.15)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Row(
                 children: [
                   Icon(
                     sport.icon,
-                    size: 18,
+                    size: 16,
                     color: isSelected
                         ? Colors.white
-                        : AppColors.textHint,
+                        : t.textHint,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     sport.displayName,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: 12,
                       color: isSelected
                           ? Colors.white
-                          : AppColors.textSecondary,
+                          : t.textSecondary,
                     ),
                   ),
                 ],
@@ -338,6 +343,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
   }
 
   Widget _matchTile(Map<String, dynamic> ms) {
+    final t = AppColors.of(context);
     final rating = (ms['overall_rating'] as num?)?.toDouble() ?? 6.0;
     final goals = ms['goals'] ?? 0;
     final assists = ms['assists'] ?? 0;
@@ -349,10 +355,18 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.backgroundCard.withValues(alpha: 0.5),
+        color: t.cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: AppColors.borderLight.withValues(alpha: 0.5)),
+        border: Border.all(color: t.borderLight),
+        boxShadow: [
+          BoxShadow(
+            color: t.isDark
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -362,7 +376,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
             decoration: BoxDecoration(
               color: isMvp
                   ? AppColors.primaryLight.withValues(alpha: 0.15)
-                  : AppColors.borderLight.withValues(alpha: 0.5),
+                  : t.surfaceBg,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -388,7 +402,10 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                   children: [
                     Text(
                       '${_goalEmoji(_selectedSport)} $goals  🅰️ $assists',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
                     ),
                     if (isMvp) ...[
                       const SizedBox(width: 8),
@@ -410,8 +427,8 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                 ),
                 Text(
                   'Матч #$shortId',
-                  style: const TextStyle(
-                    color: AppColors.textHint,
+                  style: TextStyle(
+                    color: t.textHint,
                     fontSize: 11,
                   ),
                 ),

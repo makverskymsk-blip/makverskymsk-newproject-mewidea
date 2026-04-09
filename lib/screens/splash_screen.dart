@@ -138,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
                     shaderCallback: (bounds) =>
                         AppColors.primaryGradient.createShader(bounds),
                     child: const Text(
-                      'SPORTS CLUB',
+                      'PERFORMANCE LAB',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.w900,

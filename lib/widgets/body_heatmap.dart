@@ -112,7 +112,7 @@ class _BodyHeatmapState extends State<BodyHeatmap>
                 child: GestureDetector(
                   onTapDown: (details) => _handleTap(details, context),
                   child: AspectRatio(
-                    aspectRatio: 0.85,
+                    aspectRatio: 1.0,
                     child: Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFF0A0A12),

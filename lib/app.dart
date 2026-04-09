@@ -34,7 +34,7 @@ class SportsClubApp extends StatelessWidget {
     final themeProv = context.watch<ThemeProvider>();
 
     return MaterialApp(
-      title: 'Sports Club',
+      title: 'Performance Lab',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -65,11 +65,13 @@ class SportsClubApp extends StatelessWidget {
 
           // Logged in — load communities
           if (auth.currentUser!.communityIds.isEmpty) {
-            // Init training provider even without community
+            // Init training provider and load global matches even without community
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final tp = context.read<TrainingProvider>();
+              final mp = context.read<MatchesProvider>();
               final user = auth.currentUser!;
               tp.init(user.id, initialXp: user.trainingXp, initialLevel: user.trainingLevel);
+              mp.loadMatches(null, []); // No community — only personal events
             });
             return MainNavigation(inviteCode: inviteCode);
           }
@@ -128,7 +130,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
         if (!mounted) return;
         final matchesProv = context.read<MatchesProvider>();
         await Future.wait([
-          matchesProv.loadMatches(cid).timeout(const Duration(seconds: 5)),
+          matchesProv.loadMatches(cid, widget.communityIds).timeout(const Duration(seconds: 5)),
           communityProv.loadSubscriptions(cid).timeout(const Duration(seconds: 5)),
         ]);
       }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/sport_match.dart';
 import '../../providers/matches_provider.dart';
 import '../../theme/app_colors.dart';
@@ -139,6 +140,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                 // Tab bar
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AppColors.of(context).cardBg.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(14),
@@ -147,7 +149,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                     controller: _tabCtrl,
                     indicator: BoxDecoration(
                       gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(11),
                     ),
                     indicatorSize: TabBarIndicatorSize.tab,
                     dividerColor: Colors.transparent,
@@ -155,6 +157,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                     unselectedLabelColor: AppColors.of(context).textSecondary,
                     labelStyle: const TextStyle(
                         fontWeight: FontWeight.w700, fontSize: 13),
+                    padding: const EdgeInsets.all(3),
                     tabs: [
                       Tab(
                           text:
@@ -346,6 +349,10 @@ class _EventManageScreenState extends State<EventManageScreen>
       SportMatch match, EventTeam team, int index, MatchesProvider prov) {
     final color = Color(team.colorValue);
     final unassigned = match.unassignedPlayers;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isCaptain = currentUserId != null && team.isCaptain(currentUserId);
+    final isAdmin = currentUserId == match.creatorId;
+    final canRate = (isCaptain || isAdmin) && !team.ratingsSubmitted && team.playerIds.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -369,13 +376,22 @@ class _EventManageScreenState extends State<EventManageScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        team.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: color,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            team.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: color,
+                            ),
+                          ),
+                          if (team.ratingsSubmitted) ...[
+                            const SizedBox(width: 6),
+                            const Icon(Icons.check_circle_rounded,
+                                size: 16, color: AppColors.accent),
+                          ],
+                        ],
                       ),
                       Text(
                         '${team.playerCount} игроков',
@@ -386,7 +402,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   ),
                 ),
                 // Add player
-                if (unassigned.isNotEmpty)
+                if (unassigned.isNotEmpty && !match.isCompleted)
                   GestureDetector(
                     onTap: () => _showAddPlayerDialog(
                         match, team, prov),
@@ -402,21 +418,96 @@ class _EventManageScreenState extends State<EventManageScreen>
                   ),
                 const SizedBox(width: 6),
                 // Delete team
-                GestureDetector(
-                  onTap: () =>
-                      prov.removeEventTeam(widget.matchId, team.id),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(10),
+                if (!match.isCompleted)
+                  GestureDetector(
+                    onTap: () =>
+                        prov.removeEventTeam(widget.matchId, team.id),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded,
+                          color: AppColors.error, size: 16),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded,
-                        color: AppColors.error, size: 16),
                   ),
-                ),
               ],
             ),
+
+            // Captains section
+            if (team.captainIds.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: team.captainIds.asMap().entries.map((e) {
+                  final cName = e.key < team.captainNames.length
+                      ? team.captainNames[e.key]
+                      : 'Капитан';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6D00).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.shield_rounded, size: 12, color: Color(0xFFFF6D00)),
+                        const SizedBox(width: 4),
+                        Text(cName, style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF6D00),
+                        )),
+                        if (!match.isCompleted) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () => prov.removeCaptainFromTeam(
+                                widget.matchId, team.id, e.value),
+                            child: const Icon(Icons.close_rounded,
+                                size: 12, color: Color(0xFFFF6D00)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+
+            // Assign captain button
+            if (team.captainIds.length < 2 && team.playerIds.isNotEmpty && !match.isCompleted) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => _showSelectCaptainDialog(match, team, prov),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6D00).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.shield_rounded, size: 14, color: Color(0xFFFF6D00)),
+                      const SizedBox(width: 6),
+                      Text(
+                        team.hasCaptain ? 'Добавить 2-го капитана' : 'Назначить капитана',
+                        style: const TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF6D00),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Players
             if (team.playerIds.isNotEmpty) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -426,8 +517,9 @@ class _EventManageScreenState extends State<EventManageScreen>
                   final name = e.key < team.playerNames.length
                       ? team.playerNames[e.key]
                       : 'Игрок';
+                  final isCpt = team.isCaptain(e.value);
                   return GestureDetector(
-                    onTap: () => prov.removePlayerFromTeam(
+                    onTap: match.isCompleted ? null : () => prov.removePlayerFromTeam(
                         widget.matchId, team.id, e.value),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -436,11 +528,18 @@ class _EventManageScreenState extends State<EventManageScreen>
                         color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: color.withValues(alpha: 0.2)),
+                            color: isCpt
+                                ? const Color(0xFFFF6D00).withValues(alpha: 0.4)
+                                : color.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (isCpt) ...[
+                            const Icon(Icons.shield_rounded,
+                                size: 12, color: Color(0xFFFF6D00)),
+                            const SizedBox(width: 3),
+                          ],
                           Text(
                             name,
                             style: TextStyle(
@@ -448,9 +547,11 @@ class _EventManageScreenState extends State<EventManageScreen>
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(width: 4),
-                          Icon(Icons.close_rounded,
-                              size: 12, color: color.withValues(alpha: 0.6)),
+                          if (!match.isCompleted) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.close_rounded,
+                                size: 12, color: color.withValues(alpha: 0.6)),
+                          ],
                         ],
                       ),
                     ),
@@ -458,7 +559,165 @@ class _EventManageScreenState extends State<EventManageScreen>
                 }).toList(),
               ),
             ],
+
+            // Rate team button (for captain or admin)
+            if (canRate) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => _openRateTeam(match, team),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star_rounded, size: 16, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text('Оценить команду', style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Already rated badge
+            if (team.ratingsSubmitted) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_rounded, size: 14, color: AppColors.accent),
+                    SizedBox(width: 6),
+                    Text('Команда оценена', style: TextStyle(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    )),
+                  ],
+                ),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showSelectCaptainDialog(
+      SportMatch match, EventTeam team, MatchesProvider prov) {
+    final color = Color(team.colorValue);
+    // Only show players who are NOT already captains
+    final candidates = <MapEntry<String, String>>[];
+    for (int i = 0; i < team.playerIds.length; i++) {
+      final pid = team.playerIds[i];
+      if (!team.isCaptain(pid)) {
+        final name = i < team.playerNames.length ? team.playerNames[i] : 'Игрок';
+        candidates.add(MapEntry(pid, name));
+      }
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundCard.withValues(alpha: 0.95),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.of(context).borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.shield_rounded, size: 20, color: Color(0xFFFF6D00)),
+                const SizedBox(width: 8),
+                Text(
+                  'Капитан «${team.name}»',
+                  style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w700, color: color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text('Выберите игрока',
+                style: TextStyle(fontSize: 12, color: AppColors.textHint)),
+            const SizedBox(height: 16),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: candidates.map((p) {
+                  return GestureDetector(
+                    onTap: () {
+                      prov.setCaptain(widget.matchId, team.id, p.key, p.value);
+                      Navigator.pop(ctx);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6D00).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: const Color(0xFFFF6D00).withValues(alpha: 0.15)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.shield_rounded,
+                              color: Color(0xFFFF6D00), size: 18),
+                          const SizedBox(width: 10),
+                          Text(p.value,
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openRateTeam(SportMatch match, EventTeam team) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatePlayersScreen(
+          match: match,
+          teamId: team.id,
         ),
       ),
     );
@@ -1098,44 +1357,218 @@ class _EventManageScreenState extends State<EventManageScreen>
     final match = prov.getById(widget.matchId);
     if (match == null) return;
 
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    final isAdmin = currentUserId == match.creatorId;
+
+    // If teams exist → captain-based flow
+    if (match.eventTeams.isNotEmpty) {
+      // Find teams where the current user is captain and hasn't rated yet
+      final myUnratedTeams = match.eventTeams
+          .where((t) => currentUserId != null &&
+              t.isCaptain(currentUserId) &&
+              !t.ratingsSubmitted &&
+              t.playerIds.isNotEmpty)
+          .toList();
+
+      if (myUnratedTeams.isNotEmpty) {
+        // Captain hasn't rated their team(s) → send them to rate
+        final team = myUnratedTeams.first;
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.of(context).dialogBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: BorderSide(color: AppColors.borderLight),
+            ),
+            title: const Text('Оценить команду'),
+            content: Text(
+              'Оцените игроков команды «${team.name}» для завершения события.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Позже'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _openRateTeam(match, team);
+                },
+                child: const Text('Оценить',
+                    style: TextStyle(color: AppColors.accent)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // All teams rated → auto-complete
+      if (match.allCaptainsRated) {
+        prov.completeEvent(widget.matchId);
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      // Not all teams rated → show status
+      _showRatingStatusDialog(match, prov, isAdmin);
+      return;
+    }
+
+    // No teams → old flow: rate all players at once
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.of(context).dialogBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-                color: AppColors.borderLight),
+        backgroundColor: AppColors.of(context).dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        title: const Text('Завершить событие?'),
+        content: const Text('Оцените каждого игрока перед завершением. Продолжить?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
           ),
-          title: const Text('Завершить событие?'),
-          content: const Text(
-              'Вы сможете оценить каждого игрока перед завершением. Продолжить?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Отмена'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx); // close dialog
-                // Navigate to Rate Players screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RatePlayersScreen(match: match),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RatePlayersScreen(match: match),
+                ),
+              ).then((_) {
+                if (match.isCompleted && mounted) {
+                  Navigator.pop(context);
+                }
+              });
+            },
+            child: const Text('Завершить',
+                style: TextStyle(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRatingStatusDialog(SportMatch match, MatchesProvider prov, bool isAdmin) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.of(context).dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        title: const Text('Ожидание оценок'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Событие завершится автоматически, когда все капитаны оценят своих игроков.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+            ...match.eventTeams.map((t) {
+              final color = Color(t.colorValue);
+              final canRateThis = isAdmin && !t.ratingsSubmitted && t.playerIds.isNotEmpty;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: canRateThis ? () {
+                    Navigator.pop(ctx);
+                    _openRateTeam(match, t);
+                  } : null,
+                  child: Row(
+                    children: [
+                      Icon(
+                        t.ratingsSubmitted
+                            ? Icons.check_circle_rounded
+                            : Icons.pending_rounded,
+                        size: 18,
+                        color: t.ratingsSubmitted ? AppColors.accent : AppColors.warning,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8, height: 8,
+                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(t.name, style: TextStyle(
+                          fontWeight: FontWeight.w600, color: color, fontSize: 13)),
+                      ),
+                      if (canRateThis)
+                        const Icon(Icons.star_rounded, size: 14, color: AppColors.accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        t.ratingsSubmitted ? 'Оценена' : (t.hasCaptain ? 'Ожидание' : 'Нет капитана'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: t.ratingsSubmitted
+                              ? AppColors.accent
+                              : (t.hasCaptain ? AppColors.warning : AppColors.error),
+                        ),
+                      ),
+                    ],
                   ),
-                ).then((_) {
-                  // After rating, go back if event was completed
-                  if (match.isCompleted && mounted) {
-                    Navigator.pop(context);
-                  }
-                });
-              },
-              child: const Text('Завершить',
-                  style: TextStyle(color: AppColors.accent)),
-            ),
+                ),
+              );
+            }),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Понятно'),
+          ),
+          if (isAdmin)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _forceCompleteEvent(prov);
+              },
+              child: const Text('Завершить принудительно',
+                  style: TextStyle(color: AppColors.error, fontSize: 12)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _forceCompleteEvent(MatchesProvider prov) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.of(context).dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        title: const Text('Принудительное завершение'),
+        content: const Text('Команды без оценки не получат статистику. Продолжить?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              prov.completeEvent(widget.matchId);
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text('Да, завершить',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
     );
   }
 

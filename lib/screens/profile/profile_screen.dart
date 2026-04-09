@@ -239,7 +239,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             offset: const Offset(0, 2),
                           ),
                         ]
-                      : null,
+                      : [
+                          BoxShadow(
+                            color: t.isDark
+                                ? Colors.black.withValues(alpha: 0.15)
+                                : Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                 ),
                 child: Row(
                   children: [
@@ -1149,7 +1157,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: BoxDecoration(
             color: t.cardBg,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: t.borderLight),
+            border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: t.isDark
+                    ? Colors.black.withValues(alpha: 0.18)
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+                spreadRadius: -3,
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -1559,11 +1577,17 @@ class _DistanceSheetState extends State<_DistanceSheet> {
   }
 
   Future<void> _loadDistances() async {
-    for (final match in widget.completedMatches) {
+    final matches = widget.completedMatches;
+    // Load all distances in parallel instead of sequentially
+    final futures = matches.map((match) async {
       final km = await widget.db.getPlayerDistance(match.id, widget.userId);
-      _savedDistances[match.id] = km;
-      _controllers[match.id] = TextEditingController(
-        text: km > 0 ? km.toStringAsFixed(1) : '',
+      return MapEntry(match.id as String, km as double);
+    });
+    final results = await Future.wait(futures);
+    for (final entry in results) {
+      _savedDistances[entry.key] = entry.value;
+      _controllers[entry.key] = TextEditingController(
+        text: entry.value > 0 ? entry.value.toStringAsFixed(1) : '',
       );
     }
     if (mounted) setState(() => _loading = false);

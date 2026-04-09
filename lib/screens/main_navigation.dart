@@ -135,7 +135,7 @@ class _MainNavigationState extends State<MainNavigation> {
           if (!mounted) return;
           final matchesProv = context.read<MatchesProvider>();
           await Future.wait([
-            matchesProv.loadMatches(cid),
+            matchesProv.loadMatches(cid, auth.currentUser?.communityIds ?? [cid]),
             communityProv.loadSubscriptions(cid),
           ]);
         }
