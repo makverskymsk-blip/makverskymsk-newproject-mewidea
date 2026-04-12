@@ -227,14 +227,17 @@ class MatchesProvider extends ChangeNotifier {
   // ============================================================
 
   /// Добавить команду в событие (макс 5)
-  bool addEventTeam(String matchId) {
+  bool addEventTeam(String matchId, {String? name}) {
     final match = getById(matchId);
     if (match == null || match.eventTeams.length >= 5) return false;
 
     final idx = match.eventTeams.length;
+    final teamName = (name != null && name.trim().isNotEmpty)
+        ? name.trim()
+        : teamColorNames[idx];
     match.eventTeams.add(EventTeam(
       id: 'team_${DateTime.now().millisecondsSinceEpoch}_$idx',
-      name: teamColorNames[idx],
+      name: teamName,
       colorValue: teamColors[idx],
     ));
     _syncEventTeams(match);
@@ -291,7 +294,7 @@ class MatchesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Авто-разделение: равномерно распределить всех по командам
+  /// Авто-разделение: случайно распределить всех по командам
   void autoDistributePlayers(String matchId) {
     final match = getById(matchId);
     if (match == null || match.eventTeams.isEmpty) return;
@@ -302,14 +305,19 @@ class MatchesProvider extends ChangeNotifier {
       team.playerNames.clear();
     }
 
-    // Распределяем round-robin
-    for (int i = 0; i < match.registeredPlayerIds.length; i++) {
+    // Создаём список индексов и перемешиваем случайно
+    final indices = List<int>.generate(match.registeredPlayerIds.length, (i) => i);
+    indices.shuffle();
+
+    // Распределяем round-robin по перемешанному порядку
+    for (int i = 0; i < indices.length; i++) {
+      final playerIdx = indices[i];
       final teamIdx = i % match.eventTeams.length;
-      final name = i < match.registeredPlayerNames.length
-          ? match.registeredPlayerNames[i]
+      final name = playerIdx < match.registeredPlayerNames.length
+          ? match.registeredPlayerNames[playerIdx]
           : 'Игрок';
       match.eventTeams[teamIdx]
-          .addPlayer(match.registeredPlayerIds[i], name);
+          .addPlayer(match.registeredPlayerIds[playerIdx], name);
     }
     _syncEventTeams(match);
     notifyListeners();

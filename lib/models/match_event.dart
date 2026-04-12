@@ -57,6 +57,7 @@ List<MatchEventType> eventTypesForSport(SportCategory sport) {
         MatchEventType.penaltyMin,
       ];
     case SportCategory.tennis:
+    case SportCategory.padel:
       return [
         MatchEventType.ace,
         MatchEventType.winner,

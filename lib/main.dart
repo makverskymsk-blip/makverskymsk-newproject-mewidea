@@ -12,6 +12,7 @@ import 'providers/stats_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/match_events_provider.dart';
 import 'providers/training_provider.dart';
+import 'providers/sport_prefs_provider.dart';
 
 
 /// Запуск напрямую (по умолчанию — prod).
@@ -25,10 +26,16 @@ Future<void> appMain() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final cfg = AppConfig.instance;
-  await Supabase.initialize(
-    url: cfg.supabaseUrl,
-    anonKey: cfg.supabaseAnonKey,
-  );
+  try {
+    await Supabase.initialize(
+      url: cfg.supabaseUrl,
+      anonKey: cfg.supabaseAnonKey,
+    ).timeout(const Duration(seconds: 10));
+    debugPrint('MAIN: Supabase initialized successfully');
+  } catch (e) {
+    debugPrint('MAIN: Supabase init error: $e');
+    // Continue anyway — auth will handle offline state
+  }
 
   // Push notifications migration needed (Supabase has different setup)
   /* if (!kIsWeb) {
@@ -51,6 +58,7 @@ Future<void> appMain() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => MatchEventsProvider()),
         ChangeNotifierProvider(create: (_) => TrainingProvider()),
+        ChangeNotifierProvider(create: (_) => SportPrefsProvider()),
       ],
       child: const SportsClubApp(),
     ),

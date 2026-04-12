@@ -16,6 +16,11 @@ enum SportCategory {
     icon: Icons.sports_tennis,
     backgroundImage: 'assets/images/tennis_back.jpg',
   ),
+  padel(
+    displayName: 'Падл',
+    icon: Icons.sports_tennis,
+    backgroundImage: 'assets/images/padel_back.jpg',
+  ),
   esports(
     displayName: 'Киберспорт',
     icon: Icons.sports_esports,

@@ -14,8 +14,11 @@ import '../../widgets/player_fifa_card.dart';
 import '../stats/player_stats_screen.dart';
 import '../community/community_manage_screen.dart';
 import '../../models/enums.dart';
+import '../../providers/sport_prefs_provider.dart';
+import 'manage_sports_screen.dart';
 import '../../models/achievement.dart';
 import '../community/members_screen.dart';
+import '../community/community_directory_screen.dart';
 import '../../providers/matches_provider.dart';
 import '../../widgets/avatar_viewer.dart';
 import '../wallet/wallet_screen.dart';
@@ -47,6 +50,12 @@ class ProfileScreen extends StatefulWidget {
     'Универсал': ('UNI', 'Универсал', Icons.person_rounded, Color(0xFF8E24AA)),
   };
 
+  static const _padelPositions = {
+    'Драйв': ('DR', 'Драйв', Icons.sports_tennis, Color(0xFF43A047)),
+    'Ревес': ('RV', 'Ревес', Icons.swap_horiz_rounded, Color(0xFFE53935)),
+    'Универсал': ('UNI', 'Универсал', Icons.person_rounded, Color(0xFF8E24AA)),
+  };
+
   static const _esportsPositions = {
     // ─── MOBA (Dota 2) ───
     'Керри': ('P1', 'Керри', Icons.auto_awesome_rounded, Color(0xFFFFB300)),
@@ -68,6 +77,7 @@ class ProfileScreen extends StatefulWidget {
       SportCategory.football => _footballPositions,
       SportCategory.hockey => _hockeyPositions,
       SportCategory.tennis => _tennisPositions,
+      SportCategory.padel => _padelPositions,
       SportCategory.esports => _esportsPositions,
     };
   }
@@ -78,6 +88,7 @@ class ProfileScreen extends StatefulWidget {
     return _footballPositions[position] ??
            _hockeyPositions[position] ??
            _tennisPositions[position] ??
+           _padelPositions[position] ??
            _esportsPositions[position];
   }
 
@@ -161,9 +172,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // ─── Last Matches (sport-specific) ───
-                _buildLastMatches(
-                  statsProv.getMatchHistoryForSport(user?.id ?? '', _selectedSport)),
+                // ─── Last Matches (inner matches from completed events) ───
+                _buildLastMatches(context),
                 const SizedBox(height: 16),
 
                 // ─── Achievements (sport-specific) ───
@@ -197,6 +207,210 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildCommunityChip() {
+    final t = AppColors.of(context);
+    final communityProv = context.watch<CommunityProvider>();
+    final communities = communityProv.communities;
+    final active = communityProv.activeCommunity;
+
+    if (communities.isEmpty) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: communities.length > 1
+          ? () => _showCommunitySwitcher(communities, active)
+          : null,
+      child: Container(
+        margin: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: t.borderLight),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (active?.logoUrl != null && active!.logoUrl!.isNotEmpty) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  active.logoUrl!,
+                  width: 18, height: 18,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+              const SizedBox(width: 5),
+            ],
+            Flexible(
+              child: Text(
+                active?.name ?? '',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: t.textSecondary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (communities.length > 1) ...[
+              const SizedBox(width: 2),
+              Icon(Icons.unfold_more_rounded,
+                  size: 12, color: t.textHint),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCommunitySwitcher(List<dynamic> communities, dynamic active) {
+    final t = AppColors.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: t.dialogBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: t.borderLight,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.swap_horiz_rounded,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text('Выберите сообщество',
+                    style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700, color: t.textPrimary)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...communities.map((c) {
+              final isActive = c.id == active?.id;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    if (!isActive) {
+                      final prov = context.read<CommunityProvider>();
+                      prov.setActiveCommunity(c);
+                      prov.loadSubscriptions(c.id);
+                      context.read<MatchesProvider>().loadMatches(
+                        c.id,
+                        context.read<AuthProvider>().currentUser?.communityIds ?? [c.id],
+                      );
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppColors.primary.withValues(alpha: 0.08)
+                          : t.cardBg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isActive
+                            ? AppColors.primary.withValues(alpha: 0.3)
+                            : t.borderLight,
+                        width: isActive ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? AppColors.primary.withValues(alpha: 0.12)
+                                : t.borderLight.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: c.logoUrl != null && c.logoUrl!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    c.logoUrl!,
+                                    width: 40, height: 40,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Text(
+                                        c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          color: isActive ? AppColors.primary : t.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Center(
+                                  child: Text(
+                                    c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      color: isActive ? AppColors.primary : t.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(c.name,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: isActive ? AppColors.primary : t.textPrimary,
+                                  )),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${c.sport.displayName} • ${c.memberIds.length + c.adminIds.length + 1} участников',
+                                style: TextStyle(color: t.textHint, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isActive)
+                          const Icon(Icons.check_circle_rounded,
+                              color: AppColors.primary, size: 22),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─────────── SPORT SELECTOR ───────────
 
   Widget _buildSportSelector() {
@@ -207,7 +421,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         scrollDirection: Axis.horizontal,
         children: [
           // Sport categories
-          ...SportCategory.values.map((sport) {
+          ...context.watch<SportPrefsProvider>().visibleSports.map((sport) {
             final isSelected = !_isTrainingMode && _selectedSport == sport;
             return GestureDetector(
               onTap: () {
@@ -270,6 +484,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             );
           }),
+          // Settings gear
+          GestureDetector(
+            onTap: () => ManageSportsScreen.show(context),
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: t.surfaceBg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: t.borderLight),
+              ),
+              child: Icon(Icons.tune_rounded, size: 16, color: t.textHint),
+            ),
+          ),
           // Training tab
           GestureDetector(
             onTap: () => setState(() => _isTrainingMode = true),
@@ -642,7 +870,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(width: 12),
-        // Name + ID
+        // Name + ID + Community
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -655,9 +883,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: t.textPrimary,
                 ),
               ),
-              Text(
-                'ID: ${(user?.id ?? "0000").substring((user?.id ?? "0000").length - 4)}',
-                style: TextStyle(color: t.textHint, fontSize: 12),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    'ID: ${(user?.id ?? "0000").substring((user?.id ?? "0000").length - 4)}',
+                    style: TextStyle(color: t.textHint, fontSize: 12),
+                  ),
+                  _buildCommunityChip(),
+                ],
               ),
             ],
           ),
@@ -693,8 +927,97 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ─────────── LAST MATCHES ───────────
 
-  Widget _buildLastMatches(List<Map<String, dynamic>> realHistory) {
-    if (realHistory.isEmpty) {
+  Widget _buildLastMatches(BuildContext context) {
+    final matchesProv = context.watch<MatchesProvider>();
+    final uid = context.read<AuthProvider>().uid ?? '';
+    final completedEvents = matchesProv.completedEvents
+        .where((e) => e.category == _selectedSport)
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+
+    // Extract inner match results for this user
+    final innerResults = <_InnerMatchResult>[];
+    for (final event in completedEvents) {
+      // Check if user participated at all
+      final isRegistered = event.registeredPlayerIds.contains(uid);
+
+      // Find user's team index
+      int userTeamIdx = -1;
+      for (int t = 0; t < event.eventTeams.length; t++) {
+        if (event.eventTeams[t].hasPlayer(uid)) {
+          userTeamIdx = t;
+          break;
+        }
+      }
+
+      // Skip if user wasn't registered AND isn't in any team
+      if (userTeamIdx < 0 && !isRegistered) continue;
+
+      if (userTeamIdx >= 0 && event.innerMatches.isNotEmpty) {
+        // User is in a team — show inner match results
+        for (final im in event.innerMatches) {
+          if (!im.isCompleted) continue;
+          if (im.team1Index != userTeamIdx && im.team2Index != userTeamIdx) continue;
+
+          final isTeam1 = im.team1Index == userTeamIdx;
+          final myScore = isTeam1 ? im.team1Score : im.team2Score;
+          final oppScore = isTeam1 ? im.team2Score : im.team1Score;
+          final oppTeamIdx = isTeam1 ? im.team2Index : im.team1Index;
+          final myTeamName = event.eventTeams[userTeamIdx].name;
+          final oppTeamName = oppTeamIdx < event.eventTeams.length
+              ? event.eventTeams[oppTeamIdx].name
+              : '?';
+          final myColor = Color(event.eventTeams[userTeamIdx].colorValue);
+          final oppColor = oppTeamIdx < event.eventTeams.length
+              ? Color(event.eventTeams[oppTeamIdx].colorValue)
+              : Colors.grey;
+
+          _MatchResult result;
+          if (myScore > oppScore) {
+            result = _MatchResult.win;
+          } else if (myScore < oppScore) {
+            result = _MatchResult.loss;
+          } else {
+            result = _MatchResult.draw;
+          }
+
+          innerResults.add(_InnerMatchResult(
+            myTeamName: myTeamName,
+            oppTeamName: oppTeamName,
+            myScore: myScore,
+            oppScore: oppScore,
+            result: result,
+            myColor: myColor,
+            oppColor: oppColor,
+          ));
+        }
+      } else if (isRegistered) {
+        // Fallback: user registered but not in a team — show event-level result
+        final standings = event.getStandings();
+        if (standings.length >= 2) {
+          final s1 = standings[0];
+          final s2 = standings[1];
+          final team1Name = s1.teamName.isNotEmpty ? s1.teamName : 'Команда 1';
+          final team2Name = s2.teamName.isNotEmpty ? s2.teamName : 'Команда 2';
+          final isDraw = s1.points == s2.points;
+          innerResults.add(_InnerMatchResult(
+            myTeamName: team1Name,
+            oppTeamName: team2Name,
+            myScore: s1.goalsFor,
+            oppScore: s2.goalsFor,
+            result: isDraw
+                ? _MatchResult.draw
+                : (s1.points > s2.points ? _MatchResult.win : _MatchResult.loss),
+            myColor: Color(s1.colorValue),
+            oppColor: Color(s2.colorValue),
+          ));
+        }
+      }
+    }
+
+    final t = AppColors.of(context);
+
+    if (innerResults.isEmpty) {
       return GlassCard(
         child: Column(
           children: [
@@ -709,25 +1032,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             Icon(Icons.sports_score_outlined,
-                size: 40, color: AppColors.of(context).textHint.withValues(alpha: 0.3)),
+                size: 40, color: t.textHint.withValues(alpha: 0.3)),
             const SizedBox(height: 8),
             Text('Нет сыгранных матчей',
-                style: TextStyle(
-                    color: AppColors.of(context).textHint, fontSize: 13)),
+                style: TextStyle(color: t.textHint, fontSize: 13)),
             const SizedBox(height: 8),
           ],
         ),
       );
     }
 
-    final displayMatches = realHistory.take(5).map((r) {
-      if (r['is_win'] == true) return _MatchResult.win;
-      if (r['is_draw'] == true) return _MatchResult.draw;
-      return _MatchResult.loss;
-    }).toList();
-
-    final wins = displayMatches.where((m) => m == _MatchResult.win).length;
-    final total = displayMatches.length;
+    final display = innerResults.take(7).toList();
+    final wins = display.where((m) => m.result == _MatchResult.win).length;
+    final draws = display.where((m) => m.result == _MatchResult.draw).length;
+    final losses = display.where((m) => m.result == _MatchResult.loss).length;
 
     return GlassCard(
       child: Column(
@@ -748,7 +1066,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${wins}В из $total', // ignore: unnecessary_brace_in_string_interps
+                  '${wins}В ${draws}Н ${losses}П',
                   style: const TextStyle(
                     color: Color(0xFF43A047), fontSize: 11, fontWeight: FontWeight.w700,
                   ),
@@ -756,34 +1074,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: displayMatches.map((m) {
-              return Column(
-                children: [
-                  Container(
-                    width: 42, height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: m.color.withValues(alpha: 0.1),
-                      border: Border.all(color: m.color.withValues(alpha: 0.3)),
-                    ),
-                    child: Center(
-                      child: Text(m.letter,
-                          style: TextStyle(color: m.color,
-                              fontWeight: FontWeight.w800, fontSize: 16)),
-                    ),
+          const SizedBox(height: 10),
+          ...display.map((m) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                // Result indicator
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: m.result.color.withValues(alpha: 0.1),
+                    border: Border.all(color: m.result.color.withValues(alpha: 0.3)),
                   ),
-                  const SizedBox(height: 4),
-                  Text(m.label,
-                      style: const TextStyle(
-                          fontSize: 9, color: AppColors.textHint,
-                          fontWeight: FontWeight.w500)),
-                ],
-              );
-            }).toList(),
-          ),
+                  child: Center(
+                    child: Text(m.result.letter,
+                        style: TextStyle(color: m.result.color,
+                            fontWeight: FontWeight.w800, fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Team names & score
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(m.myTeamName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: t.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '${m.myScore}:${m.oppScore}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: m.result.color,
+                          ),
+                        ),
+                      ),
+                      Flexible(
+                        child: Text(m.oppTeamName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: t.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
         ],
       ),
     );
@@ -982,13 +1330,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 42, height: 42,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.groups_rounded,
-                  color: AppColors.primary, size: 22),
+              child: community.activeCommunity!.logoUrl != null &&
+                      community.activeCommunity!.logoUrl!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        community.activeCommunity!.logoUrl!,
+                        width: 42, height: 42,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.groups_rounded,
+                            color: AppColors.primary, size: 22),
+                      ),
+                    )
+                  : const Icon(Icons.groups_rounded,
+                      color: AppColors.primary, size: 22),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1047,60 +1408,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(color: AppColors.textHint, fontSize: 13),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _showCreateDialog(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                        SizedBox(width: 6),
-                        Text('Создать',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                ),
+          GestureDetector(
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CommunityDirectoryScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _showJoinDialog(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.login_rounded,
-                            color: AppColors.primary, size: 18),
-                        SizedBox(width: 6),
-                        Text('Вступить',
-                            style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.explore_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 6),
+                  Text('Найти сообщество',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                ],
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -1198,12 +1527,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
-        _menuTile(Icons.edit_rounded, 'Изменить позицию',
-            () => _showPositionDialog(context, auth)),
-        _menuTile(Icons.add_circle_outline_rounded, 'Создать сообщество',
-            () => _showCreateDialog(context)),
-        _menuTile(Icons.login_rounded, 'Вступить по коду',
-            () => _showJoinDialog(context)),
         _menuTile(Icons.directions_run_rounded, 'Моя дистанция',
             () => _showDistanceSheet(context)),
         _menuTile(Icons.account_balance_wallet_rounded, 'Кошелёк',
@@ -1212,7 +1535,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _menuTile(Icons.person_outline_rounded, 'Физические данные',
             () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const GenderSelectorScreen()))),
+        _menuTile(Icons.tune_rounded, 'Мои виды спорта',
+            () => ManageSportsScreen.show(context)),
         _menuTile(Icons.notifications_none_rounded, 'Уведомления', () {}),
+        Divider(
+            color: t.borderLight.withValues(alpha: 0.5), height: 24),
+        _menuTile(Icons.explore_rounded, 'Список сообществ',
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CommunityDirectoryScreen()))),
+        _menuTile(Icons.add_circle_outline_rounded, 'Создать сообщество',
+            () => _showCreateDialog(context)),
+        _menuTile(Icons.login_rounded, 'Вступить по коду',
+            () => _showJoinDialog(context)),
         Divider(
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
         _menuTile(Icons.logout_rounded, 'Выйти', () => auth.logout(),
@@ -1529,6 +1863,26 @@ enum _MatchResult {
   final Color color;
 
   const _MatchResult(this.letter, this.label, this.color);
+}
+
+class _InnerMatchResult {
+  final String myTeamName;
+  final String oppTeamName;
+  final int myScore;
+  final int oppScore;
+  final _MatchResult result;
+  final Color myColor;
+  final Color oppColor;
+
+  const _InnerMatchResult({
+    required this.myTeamName,
+    required this.oppTeamName,
+    required this.myScore,
+    required this.oppScore,
+    required this.result,
+    required this.myColor,
+    required this.oppColor,
+  });
 }
 
 class _NearAchievement { // ignore: unused_element

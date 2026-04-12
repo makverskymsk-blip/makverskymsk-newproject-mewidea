@@ -80,11 +80,14 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
     final topPoints = standings.isNotEmpty ? standings.first.points : 0;
     // Multiple teams could tie for first
     final winnerIndices = standings
-        .where((s) => s.points == topPoints && topPoints > 0)
+        .where((s) => s.points == topPoints)
         .map((s) => s.teamIndex)
         .toSet();
-    final isDraw = winnerIndices.length > 1;
-    final winnerTeamIndex = standings.isNotEmpty ? standings.first.teamIndex : -1;
+    // It's a draw if there are no inner matches (topPoints==0) or multiple teams tied
+    final isDraw = winnerIndices.length != 1;
+    final winnerTeamIndex = (!isDraw && winnerIndices.isNotEmpty)
+        ? winnerIndices.first
+        : -1;
 
     // If teamId is specified, only rate that team's players
     final EventTeam? targetTeam = widget.teamId != null
@@ -116,11 +119,13 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       bool isWin = false;
       bool isDrawResult = false;
       if (playerTeamIndex >= 0) {
-        if (isDraw && winnerIndices.contains(playerTeamIndex)) {
+        if (isDraw) {
+          // Draw for all teams when tied or no matches played
           isDrawResult = true;
-        } else if (!isDraw && playerTeamIndex == winnerTeamIndex) {
+        } else if (playerTeamIndex == winnerTeamIndex) {
           isWin = true;
         }
+        // else: loss (isWin=false, isDrawResult=false)
       }
 
       _ratings[pid] = _PlayerRating(
@@ -748,6 +753,7 @@ class _SportConfig {
           slider3Label: 'Катание', slider3Color: Color(0xFF43A047),
         );
       case SportCategory.tennis:
+      case SportCategory.padel:
         return const _SportConfig(
           goalLabel: 'Эйсы', goalEmoji: '🎾',
           assistLabel: 'Виннеры', assistEmoji: '💥',

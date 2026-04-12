@@ -169,11 +169,11 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
                               Container(
                                 width: 36, height: 36,
                                 decoration: BoxDecoration(
-                                  color: Color(t1.colorValue).withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(Icons.shield_rounded,
-                                  color: Color(t1.colorValue), size: 20),
+                                  color: AppColors.primary, size: 20),
                               ),
                               const SizedBox(height: 6),
                               Text(t1.name, style: TextStyle(
@@ -221,11 +221,11 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
                               Container(
                                 width: 36, height: 36,
                                 decoration: BoxDecoration(
-                                  color: Color(t2.colorValue).withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(Icons.shield_rounded,
-                                  color: Color(t2.colorValue), size: 20),
+                                  color: AppColors.primary, size: 20),
                               ),
                               const SizedBox(height: 6),
                               Text(t2.name, style: TextStyle(
@@ -462,7 +462,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
             Container(
               width: 14, height: 14,
               decoration: BoxDecoration(
-                color: Color(team.colorValue),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -482,9 +482,9 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
             dense: true,
             title: Text(pname, style: TextStyle(color: t.textPrimary)),
             leading: CircleAvatar(
-              backgroundColor: Color(team.colorValue).withValues(alpha: 0.2),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
               child: Text(pname.isNotEmpty ? pname[0] : '?',
-                style: TextStyle(color: Color(team.colorValue), fontWeight: FontWeight.w700)),
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
             ),
             onTap: () {
               Navigator.pop(ctx);

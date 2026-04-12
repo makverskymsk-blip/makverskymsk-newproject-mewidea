@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 import '../models/enums.dart';
 import '../models/subscription.dart';
@@ -17,10 +19,15 @@ class CommunityProvider extends ChangeNotifier {
   Community? get activeCommunity => _activeCommunity;
   List<MonthlySubscription> get subscriptions => _subscriptions;
 
-  void setActiveCommunity(Community community) {
+  static const _prefKey = 'active_community_id';
+
+  void setActiveCommunity(Community community) async {
     _activeCommunity = community;
     _subscribeToCommunityRealtime(community.id);
     notifyListeners();
+    // Persist selection
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, community.id);
   }
 
   Future<void> loadUserCommunities(List<String> communityIds) async {
@@ -28,7 +35,17 @@ class CommunityProvider extends ChangeNotifier {
     final loaded = await _db.getUserCommunities(communityIds);
     _communities.addAll(loaded);
     if (_communities.isNotEmpty && _activeCommunity == null) {
-      _activeCommunity = _communities.first;
+      // Try to restore saved selection
+      final prefs = await SharedPreferences.getInstance();
+      final savedId = prefs.getString(_prefKey);
+      if (savedId != null) {
+        final saved = _communities.where((c) => c.id == savedId);
+        if (saved.isNotEmpty) {
+          _activeCommunity = saved.first;
+        }
+      }
+      // Fallback to first community
+      _activeCommunity ??= _communities.first;
     }
     // Subscribe to realtime for the active community
     if (_activeCommunity != null) {
@@ -36,6 +53,82 @@ class CommunityProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Upload community logo and update DB
+  Future<bool> uploadLogo(String communityId, Uint8List bytes, String ext) async {
+    try {
+      final url = await _db.uploadCommunityLogo(communityId, bytes, ext);
+      if (url == null) return false;
+      await _db.updateCommunityLogoUrl(communityId, url);
+      // Update local
+      final idx = _communities.indexWhere((c) => c.id == communityId);
+      if (idx != -1) _communities[idx].logoUrl = url;
+      if (_activeCommunity?.id == communityId) _activeCommunity!.logoUrl = url;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('LOGO UPLOAD ERROR: $e');
+      return false;
+    }
+  }
+
+  // ===== COMMUNITY DIRECTORY =====
+
+  List<Community> _allCommunities = [];
+  List<Community> get allCommunities => _allCommunities;
+
+  List<Map<String, dynamic>> _pendingRequests = [];
+  List<Map<String, dynamic>> get pendingRequests => _pendingRequests;
+
+  List<Map<String, dynamic>> _userRequests = [];
+  List<Map<String, dynamic>> get userRequests => _userRequests;
+
+  Future<void> loadAllCommunities() async {
+    _allCommunities = await _db.getAllCommunities();
+    notifyListeners();
+  }
+
+  Future<void> loadUserJoinRequests(String userId) async {
+    _userRequests = await _db.getUserJoinRequests(userId);
+    notifyListeners();
+  }
+
+  Future<void> loadPendingRequests(String communityId) async {
+    _pendingRequests = await _db.getJoinRequestsForCommunity(communityId);
+    notifyListeners();
+  }
+
+  /// Check if user already sent a request for a community
+  String? getRequestStatus(String communityId) {
+    final match = _userRequests.where((r) => r['community_id'] == communityId);
+    if (match.isEmpty) return null;
+    return match.first['status'] as String?;
+  }
+
+  Future<void> sendJoinRequest(String communityId, String userId) async {
+    await _db.createJoinRequest(communityId, userId);
+    await loadUserJoinRequests(userId);
+  }
+
+  Future<void> acceptJoinRequest(String requestId, String userId, String communityId) async {
+    await _db.updateJoinRequestStatus(requestId, 'accepted');
+    // Also add the user to the community
+    await _db.joinCommunity(communityId, userId);
+    // Reload
+    if (_activeCommunity != null) {
+      await loadPendingRequests(_activeCommunity!.id);
+    }
+  }
+
+  Future<void> rejectJoinRequest(String requestId) async {
+    await _db.updateJoinRequestStatus(requestId, 'rejected');
+    if (_activeCommunity != null) {
+      await loadPendingRequests(_activeCommunity!.id);
+    }
+  }
+
+  /// Get pending request count for admin badge
+  int get pendingRequestCount => _pendingRequests.length;
 
   /// Subscribe to Realtime changes for a community
   void _subscribeToCommunityRealtime(String communityId) {
@@ -402,6 +495,26 @@ class CommunityProvider extends ChangeNotifier {
     debugPrint('SUB: CREATED subscription for $month/$year with rent=${sub.totalRent}, id=$realId');
     notifyListeners();
     return true;
+  }
+
+  /// Удалить абонемент (только для админов). Аннулирует запись и всех подписавшихся.
+  Future<bool> deleteSubscription({
+    required String requesterId,
+    required String subscriptionId,
+  }) async {
+    if (_activeCommunity == null) return false;
+    if (!_activeCommunity!.isAdmin(requesterId)) return false;
+
+    try {
+      await _db.deleteSubscription(subscriptionId);
+      _subscriptions.removeWhere((s) => s.id == subscriptionId);
+      debugPrint('SUB: DELETED subscription id=$subscriptionId');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('SUB: DELETE error: $e');
+      return false;
+    }
   }
 
   /// Получить ВСЕ абонементы с открытой записью (несколько месяцев)

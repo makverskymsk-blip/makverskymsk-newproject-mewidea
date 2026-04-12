@@ -11,6 +11,7 @@ class Community {
   final double monthlyRent;
   final double singleGamePrice;
   double bankBalance;
+  String? logoUrl;
   final DateTime createdAt;
 
   Community({
@@ -24,6 +25,7 @@ class Community {
     this.monthlyRent = 100000,
     this.singleGamePrice = 1200,
     this.bankBalance = 0,
+    this.logoUrl,
     DateTime? createdAt,
   })  : adminIds = adminIds ?? [],
         memberIds = memberIds ?? [],

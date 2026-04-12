@@ -111,6 +111,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 communityName: isOwnCommunity
                                     ? communityProv.activeCommunity?.name
                                     : (match.communityId != null ? 'Внешнее сообщество' : 'Личное событие'),
+                                communityLogoUrl: isOwnCommunity
+                                    ? communityProv.activeCommunity?.logoUrl
+                                    : null,
                                 isExternal: isExternal,
                                 price: isSubscriber
                                     ? 'Абонемент ✓'

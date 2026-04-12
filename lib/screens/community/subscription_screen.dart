@@ -248,6 +248,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             _subscribersSection(
                                 selectedSub, isAdmin, communityProv,
                                 auth),
+                            const SizedBox(height: 16),
+
+                            // Admin: delete subscription
+                            if (isAdmin && !selectedSub.isCalculated)
+                              _adminDeleteSection(
+                                  communityProv, auth, selectedSub),
                             const SizedBox(height: 24),
                           ] else ...[
                             // No open subscriptions
@@ -1438,6 +1444,150 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         ),
         const SizedBox(height: 20),
       ],
+    );
+  }
+  // ============ ADMIN: DELETE SUBSCRIPTION ============
+
+  Widget _adminDeleteSection(CommunityProvider communityProv,
+      AuthProvider auth, MonthlySubscription sub) {
+    return GestureDetector(
+      onTap: () => _confirmDeleteSubscription(communityProv, auth, sub),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_outline_rounded,
+                color: AppColors.error, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'Удалить запись на абонемент',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteSubscription(CommunityProvider communityProv,
+      AuthProvider auth, MonthlySubscription sub) {
+    final subCount = sub.subscriberCount;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.of(context).dialogBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: AppColors.borderLight),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: AppColors.error, size: 24),
+            SizedBox(width: 10),
+            Text('Удалить абонемент'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${_months[sub.month]} ${sub.year}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: AppColors.error.withValues(alpha: 0.15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.people_rounded,
+                          size: 16, color: AppColors.error),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Записалось: $subCount чел.',
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (subCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Все записи участников будут аннулированы!',
+                      style: TextStyle(
+                        color: AppColors.error.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Это действие нельзя отменить.',
+              style: TextStyle(
+                  color: AppColors.textHint, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await communityProv.deleteSubscription(
+                requesterId: auth.uid!,
+                subscriptionId: sub.id,
+              );
+              if (ok && mounted) {
+                setState(() {
+                  _selectedMonthIndex = 0;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                        '${_months[sub.month]} ${sub.year} — абонемент удалён'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+            child: const Text('Удалить',
+                style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
     );
   }
 

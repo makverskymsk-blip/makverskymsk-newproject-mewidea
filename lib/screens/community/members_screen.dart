@@ -12,7 +12,8 @@ import '../../widgets/avatar_viewer.dart';
 
 
 class MembersScreen extends StatefulWidget {
-  const MembersScreen({super.key});
+  final int initialTab;
+  const MembersScreen({super.key, this.initialTab = 0});
 
   @override
   State<MembersScreen> createState() => _MembersScreenState();
@@ -28,7 +29,7 @@ class _MembersScreenState extends State<MembersScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
     _loadMembers();
   }
 

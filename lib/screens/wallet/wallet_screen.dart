@@ -67,7 +67,7 @@ class WalletScreen extends StatelessWidget {
 
                 // Community bank
                 if (community.activeCommunity != null)
-                  _buildBankWidget(community.activeCommunity!.name, bank),
+                  _buildBankWidget(community.activeCommunity!.name, bank, community.activeCommunity!.logoUrl),
                 if (community.activeCommunity != null) const SizedBox(height: 28),
 
                 // Transactions
@@ -157,17 +157,28 @@ class WalletScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBankWidget(String communityName, double bank) {
+  Widget _buildBankWidget(String communityName, double bank, String? logoUrl) {
     return GlassCard(
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            width: 48, height: 48,
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.account_balance_rounded, color: AppColors.accent, size: 24),
+            child: logoUrl != null && logoUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(
+                      logoUrl,
+                      width: 48, height: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.account_balance_rounded, color: AppColors.accent, size: 24),
+                    ),
+                  )
+                : const Icon(Icons.account_balance_rounded, color: AppColors.accent, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(

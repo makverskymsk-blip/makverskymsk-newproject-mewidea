@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/enums.dart';
+import '../../providers/sport_prefs_provider.dart';
 import '../../models/subscription.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/matches_provider.dart';
@@ -19,16 +20,21 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedCategoryIndex = 0;
+  SportCategory? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
     final matchesProv = context.watch<MatchesProvider>();
     final authProv = context.watch<AuthProvider>();
     final communityProv = context.watch<CommunityProvider>();
+    final sportPrefs = context.watch<SportPrefsProvider>();
     final user = authProv.currentUser;
 
-    final category = SportCategory.values[_selectedCategoryIndex];
+    // Default to first visible sport if not set or hidden
+    final visibleSports = sportPrefs.visibleSports;
+    final category = (_selectedCategory != null && visibleSports.contains(_selectedCategory))
+        ? _selectedCategory!
+        : visibleSports.first;
     final filteredMatches = matchesProv.getByCategory(category);
     final activeCommunity = communityProv.activeCommunity;
 
@@ -42,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                _buildHeader(user?.balance ?? 0, activeCommunity?.name),
+                _buildHeader(user?.balance ?? 0, activeCommunity?.name, activeCommunity?.logoUrl),
                 const SizedBox(height: 28),
 
                 // Subscription banner
@@ -96,6 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           communityName: isOwnCommunity
                               ? communityProv.activeCommunity?.name
                               : (match.communityId != null ? 'Внешнее сообщество' : 'Личное событие'),
+                          communityLogoUrl: isOwnCommunity
+                              ? communityProv.activeCommunity?.logoUrl
+                              : null,
                           isExternal: isExternal,
                           price: isSubscriber
                               ? 'Абонемент ✓'
@@ -161,24 +170,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(double balance, String? communityName) {
+  Widget _buildHeader(double balance, String? communityName, String? communityLogoUrl) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          width: 42, height: 42,
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFF6B35), Color(0xFFE8430A)],
+            ),
+            borderRadius: BorderRadius.circular(13),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: const Color(0xFFFF6B35).withValues(alpha: 0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
                 spreadRadius: -2,
               ),
             ],
           ),
-          child: const Icon(Icons.sports_soccer, color: Colors.white, size: 22),
+          child: const Center(
+            child: Text(
+              'PL',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+                height: 1,
+              ),
+            ),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -194,12 +218,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               if (communityName != null)
-                Text(
-                  communityName,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                Row(
+                  children: [
+                    if (communityLogoUrl != null && communityLogoUrl.isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          communityLogoUrl,
+                          width: 20, height: 20,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Flexible(
+                      child: Text(
+                        communityName,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -259,51 +302,44 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: accentColor.withValues(alpha: 0.25)),
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withValues(alpha: 0.1),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-            spreadRadius: -3,
-          ),
-        ],
       ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.card_membership, color: accentColor, size: 22),
+                child: Icon(Icons.card_membership, color: accentColor, size: 16),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -313,13 +349,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(
                         color: accentColor,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 11,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 3),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
-                      size: 12,
+                      size: 10,
                       color: accentColor,
                     ),
                   ],
@@ -332,16 +368,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategorySelector() {
     final t = AppColors.of(context);
+    final visibleSports = context.watch<SportPrefsProvider>().visibleSports;
+    final currentCategory = (_selectedCategory != null && visibleSports.contains(_selectedCategory))
+        ? _selectedCategory!
+        : visibleSports.first;
     return SizedBox(
       height: 46,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: SportCategory.values.length,
+        itemCount: visibleSports.length,
         itemBuilder: (context, index) {
-          final cat = SportCategory.values[index];
-          bool isSelected = _selectedCategoryIndex == index;
+          final cat = visibleSports[index];
+          bool isSelected = currentCategory == cat;
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategoryIndex = index),
+            onTap: () => setState(() => _selectedCategory = cat),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 10),

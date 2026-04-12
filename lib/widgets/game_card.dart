@@ -9,6 +9,7 @@ class GameCard extends StatelessWidget {
   final String date;
   final String location;
   final String? communityName;
+  final String? communityLogoUrl;
   final bool isExternal;
   final String price;
   final int currentPlayers;
@@ -24,6 +25,7 @@ class GameCard extends StatelessWidget {
     required this.date,
     required this.location,
     this.communityName,
+    this.communityLogoUrl,
     this.isExternal = false,
     required this.price,
     required this.currentPlayers,
@@ -108,9 +110,22 @@ class GameCard extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(Icons.groups_outlined,
-                    size: 14, color: t.textHint),
-                const SizedBox(width: 4),
+                if (communityLogoUrl != null && communityLogoUrl!.isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      communityLogoUrl!,
+                      width: 20, height: 20,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(Icons.groups_outlined,
+                          size: 16, color: t.textHint),
+                    ),
+                  ),
+                ] else ...[
+                  Icon(Icons.groups_outlined,
+                      size: 16, color: t.textHint),
+                ],
+                const SizedBox(width: 6),
                 Text(
                   communityName!,
                   style: TextStyle(color: t.textHint, fontSize: 12),
@@ -165,15 +180,14 @@ class GameCard extends StatelessWidget {
   Widget _buildTag(String text) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          border: Border.all(color: AppColors.borderLight),
         ),
         child: Text(
           text,
           style: const TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
             fontSize: 12,
           ),
         ),

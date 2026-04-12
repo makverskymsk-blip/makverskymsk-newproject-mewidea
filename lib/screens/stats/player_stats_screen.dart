@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/enums.dart';
+import '../../providers/sport_prefs_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/stats_provider.dart';
 import '../../theme/app_colors.dart';
@@ -250,7 +251,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
       height: 46,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        children: SportCategory.values.map((sport) {
+        children: context.watch<SportPrefsProvider>().visibleSports.map((sport) {
           final isSelected = _selectedSport == sport;
           return GestureDetector(
             onTap: () {
@@ -328,7 +329,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     return switch (sport) {
       SportCategory.football => 'Голы',
       SportCategory.hockey => 'Шайбы',
-      SportCategory.tennis => 'Эйсы',
+      SportCategory.tennis || SportCategory.padel => 'Эйсы',
       SportCategory.esports => 'Убийства',
     };
   }
@@ -337,7 +338,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     return switch (sport) {
       SportCategory.football => 'Ассисты',
       SportCategory.hockey => 'Передачи',
-      SportCategory.tennis => 'Виннеры',
+      SportCategory.tennis || SportCategory.padel => 'Виннеры',
       SportCategory.esports => 'Ассисты',
     };
   }
@@ -444,7 +445,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
     return switch (sport) {
       SportCategory.football => '⚽',
       SportCategory.hockey => '🏒',
-      SportCategory.tennis => '🎾',
+      SportCategory.tennis || SportCategory.padel => '🎾',
       SportCategory.esports => '🎮',
     };
   }

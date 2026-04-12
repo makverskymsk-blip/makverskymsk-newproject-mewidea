@@ -219,7 +219,7 @@ class _EventManageScreenState extends State<EventManageScreen>
             team.name,
             Icons.groups_rounded,
             count: team.playerCount,
-            color: Color(team.colorValue),
+            color: AppColors.primary,
           ),
           const SizedBox(height: 10),
           if (team.playerIds.isEmpty)
@@ -228,7 +228,7 @@ class _EventManageScreenState extends State<EventManageScreen>
               child: Center(
                 child: Text('Нет игроков',
                     style: TextStyle(
-                        color: Color(team.colorValue).withValues(alpha: 0.5),
+                        color: AppColors.primary.withValues(alpha: 0.5),
                         fontSize: 12)),
               ),
             )
@@ -240,7 +240,7 @@ class _EventManageScreenState extends State<EventManageScreen>
               return _playerTile(
                 name,
                 e.value,
-                teamColor: Color(team.colorValue),
+                teamColor: AppColors.primary,
                 teamName: team.name,
               );
             }),
@@ -310,7 +310,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   'Добавить команду',
                   Icons.group_add_rounded,
                   AppColors.primary,
-                  () => prov.addEventTeam(widget.matchId),
+                  () => _showAddTeamDialog(prov),
                 ),
               ),
             if (match.eventTeams.length < 5 &&
@@ -347,7 +347,7 @@ class _EventManageScreenState extends State<EventManageScreen>
 
   Widget _teamCard(
       SportMatch match, EventTeam team, int index, MatchesProvider prov) {
-    final color = Color(team.colorValue);
+    final color = AppColors.primary;
     final unassigned = match.unassignedPlayers;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
     final isCaptain = currentUserId != null && team.isCaptain(currentUserId);
@@ -620,7 +620,7 @@ class _EventManageScreenState extends State<EventManageScreen>
 
   void _showSelectCaptainDialog(
       SportMatch match, EventTeam team, MatchesProvider prov) {
-    final color = Color(team.colorValue);
+    final color = AppColors.primary;
     // Only show players who are NOT already captains
     final candidates = <MapEntry<String, String>>[];
     for (int i = 0; i < team.playerIds.length; i++) {
@@ -723,10 +723,85 @@ class _EventManageScreenState extends State<EventManageScreen>
     );
   }
 
+  void _showAddTeamDialog(MatchesProvider prov) {
+    final controller = TextEditingController();
+    final t = AppColors.of(context);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: t.dialogBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.group_add_rounded,
+                  color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text('Новая команда',
+                style: TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.w700, color: t.textPrimary)),
+          ],
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          style: TextStyle(color: t.textPrimary, fontWeight: FontWeight.w600),
+          decoration: InputDecoration(
+            hintText: 'Например: Локомотив',
+            hintStyle: TextStyle(color: t.textHint),
+            filled: true,
+            fillColor: t.surfaceBg,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              prov.addEventTeam(widget.matchId, name: value);
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Отмена', style: TextStyle(color: t.textHint)),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                prov.addEventTeam(widget.matchId, name: name);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Добавить',
+                style: TextStyle(
+                  color: AppColors.primary, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddPlayerDialog(
       SportMatch match, EventTeam team, MatchesProvider prov) {
     final unassigned = match.unassignedPlayers;
-    final color = Color(team.colorValue);
+    final color = AppColors.primary;
 
     showModalBottomSheet(
       context: context,
@@ -860,8 +935,8 @@ class _EventManageScreenState extends State<EventManageScreen>
 
   Widget _innerMatchTile(InnerMatch im, EventTeam t1, EventTeam t2,
       int number, SportMatch match, MatchesProvider prov) {
-    final c1 = Color(t1.colorValue);
-    final c2 = Color(t2.colorValue);
+    final c1 = AppColors.primary;
+    final c2 = AppColors.primary;
 
     // Use live event scores
     final eventsProv = context.watch<MatchEventsProvider>();
@@ -1021,20 +1096,20 @@ class _EventManageScreenState extends State<EventManageScreen>
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Color(t1.colorValue),
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(t1.name,
                         style: TextStyle(
-                            color: Color(t1.colorValue),
+                            color: AppColors.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 10),
                     _scoreCounter(
                       s1,
-                      Color(t1.colorValue),
+                      AppColors.primary,
                       (v) => setDialogState(() => s1 = v),
                     ),
                   ],
@@ -1050,20 +1125,20 @@ class _EventManageScreenState extends State<EventManageScreen>
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Color(t2.colorValue),
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(t2.name,
                         style: TextStyle(
-                            color: Color(t2.colorValue),
+                            color: AppColors.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 10),
                     _scoreCounter(
                       s2,
-                      Color(t2.colorValue),
+                      AppColors.primary,
                       (v) => setDialogState(() => s2 = v),
                     ),
                   ],
@@ -1171,7 +1246,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                     final team = e.value;
                     final idx = e.key;
                     final isSelected = t1 == idx || t2 == idx;
-                    final color = Color(team.colorValue);
+                    final color = AppColors.primary;
 
                     return GestureDetector(
                       onTap: () => setDialogState(() {
@@ -1283,7 +1358,7 @@ class _EventManageScreenState extends State<EventManageScreen>
           // Rows
           ...standings.asMap().entries.map((e) {
             final s = e.value;
-            final color = Color(s.colorValue);
+            final color = AppColors.primary;
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
@@ -1475,7 +1550,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             const SizedBox(height: 16),
             ...match.eventTeams.map((t) {
-              final color = Color(t.colorValue);
+              final color = AppColors.primary;
               final canRateThis = isAdmin && !t.ratingsSubmitted && t.playerIds.isNotEmpty;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),

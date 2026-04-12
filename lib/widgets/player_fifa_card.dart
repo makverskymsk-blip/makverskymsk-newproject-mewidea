@@ -398,7 +398,8 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
     switch (sport) {
       case SportCategory.football: return Icons.sports_soccer_rounded;
       case SportCategory.hockey: return Icons.sports_hockey_rounded;
-      case SportCategory.tennis: return Icons.sports_tennis_rounded;
+      case SportCategory.tennis:
+      case SportCategory.padel: return Icons.sports_tennis_rounded;
       case SportCategory.esports: return Icons.sports_esports_rounded;
     }
   }

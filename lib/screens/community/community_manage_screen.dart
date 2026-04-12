@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/enums.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
@@ -61,6 +62,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                   ),
                 ),
 
+
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -96,6 +98,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                 inviteCode: c.inviteCode,
                                 isActive: c.id == active?.id,
                                 isOwner: c.ownerId == auth.uid,
+                                logoUrl: c.logoUrl,
+                                communityId: c.id,
                                 onTap: () {
                                   communityProv.setActiveCommunity(c);
                                   Navigator.pop(context);
@@ -105,80 +109,27 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                         c.ownerId == auth.uid, auth, communityProv),
                               )),
 
-                        const SizedBox(height: 32),
-                        Divider(
-                            color: AppColors.borderLight.withValues(alpha: 0.5)),
-                        const SizedBox(height: 24),
-
-                        // Actions
-                        const Text(
-                          'Действия',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        GlassButton(
-                          text: 'Создать сообщество',
-                          icon: Icons.add_rounded,
-                          color: AppColors.primary,
-                          onPressed: () =>
-                              _showCreateDialog(context, auth, communityProv),
-                        ),
-                        const SizedBox(height: 12),
-                        GlassButton(
-                          text: 'Вступить по коду',
-                          icon: Icons.login_rounded,
-                          color: AppColors.accent,
-                          onPressed: () =>
-                              _showJoinDialog(context, auth, communityProv),
-                        ),
-
-                        // Navigation to Members & Subscription (only if active community exists)
+                        // Bank card + members (only if active community exists)
                         if (active != null) ...[
-                          const SizedBox(height: 32),
-                          Divider(
-                              color: AppColors.borderLight.withValues(alpha: 0.5)),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Сообщество',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Community bank balance card
-                          if (active.isAdmin(auth.uid ?? ''))
-                            _buildBankCard(active.bankBalance,
-                                communityProv, auth),
-                          if (active.isAdmin(auth.uid ?? ''))
+                          // Bank card for admins
+                          if (active.isAdmin(auth.uid ?? '')) ...[
                             const SizedBox(height: 16),
+                            _buildBankCard(active.bankBalance, communityProv, auth),
+                          ],
 
-                          GlassButton(
-                            text: 'Участники',
-                            icon: Icons.people_alt_rounded,
-                            color: AppColors.primaryLight,
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const MembersScreen()),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          GlassButton(
-                            text: 'Абонемент',
-                            icon: Icons.card_membership_rounded,
-                            color: AppColors.accent,
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const SubscriptionScreen()),
+                          const SizedBox(height: 20),
+
+                          // ── Horizontal tab bar ──
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _tabChip(Icons.people_alt_rounded, 'Участники',
+                                    () => Navigator.push(context,
+                                        MaterialPageRoute(builder: (_) => const MembersScreen()))),
+                                const SizedBox(width: 10),
+                                // Future tabs will go here
+                              ],
                             ),
                           ),
                         ],
@@ -196,6 +147,35 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
     );
   }
 
+  Widget _tabChip(IconData icon, String title, VoidCallback onTap) {
+    final t = AppColors.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: t.cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: t.borderLight),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: t.textSecondary, size: 18),
+            const SizedBox(width: 8),
+            Text(title,
+                style: TextStyle(
+                    color: t.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(width: 6),
+            Icon(Icons.chevron_right_rounded, color: t.borderLight, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _communityTile(
     String name,
     String sport,
@@ -205,6 +185,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
     required bool isOwner,
     required VoidCallback onTap,
     required VoidCallback onLeave,
+    String? logoUrl,
+    required String communityId,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -230,18 +212,52 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isActive
-                    ? AppColors.primary.withValues(alpha: 0.15)
-                    : AppColors.of(context).borderLight.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.groups_rounded,
-                color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+            // Logo / avatar
+            GestureDetector(
+              onTap: isOwner ? () => _pickAndUploadLogo(communityId) : null,
+              child: Stack(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : AppColors.of(context).borderLight.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: logoUrl != null && logoUrl.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.network(
+                              logoUrl,
+                              width: 48, height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Icon(
+                                Icons.groups_rounded,
+                                color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+                              ),
+                            ),
+                          )
+                        : Icon(
+                            Icons.groups_rounded,
+                            color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+                          ),
+                  ),
+                  if (isOwner)
+                    Positioned(
+                      right: 0, bottom: 0,
+                      child: Container(
+                        width: 16, height: 16,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.of(context).cardBg, width: 1.5),
+                        ),
+                        child: const Icon(Icons.camera_alt, size: 8, color: Colors.white),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 14),
@@ -337,6 +353,34 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         ),
       ),
     );
+  }
+  Future<void> _pickAndUploadLogo(String communityId) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 80);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      final validExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Загрузка логотипа...'), duration: Duration(seconds: 2)),
+      );
+
+      final prov = context.read<CommunityProvider>();
+      final ok = await prov.uploadLogo(communityId, bytes, validExt);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok ? 'Логотип обновлён!' : 'Ошибка загрузки'),
+          backgroundColor: ok ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      debugPrint('LOGO PICK ERROR: $e');
+    }
   }
 
   void _confirmLeave(
@@ -601,150 +645,183 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
   Widget _buildBankCard(double bankBalance,
       CommunityProvider communityProv, AuthProvider auth) {
     return GlassCard(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF00D4AA), Color(0xFF00B894)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.account_balance_wallet_rounded,
-                    color: Colors.white, size: 20),
+                    color: Colors.white, size: 16),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Касса сообщества',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Касса сообщества',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              // Subscription button in header
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SubscriptionScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.card_membership_rounded,
+                          color: AppColors.accent, size: 14),
+                      SizedBox(width: 4),
+                      Text('Абонемент',
+                          style: TextStyle(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Payment tab button
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const MembersScreen(initialTab: 1)),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.2)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.payments_rounded,
+                          color: AppColors.error, size: 14),
+                      SizedBox(width: 4),
+                      Text('Оплата',
+                          style: TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11)),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
 
-          // Balance display
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  bankBalance >= 0
-                      ? AppColors.accent.withValues(alpha: 0.12)
-                      : AppColors.error.withValues(alpha: 0.12),
-                  AppColors.of(context).surfaceBg,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: bankBalance >= 0
-                    ? AppColors.accent.withValues(alpha: 0.15)
-                    : AppColors.error.withValues(alpha: 0.15),
-              ),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  'Текущий баланс',
-                  style: TextStyle(
-                    color: AppColors.textHint,
-                    fontSize: 11,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${bankBalance.toInt()} ₽',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: bankBalance >= 0
-                        ? AppColors.accent
-                        : AppColors.error,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Action buttons
+          // Compact balance + buttons row
           Row(
             children: [
+              // Balance
               Expanded(
-                child: GestureDetector(
-                  onTap: () => _showBankBalanceDialog(
-                    isTopUp: true,
-                    communityProv: communityProv,
-                    auth: auth,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.25)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_circle_outline_rounded,
-                            color: AppColors.accent, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Пополнить',
-                          style: TextStyle(
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        bankBalance >= 0
+                            ? AppColors.accent.withValues(alpha: 0.12)
+                            : AppColors.error.withValues(alpha: 0.12),
+                        AppColors.of(context).surfaceBg,
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: bankBalance >= 0
+                          ? AppColors.accent.withValues(alpha: 0.15)
+                          : AppColors.error.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Баланс',
+                        style: TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 10,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${bankBalance.toInt()} ₽',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: bankBalance >= 0
+                              ? AppColors.accent
+                              : AppColors.error,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _showBankBalanceDialog(
-                    isTopUp: false,
-                    communityProv: communityProv,
-                    auth: auth,
+              const SizedBox(width: 8),
+              // Top up
+              GestureDetector(
+                onTap: () => _showBankBalanceDialog(
+                  isTopUp: true,
+                  communityProv: communityProv,
+                  auth: auth,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.25)),
                   ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.2)),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.remove_circle_outline_rounded,
-                            color: AppColors.error, size: 18),
-                        SizedBox(width: 6),
-                        Text(
-                          'Списать',
-                          style: TextStyle(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: const Icon(Icons.add_circle_outline_rounded,
+                      color: AppColors.accent, size: 20),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Withdraw
+              GestureDetector(
+                onTap: () => _showBankBalanceDialog(
+                  isTopUp: false,
+                  communityProv: communityProv,
+                  auth: auth,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.2)),
                   ),
+                  child: const Icon(Icons.remove_circle_outline_rounded,
+                      color: AppColors.error, size: 20),
                 ),
               ),
             ],

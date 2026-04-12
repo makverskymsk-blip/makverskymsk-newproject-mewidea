@@ -251,6 +251,58 @@ class Achievements {
     ),
   ];
 
+  // ========== ПАДЛ ==========
+  static const List<Achievement> padel = [
+    Achievement(
+      id: 'pd_first_serve',
+      name: 'Первая подача',
+      description: 'Сыграйте свой первый матч по падлу',
+      icon: Icons.sports_tennis,
+      rarity: AchievementRarity.common,
+      sport: SportCategory.padel,
+    ),
+    Achievement(
+      id: 'pd_smash_king',
+      name: 'Смэш-король',
+      description: 'Выполните 10 смэшей за матч',
+      icon: Icons.flash_on_rounded,
+      rarity: AchievementRarity.rare,
+      sport: SportCategory.padel,
+    ),
+    Achievement(
+      id: 'pd_wall_master',
+      name: 'Мастер стенки',
+      description: 'Выиграйте розыгрыш от стеклянной стены 5 раз',
+      icon: Icons.dashboard_rounded,
+      rarity: AchievementRarity.rare,
+      sport: SportCategory.padel,
+    ),
+    Achievement(
+      id: 'pd_golden_point',
+      name: 'Золотой пойнт',
+      description: 'Выиграйте решающий гейм с 0-40',
+      icon: Icons.emoji_events_rounded,
+      rarity: AchievementRarity.epic,
+      sport: SportCategory.padel,
+    ),
+    Achievement(
+      id: 'pd_duo_master',
+      name: 'Идеальный дуэт',
+      description: 'Выиграйте 10 матчей с одним и тем же партнером',
+      icon: Icons.handshake_rounded,
+      rarity: AchievementRarity.epic,
+      sport: SportCategory.padel,
+    ),
+    Achievement(
+      id: 'pd_padel_legend',
+      name: 'Легенда падла',
+      description: 'Выиграйте 50 матчей по падлу',
+      icon: Icons.diamond_rounded,
+      rarity: AchievementRarity.legendary,
+      sport: SportCategory.padel,
+    ),
+  ];
+
   // ========== КИБЕРСПОРТ ==========
   static const List<Achievement> esports = [
     Achievement(
@@ -309,6 +361,7 @@ class Achievements {
       SportCategory.football => football,
       SportCategory.hockey => hockey,
       SportCategory.tennis => tennis,
+      SportCategory.padel => padel,
       SportCategory.esports => esports,
     };
     return [...general, ...sportSpecific];
@@ -319,5 +372,5 @@ class Achievements {
 
   /// Все достижения вообще
   static List<Achievement> get all =>
-      [...general, ...football, ...hockey, ...tennis, ...esports];
+      [...general, ...football, ...hockey, ...tennis, ...padel, ...esports];
 }

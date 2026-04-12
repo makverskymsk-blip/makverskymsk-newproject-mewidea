@@ -35,6 +35,33 @@ class SupabaseService {
     }
   }
 
+  Future<String?> uploadCommunityLogo(String communityId, Uint8List bytes, String ext) async {
+    try {
+      final path = 'community_logos/$communityId.$ext';
+      await _supabase.storage.from('avatars').uploadBinary(
+        path,
+        bytes,
+        fileOptions: FileOptions(
+          contentType: 'image/$ext',
+          upsert: true,
+        ),
+      );
+      final url = _supabase.storage.from('avatars').getPublicUrl(path);
+      final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
+      debugPrint('LOGO: Uploaded to $publicUrl');
+      return publicUrl;
+    } catch (e) {
+      debugPrint('LOGO ERROR: $e');
+      return null;
+    }
+  }
+
+  Future<void> updateCommunityLogoUrl(String communityId, String logoUrl) async {
+    await _supabase.from('communities').update({
+      'logo_url': logoUrl,
+    }).eq('id', communityId);
+  }
+
   // ===== USERS =====
 
   Future<void> createUser(UserProfile user) async {
@@ -281,7 +308,63 @@ class SupabaseService {
       monthlyRent: (d['monthly_rent'] ?? 100000).toDouble(),
       singleGamePrice: (d['single_game_price'] ?? 1200).toDouble(),
       bankBalance: (d['bank_balance'] ?? 0).toDouble(),
+      logoUrl: d['logo_url']?.toString(),
     );
+  }
+
+  // ===== COMMUNITY DIRECTORY =====
+
+  /// Get ALL communities for the directory
+  Future<List<Community>> getAllCommunities() async {
+    final response = await _supabase
+        .from('communities')
+        .select()
+        .order('name');
+    return (response as List).map((d) => _communityFromMap(d)).toList();
+  }
+
+  // ===== JOIN REQUESTS =====
+
+  /// Create a join request
+  Future<void> createJoinRequest(String communityId, String userId) async {
+    await _supabase.from('join_requests').upsert({
+      'user_id': userId,
+      'community_id': communityId,
+      'status': 'pending',
+    }, onConflict: 'user_id,community_id');
+  }
+
+  /// Get join requests for a community (for admins)
+  Future<List<Map<String, dynamic>>> getJoinRequestsForCommunity(String communityId) async {
+    final response = await _supabase
+        .from('join_requests')
+        .select()
+        .eq('community_id', communityId)
+        .eq('status', 'pending')
+        .order('created_at');
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Get user's own join requests
+  Future<List<Map<String, dynamic>>> getUserJoinRequests(String userId) async {
+    final response = await _supabase
+        .from('join_requests')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at');
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Update join request status (accept/reject)
+  Future<void> updateJoinRequestStatus(String requestId, String status) async {
+    await _supabase.from('join_requests').update({
+      'status': status,
+    }).eq('id', requestId);
+  }
+
+  /// Delete a join request
+  Future<void> deleteJoinRequest(String requestId) async {
+    await _supabase.from('join_requests').delete().eq('id', requestId);
   }
 
   // ===== SUBSCRIPTIONS =====
@@ -301,12 +384,20 @@ class SupabaseService {
       'payment_deadline': sub.paymentDeadline?.millisecondsSinceEpoch,
     };
 
-    // If sub.id looks like a real UUID, include it for update
+    // If sub.id is a real UUID, the row already exists → use UPDATE
+    // (UPDATE policy allows all community members, INSERT only admins)
     final isRealUuid = sub.id.length == 36 && sub.id.contains('-');
     if (isRealUuid) {
-      map['id'] = sub.id;
+      final result = await _supabase
+          .from('subscriptions')
+          .update(map)
+          .eq('id', sub.id)
+          .select()
+          .single();
+      return result['id'].toString();
     }
 
+    // New subscription → use upsert (requires admin INSERT policy)
     final result = await _supabase
         .from('subscriptions')
         .upsert(map, onConflict: 'community_id,month,year')
@@ -372,6 +463,10 @@ class SupabaseService {
       if (filtered.isEmpty) return null;
       return MonthlySubscription.fromMap(filtered.first['id'].toString(), filtered.first);
     });
+  }
+
+  Future<void> deleteSubscription(String subscriptionId) async {
+    await _supabase.from('subscriptions').delete().eq('id', subscriptionId);
   }
 
   // ===== MATCHES =====

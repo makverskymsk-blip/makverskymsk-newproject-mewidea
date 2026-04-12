@@ -72,6 +72,7 @@ flutter:
     - assets/images/back2.jpg
     - assets/images/hockey_back.jpg
     - assets/images/tennis_back.jpg
+    - assets/images/padel_back.jpg
     - assets/images/esports_back.jpg
     - assets/images/splash_bg.jpg
     - assets/images/logo.png

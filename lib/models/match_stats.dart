@@ -302,6 +302,7 @@ SportMetrics buildSportMetrics(PlayerOverallStats stats, SportCategory sport) {
     case SportCategory.hockey:
       return HockeyMetrics.fromOverall(stats);
     case SportCategory.tennis:
+    case SportCategory.padel:
       return TennisMetrics.fromOverall(stats);
     case SportCategory.esports:
       return EsportsMetrics.fromOverall(stats);
