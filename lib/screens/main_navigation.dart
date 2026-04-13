@@ -78,7 +78,7 @@ class _MainNavigationState extends State<MainNavigation> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
               child: Row(
@@ -110,7 +110,7 @@ class _MainNavigationState extends State<MainNavigation> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
             ),
             child: const Text('Вступить'),
           ),

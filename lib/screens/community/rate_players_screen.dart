@@ -158,7 +158,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: AppColors.borderLight.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: const Icon(Icons.arrow_back_ios_new_rounded,
                           size: 18),
@@ -186,7 +186,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -230,7 +230,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(100)),
                     elevation: 0,
                   ),
                   child: _saving
@@ -344,7 +344,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                     color: isMvp
                         ? const Color(0xFFFF6D00).withValues(alpha: 0.1)
                         : Colors.grey.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                       color: isMvp
                           ? const Color(0xFFFF6D00).withValues(alpha: 0.4)
@@ -451,7 +451,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Text('$emoji $count', style: const TextStyle(fontSize: 12)),
     );
@@ -482,7 +482,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
           color: Colors.grey.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: AppColors.borderLight.withValues(alpha: 0.5)),
         ),
         child: Row(

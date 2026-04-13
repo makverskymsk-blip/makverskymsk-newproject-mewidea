@@ -295,7 +295,7 @@ class _CommunityChatScreenState extends State<CommunityChatScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: AppColors.of(context).cardBg,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: Text(
             msg.content,

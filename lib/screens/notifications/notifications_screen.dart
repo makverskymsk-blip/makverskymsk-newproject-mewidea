@@ -128,7 +128,7 @@ class _NotificationTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: n.type.color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Icon(n.type.icon, color: n.type.color, size: 20),
               ),

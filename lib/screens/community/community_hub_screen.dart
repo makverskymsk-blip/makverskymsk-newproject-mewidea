@@ -164,7 +164,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.error.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(_error!,
                             style: const TextStyle(color: AppColors.error, fontSize: 13),
@@ -178,24 +178,40 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                     SizedBox(
                       width: double.infinity,
                       height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : (_isCreate ? _create : _join),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isLoading ? null : (_isCreate ? _create : _join),
+                          borderRadius: BorderRadius.circular(100),
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: _isLoading ? null : AppColors.primaryGradient,
+                              color: _isLoading ? AppColors.primary.withValues(alpha: 0.3) : null,
+                              borderRadius: BorderRadius.circular(100),
+                              boxShadow: _isLoading ? null : [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                  spreadRadius: -2,
+                                ),
+                              ],
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22, height: 22,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white))
+                                : Text(
+                                    _isCreate ? 'Создать сообщество' : 'Присоединиться',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16),
+                                  ),
+                          ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 22, height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : Text(
-                                _isCreate ? 'Создать сообщество' : 'Присоединиться',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 16),
-                              ),
                       ),
                     ),
                   ],

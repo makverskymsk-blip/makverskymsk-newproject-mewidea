@@ -294,7 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Icon(Icons.swap_horiz_rounded,
                       color: AppColors.primary, size: 20),
@@ -346,11 +346,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: isActive
                                 ? AppColors.primary.withValues(alpha: 0.12)
                                 : t.borderLight.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: c.logoUrl != null && c.logoUrl!.isNotEmpty
                               ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(100),
                                   child: Image.network(
                                     c.logoUrl!,
                                     width: 40, height: 40,
@@ -443,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   gradient: isSelected ? AppColors.primaryGradient : null,
                   color: isSelected ? null : t.cardBg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                   border: Border.all(
                     color: isSelected ? Colors.transparent : t.borderLight,
                   ),
@@ -494,7 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: t.surfaceBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(color: t.borderLight),
               ),
               child: Icon(Icons.tune_rounded, size: 14, color: t.textHint),
@@ -514,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )
                     : null,
                 color: _isTrainingMode ? null : t.cardBg,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: _isTrainingMode ? Colors.transparent : t.borderLight,
                 ),
@@ -598,7 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   gradient: const LinearGradient(
                     colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)],
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
                   'LVL $level',
@@ -1176,8 +1176,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: const Icon(Icons.history_rounded,
                     size: 16, color: AppColors.primary),
@@ -1190,10 +1191,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF43A047).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(100),
                   border: Border.all(
-                      color: const Color(0xFF43A047).withValues(alpha: 0.15)),
+                      color: const Color(0xFF43A047).withValues(alpha: 0.35)),
                 ),
                 child: Text(
                   '${wins}В ${draws}Н ${losses}П',
@@ -1231,7 +1232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: t.cardBg.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
                           color: t.isDark
@@ -1274,9 +1275,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           height: 28,
                           decoration: BoxDecoration(
                             color: m.myColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: m.myColor.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: Center(
                             child: Text(
@@ -1335,8 +1334,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: resultColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: Text(
                             '${m.myScore}:${m.oppScore}',
@@ -1357,7 +1356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Positioned.fill(
                       child: Container(
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                           gradient: RadialGradient(
                             center: Alignment.topLeft,
                             radius: 1.5,
@@ -1435,13 +1434,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: AppColors.of(context).textSecondary.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '$unlockedCount / ${achievements.length}',
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: AppColors.of(context).textSecondary,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -1538,7 +1538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               color: (balance >= 0 ? AppColors.accent : AppColors.error)
                   .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Icon(
               Icons.account_balance_wallet_rounded,
@@ -1587,12 +1587,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 42, height: 42,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: community.activeCommunity!.logoUrl != null &&
                           community.activeCommunity!.logoUrl!.isNotEmpty
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(100),
                           child: Image.network(
                             community.activeCommunity!.logoUrl!,
                             width: 42, height: 42,
@@ -1627,10 +1627,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2)),
+                          color: AppColors.primary.withValues(alpha: 0.35)),
                     ),
                     child: const Icon(Icons.people_alt_rounded,
                         color: AppColors.primary, size: 16),
@@ -1659,7 +1659,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: t.borderLight.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: Row(
                       children: [
@@ -1751,7 +1751,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1921,7 +1921,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               selected: isSelected,
               selectedTileColor: color.withValues(alpha: 0.05),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               title: Text(name,
                   style: TextStyle(
@@ -1933,7 +1933,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: isSelected ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                   border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
                 child: Column(
@@ -1991,11 +1991,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     labelText: 'Вид спорта',
                     labelStyle: TextStyle(color: AppColors.of(context).textHint),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: BorderSide(color: AppColors.of(context).borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: const BorderSide(color: AppColors.primary),
                     ),
                   ),
@@ -2132,11 +2132,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         labelStyle: TextStyle(color: t.textHint),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(100),
           borderSide: BorderSide(color: t.borderLight),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(100),
           borderSide: const BorderSide(color: AppColors.primary),
         ),
         filled: true,
@@ -2326,7 +2326,7 @@ class _DistanceSheetState extends State<_DistanceSheet> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: t.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: t.borderLight.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -2366,15 +2366,15 @@ class _DistanceSheetState extends State<_DistanceSheet> {
                 hintStyle: TextStyle(color: t.textHint, fontSize: 12),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                   borderSide: BorderSide(color: t.borderLight),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                   borderSide: BorderSide(color: t.borderLight),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                   borderSide: const BorderSide(color: Color(0xFF26A69A)),
                 ),
                 filled: true,
@@ -2412,7 +2412,7 @@ class _DistanceSheetState extends State<_DistanceSheet> {
                 color: saved > 0
                     ? const Color(0xFF26A69A).withValues(alpha: 0.1)
                     : AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(
                 saved > 0 ? Icons.check_rounded : Icons.save_rounded,

@@ -120,7 +120,7 @@ class _TrainingAnalyticsTabState extends State<TrainingAnalyticsTab> {
       IconData icon, Color accent) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -148,14 +148,14 @@ class _TrainingAnalyticsTabState extends State<TrainingAnalyticsTab> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(icon, color: accent, size: 16),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(value,
                 style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -424,7 +424,7 @@ class _TrainingAnalyticsTabState extends State<TrainingAnalyticsTab> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.15)),
       ),
       child: Column(
@@ -887,7 +887,7 @@ class _TrainingAnalyticsTabState extends State<TrainingAnalyticsTab> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color(0xFFFFAB00).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Icon(Icons.emoji_events_rounded,
                 color: Color(0xFFFFAB00), size: 24),
@@ -925,7 +925,7 @@ class _TrainingAnalyticsTabState extends State<TrainingAnalyticsTab> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFFF6B35).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Text(
               '${best.totalTonnage.toStringAsFixed(0)} кг',

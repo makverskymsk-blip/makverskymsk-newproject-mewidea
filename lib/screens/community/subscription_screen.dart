@@ -109,7 +109,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.borderLight.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                             child: const Icon(
                                 Icons.arrow_back_ios_new_rounded,
@@ -158,7 +158,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.borderLight.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(100),
                               border: Border.all(
                                 color: AppColors.borderLight),
                             ),
@@ -177,7 +177,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   gradient: AppColors.primaryGradient,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
                                 child: const Icon(Icons.add_rounded,
                                     size: 20, color: Colors.white),
@@ -306,7 +306,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 color: isSelected
                     ? null
                     : AppColors.borderLight.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -455,7 +455,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           horizontal: 20, vertical: 14),
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: Column(
                         children: [
@@ -582,7 +582,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Icon(Icons.verified_rounded,
                 color: AppColors.accent, size: 22),
@@ -715,7 +715,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                     color: AppColors.accent.withValues(alpha: 0.15)),
               ),
@@ -778,7 +778,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: AppColors.warning.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                     color: AppColors.warning.withValues(alpha: 0.15)),
               ),
@@ -1006,7 +1006,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               color: bankBalance > 0
                   ? AppColors.accent.withValues(alpha: 0.12)
                   : AppColors.of(context).surfaceBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
               border: Border.all(
                 color: bankBalance > 0
                     ? AppColors.accent.withValues(alpha: 0.3)
@@ -1044,7 +1044,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Row(
               children: [
@@ -1156,12 +1156,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         prefixIcon: const Icon(Icons.savings_rounded,
                             color: AppColors.accent),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(100),
                           borderSide: BorderSide(
                               color: AppColors.of(context).borderLight),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(100),
                           borderSide:
                               const BorderSide(color: AppColors.accent),
                         ),
@@ -1199,7 +1199,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                                         ? AppColors.accent
                                             .withValues(alpha: 0.2)
                                         : AppColors.of(context).chipBg,
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(100),
                                     border: Border.all(
                                       color: previewAmount == amount
                                           ? AppColors.accent
@@ -1228,7 +1228,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.of(context).surfaceBg.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                             color: AppColors.of(context).borderLight.withValues(alpha: 0.5)),
                       ),
@@ -1410,7 +1410,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1445,7 +1445,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.error.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
         ),
         child: const Row(
@@ -1503,7 +1503,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                     color: AppColors.error.withValues(alpha: 0.15)),
               ),
@@ -1599,7 +1599,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Text(
                 '${entries.length} чел.',
@@ -1686,7 +1686,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               height: 32,
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Center(
                 child: Text('${index + 1}',
@@ -1716,7 +1716,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: statusColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1743,7 +1743,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: AppColors.accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Icon(Icons.done_rounded,
                       color: AppColors.accent, size: 16),
@@ -1841,7 +1841,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.error.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Row(
               children: [

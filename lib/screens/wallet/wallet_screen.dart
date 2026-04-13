@@ -88,7 +88,7 @@ class WalletScreen extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Icon(Icons.sports_soccer, color: Colors.white, size: 22),
           ),
@@ -150,11 +150,11 @@ class WalletScreen extends StatelessWidget {
             width: 48, height: 48,
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: logoUrl != null && logoUrl.isNotEmpty
                 ? ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                     child: Image.network(
                       logoUrl,
                       width: 48, height: 48,
@@ -208,7 +208,7 @@ class WalletScreen extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: (isIncome ? AppColors.success : AppColors.error).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Icon(
               isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
@@ -270,7 +270,7 @@ class WalletScreen extends StatelessWidget {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
               ),
               onPressed: () {
                 final amount = double.tryParse(ctrl.text);

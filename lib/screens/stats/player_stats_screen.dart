@@ -53,7 +53,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: AppColors.borderLight.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: const Icon(
                               Icons.arrow_back_ios_new_rounded,
@@ -190,7 +190,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                         decoration: BoxDecoration(
                           color:
                               AppColors.primaryLight.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
                           '$unlockedCount / $totalCount',
@@ -222,7 +222,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         child: Icon(Icons.history_rounded,
                             size: 16, color: AppColors.primary),
@@ -242,7 +242,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                           color: AppColors.of(context)
                               .surfaceBg
                               .withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(
                               color: AppColors.of(context).borderLight),
                         ),
@@ -321,7 +321,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                 gradient:
                     isSelected ? AppColors.primaryGradient : null,
                 color: isSelected ? null : t.cardBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -599,7 +599,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: ratingColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Center(
                     child: Text(

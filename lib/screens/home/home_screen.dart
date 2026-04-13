@@ -222,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     if (communityLogoUrl != null && communityLogoUrl.isNotEmpty) ...[
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(100),
                         child: Image.network(
                           communityLogoUrl,
                           width: 20, height: 20,
@@ -251,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: (balance < 0 ? AppColors.error : AppColors.accent).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
             border: Border.all(color: (balance < 0 ? AppColors.error : AppColors.accent).withValues(alpha: 0.3)),
           ),
           child: Text(
@@ -305,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: accentColor.withValues(alpha: 0.25)),
       ),
           child: Row(
@@ -314,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Icon(Icons.card_membership, color: accentColor, size: 16),
               ),
@@ -339,7 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -389,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 gradient: isSelected ? AppColors.primaryGradient : null,
                 color: isSelected ? null : t.cardBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected ? Colors.transparent : t.borderLight,
                 ),

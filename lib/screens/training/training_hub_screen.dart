@@ -70,15 +70,15 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
               filled: true,
               fillColor: t.surfaceBg,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(100),
                 borderSide: BorderSide(color: t.borderLight),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(100),
                 borderSide: BorderSide(color: t.borderLight),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(100),
                 borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
               ),
             ),
@@ -126,7 +126,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.primary.withValues(alpha: 0.35),
@@ -157,7 +157,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                           horizontal: 16, vertical: 9),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                           color: AppColors.primary.withValues(alpha: 0.3),
                         ),
@@ -215,7 +215,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                                     ? AppColors.primaryGradient
                                     : null,
                                 color: isActive ? null : t.cardBg,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(100),
                                 border: Border.all(
                                   color: isActive
                                       ? Colors.transparent
@@ -488,7 +488,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: const Icon(Icons.library_books_outlined,
                         color: AppColors.primary, size: 20),
@@ -683,7 +683,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(icon, color: AppColors.primary, size: 18),
             ),
@@ -794,7 +794,7 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                   height: 48,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

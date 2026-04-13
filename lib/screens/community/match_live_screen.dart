@@ -88,7 +88,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: t.borderLight.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
             ),
@@ -117,7 +117,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: AppColors.error.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -248,7 +248,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             decoration: BoxDecoration(
                               color: AppColors.accent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(100),
                               border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
                             ),
                             child: const Row(
@@ -309,7 +309,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: action.color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: action.color.withValues(alpha: 0.3)),
         ),
         child: Row(
@@ -581,7 +581,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: t.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: color.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
@@ -600,7 +600,7 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
             width: 36, height: 36,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Center(
               child: Text(event.eventType.emoji, style: const TextStyle(fontSize: 16)),

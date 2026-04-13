@@ -311,7 +311,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                           horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: t.surfaceBg,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(color: t.borderLight),
                       ),
                       child: Row(
@@ -394,7 +394,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                 horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: t.cardBg,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(100),
                               border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
                               boxShadow: [
                                 BoxShadow(
@@ -415,7 +415,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFF6B35)
                                         .withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -609,11 +609,11 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
         filled: true,
         fillColor: t.surfaceBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100),
           borderSide: BorderSide(color: t.borderLight),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100),
           borderSide: BorderSide(color: t.borderLight),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -630,7 +630,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
           gradient: const LinearGradient(
             colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100),
         ),
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
       ),
@@ -805,7 +805,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                       ])
                                     : null,
                                 color: isSelected ? null : t.surfaceBg,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(100),
                                 border: Border.all(
                                   color: isSelected
                                       ? Colors.transparent
@@ -872,7 +872,7 @@ class _ActiveWorkoutScreenState extends State<ActiveWorkoutScreen> {
                                           ? const Color(0xFFFF6B35)
                                               .withValues(alpha: 0.08)
                                           : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(100),
                                       border: isSelected
                                           ? Border.all(
                                               color: const Color(0xFFFF6B35)

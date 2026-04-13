@@ -171,7 +171,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                           horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         color: AppColors.warning.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                             color: AppColors.warning.withValues(alpha: 0.3)),
                       ),
@@ -231,7 +231,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.of(context).surfaceBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
               border: Border.all(
                   color: AppColors.of(context).borderLight),
             ),
@@ -546,11 +546,12 @@ class _FriendsScreenState extends State<FriendsScreen>
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
                   ),
                   child: Icon(Icons.chat_bubble_outline_rounded,
-                      color: AppColors.primary.withValues(alpha: 0.6), size: 18),
+                      color: AppColors.primary.withValues(alpha: 0.7), size: 18),
                 ),
               ),
               const SizedBox(width: 4),
@@ -602,7 +603,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.warning.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: const Icon(Icons.person_add_rounded,
                         color: AppColors.warning, size: 20),
@@ -628,7 +629,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: t.surfaceBg,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(color: t.borderLight),
                     ),
                     child: Row(

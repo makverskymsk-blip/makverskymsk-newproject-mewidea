@@ -177,7 +177,7 @@ class _BodyHeatmapState extends State<BodyHeatmap>
                                         horizontal: 12, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(100),
                                       border: Border.all(
                                         color: const Color(0xFF2A2A3E),
                                         width: 0.5,
@@ -329,7 +329,7 @@ class _BodyHeatmapState extends State<BodyHeatmap>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             decoration: BoxDecoration(
               color: isSelected ? color.withValues(alpha: 0.12) : t.cardBg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
               border: Border.all(
                 color:
                     isSelected ? color.withValues(alpha: 0.6) : t.borderLight,
@@ -360,7 +360,7 @@ class _BodyHeatmapState extends State<BodyHeatmap>
                         color.withValues(alpha: 0.1),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                       color: color.withValues(alpha: 0.3),
                       width: 1,

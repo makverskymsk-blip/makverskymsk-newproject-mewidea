@@ -149,7 +149,7 @@ class GenderSelectorScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: t.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
@@ -184,8 +184,9 @@ class GenderSelectorScreen extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
               ),
               child: const Icon(Icons.check_rounded,
                   color: AppColors.primary, size: 18),

@@ -59,7 +59,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                         ),
                         child: const Row(
@@ -204,7 +204,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: const Icon(Icons.sports_soccer, color: Colors.white, size: 22),
           ),
@@ -221,10 +221,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget _buildDaySelector(DateTime selectedDate) {
     final t = AppColors.of(context);
     return SizedBox(
-      height: 100,
+      height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _days.length,
         itemBuilder: (context, index) {
           bool isSelected = _selectedDayIndex == index;
@@ -233,12 +233,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             onTap: () => setState(() => _selectedDayIndex = index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              width: 60,
-              margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+              curve: Curves.easeOutCubic,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 gradient: isSelected ? AppColors.primaryGradient : null,
                 color: isSelected ? null : t.cardBg,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -252,44 +253,38 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           offset: const Offset(0, 2),
                         ),
                       ]
-                    : [
-                        BoxShadow(
-                          color: t.isDark
-                              ? Colors.black.withValues(alpha: 0.15)
-                              : Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                    : null,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     Helpers.formatDayOfWeek(day),
                     style: TextStyle(
-                      color: isSelected ? Colors.white : t.textHint,
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.8)
+                          : t.textHint,
                       fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(width: 5),
                   Text(
-                    day.day.toString(),
+                    '${day.day}',
                     style: TextStyle(
                       color: isSelected ? Colors.white : t.textPrimary,
-                      fontSize: 20,
+                      fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(width: 3),
                   Text(
                     _monthsShort[day.month],
                     style: TextStyle(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.7)
                           : t.textHint,
-                      fontSize: 9,
+                      fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -362,7 +357,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             color: isSelected
                                 ? AppColors.primary.withValues(alpha: 0.2)
                                 : t.surfaceBg.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(100),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
@@ -495,12 +490,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () async {
+              GestureDetector(
+                onTap: () async {
                   if (selectedDT == null) return;
                   await matchesProv.addMatch(SportMatch(
                     id: '', // UUID will be generated by Supabase
@@ -515,7 +506,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ));
                   if (ctx.mounted) Navigator.pop(ctx);
                 },
-                child: const Text('Создать', style: TextStyle(color: Colors.white)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Text('Создать', style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  )),
+                ),
               ),
             ],
           ),

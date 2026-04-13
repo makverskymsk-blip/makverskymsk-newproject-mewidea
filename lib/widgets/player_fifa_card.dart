@@ -177,7 +177,7 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
                                   tier.accentColor.withValues(alpha: 0.05),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(100),
                               border: Border.all(
                                   color:
                                       tier.accentColor.withValues(alpha: 0.2)),
@@ -415,7 +415,7 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
           color: highlight
               ? const Color(0xFFFF6D00).withValues(alpha: 0.06)
               : tier.accentColor.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: highlight
                 ? const Color(0xFFFF6D00).withValues(alpha: 0.15)
@@ -464,7 +464,7 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
       decoration: isMain
           ? BoxDecoration(
               color: tier.accentColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                   color: tier.accentColor.withValues(alpha: 0.15)),
             )

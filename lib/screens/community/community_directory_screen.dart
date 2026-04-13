@@ -78,7 +78,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text('${cp.pendingRequestCount}',
                           style: const TextStyle(
@@ -146,14 +146,14 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: t.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           // Logo
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(100),
             child: c.logoUrl != null && c.logoUrl!.isNotEmpty
                 ? Image.network(c.logoUrl!, width: 44, height: 44, fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => _buildPlaceholderLogo(c, t))
@@ -200,7 +200,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
       height: 44,
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Center(
         child: Text(
@@ -222,7 +222,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.success.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(100),
         ),
         child: const Text('Участник',
             style: TextStyle(
@@ -235,7 +235,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: Colors.amber.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
         ),
         child: const Text('Ожидает',
@@ -249,7 +249,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: AppColors.error.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(100),
         ),
         child: const Text('Отклонён',
             style: TextStyle(
@@ -275,7 +275,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(100),
         ),
         child: const Text('Вступить',
             style: TextStyle(
@@ -364,7 +364,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: t.cardBg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(100),
             border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
           ),
           child: Row(

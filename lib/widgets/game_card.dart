@@ -56,19 +56,20 @@ class GameCard extends StatelessWidget {
                 _buildTag(format),
                 if (isExternal) ...[
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                   Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 1),
                     ),
                     child: const Text(
                       'Внешнее',
                       style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                        fontWeight: FontWeight.w600,
                         fontSize: 10,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
@@ -167,17 +168,17 @@ class GameCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: onParticipate,
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    gradient: isUserRegistered
-                        ? null
-                        : AppColors.primaryGradient,
-                    color: isUserRegistered
-                        ? AppColors.error.withValues(alpha: 0.12)
-                        : null,
-                    borderRadius: BorderRadius.circular(14),
+                     borderRadius: BorderRadius.circular(100),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: isUserRegistered
+                          ? null
+                          : AppColors.primaryGradient,
+                      color: isUserRegistered
+                          ? AppColors.error.withValues(alpha: 0.12)
+                          : null,
+                      borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                       color: isUserRegistered
                           ? AppColors.error.withValues(alpha: 0.5)
@@ -234,8 +235,9 @@ class GameCard extends StatelessWidget {
   Widget _buildTag(String text) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.borderLight),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.borderLight, width: 1),
         ),
         child: Text(
           text,

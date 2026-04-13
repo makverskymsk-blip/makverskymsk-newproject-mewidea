@@ -96,11 +96,13 @@ class _MembersScreenState extends State<MembersScreen>
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.borderLight.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: AppColors.of(context).borderLight),
                           ),
-                          child: const Icon(
+                          child: Icon(
                               Icons.arrow_back_ios_new_rounded,
+                              color: AppColors.of(context).textPrimary,
                               size: 18),
                         ),
                       ),
@@ -136,7 +138,7 @@ class _MembersScreenState extends State<MembersScreen>
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AppColors.of(context).cardBg.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: TabBar(
                     controller: _tabController,
@@ -186,7 +188,7 @@ class _MembersScreenState extends State<MembersScreen>
                                     horizontal: 6, vertical: 1),
                                 decoration: BoxDecoration(
                                   color: AppColors.error,
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
                                 child: Text(
                                   '${debtors.length}',
@@ -502,7 +504,7 @@ class _MembersScreenState extends State<MembersScreen>
                     gradient: const LinearGradient(
                       colors: [Color(0xFF00E676), Color(0xFF00C853)],
                     ),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFF00E676).withValues(alpha: 0.3),
@@ -566,7 +568,7 @@ class _MembersScreenState extends State<MembersScreen>
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: AppColors.of(context).surfaceBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(100),
                   border: Border.all(
                       color: AppColors.borderLight.withValues(alpha: 0.5)),
                 ),
@@ -747,7 +749,7 @@ class _MembersScreenState extends State<MembersScreen>
       child: Container(
       margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         color: paidBg,
         border: Border.all(color: paidBorder, width: 0.8),
       ),
@@ -906,13 +908,11 @@ class _MembersScreenState extends State<MembersScreen>
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 5, vertical: 1),
                               decoration: BoxDecoration(
-                                color: isCurrent
-                                    ? AppColors.accent.withValues(alpha: 0.08)
-                                    : Colors.grey.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(4),
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(100),
                                 border: Border.all(
                                   color: isCurrent
-                                      ? AppColors.accent.withValues(alpha: 0.25)
+                                      ? AppColors.accent.withValues(alpha: 0.35)
                                       : AppColors.borderLight,
                                   width: 0.8,
                                 ),
@@ -961,7 +961,7 @@ class _MembersScreenState extends State<MembersScreen>
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 color: t.dialogBg,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(100),
                   side: BorderSide(color: t.borderLight),
                 ),
                 itemBuilder: (ctx) => [
@@ -1186,13 +1186,13 @@ class _MembersScreenState extends State<MembersScreen>
                   suffixStyle: TextStyle(
                       color: color, fontWeight: FontWeight.w700),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                     borderSide: BorderSide(
                         color:
                             AppColors.borderLight),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                     borderSide: BorderSide(color: color),
                   ),
                   filled: true,

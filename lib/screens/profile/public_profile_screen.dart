@@ -465,7 +465,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 color: isSelected
                     ? null
                     : AppColors.of(context).cardBg,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
@@ -581,7 +581,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: const Icon(Icons.history_rounded,
                     size: 16, color: AppColors.primary),
@@ -603,7 +603,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     color: AppColors.of(context)
                         .surfaceBg
                         .withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                         color: AppColors.of(context).borderLight),
                   ),
@@ -663,7 +663,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: Text(value,
               style: TextStyle(
@@ -729,7 +729,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
                         color: AppColors.warning.withValues(alpha: 0.25)),
                   ),

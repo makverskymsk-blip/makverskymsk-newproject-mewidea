@@ -82,7 +82,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: AppColors.borderLight.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: const Icon(
                               Icons.arrow_back_ios_new_rounded,
@@ -118,7 +118,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                                 horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
                               color: AppColors.accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(100),
                               border: Border.all(
                                   color: AppColors.accent
                                       .withValues(alpha: 0.3)),
@@ -143,7 +143,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: AppColors.of(context).cardBg.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: TabBar(
                     controller: _tabCtrl,
@@ -267,7 +267,7 @@ class _EventManageScreenState extends State<EventManageScreen>
               decoration: BoxDecoration(
                 color: (teamColor ?? AppColors.textHint)
                     .withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(Icons.person_rounded,
                   size: 16,
@@ -410,7 +410,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: Icon(Icons.person_add_rounded,
                           color: color, size: 16),
@@ -426,7 +426,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: AppColors.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: const Icon(Icons.delete_outline_rounded,
                           color: AppColors.error, size: 16),
@@ -449,7 +449,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6D00).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.25)),
                     ),
                     child: Row(
@@ -486,7 +486,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFF6D00).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.15)),
                   ),
                   child: Row(
@@ -526,7 +526,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                           horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                             color: isCpt
                                 ? const Color(0xFFFF6D00).withValues(alpha: 0.4)
@@ -570,7 +570,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -596,7 +596,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -687,7 +687,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF6D00).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                             color: const Color(0xFFFF6D00).withValues(alpha: 0.15)),
                       ),
@@ -738,7 +738,7 @@ class _EventManageScreenState extends State<EventManageScreen>
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: const Icon(Icons.group_add_rounded,
                   color: AppColors.primary, size: 20),
@@ -760,11 +760,11 @@ class _EventManageScreenState extends State<EventManageScreen>
             filled: true,
             fillColor: t.surfaceBg,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(100),
               borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -855,7 +855,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(
                               color: color.withValues(alpha: 0.15)),
                         ),
@@ -1030,7 +1030,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                         horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.borderLight.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                           color:
                               AppColors.borderLight),
@@ -1189,7 +1189,7 @@ class _EventManageScreenState extends State<EventManageScreen>
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Icon(Icons.add_rounded, color: color, size: 20),
           ),
@@ -1212,7 +1212,7 @@ class _EventManageScreenState extends State<EventManageScreen>
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Icon(Icons.remove_rounded, color: color, size: 20),
           ),
@@ -1272,7 +1272,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                           color: isSelected
                               ? color.withValues(alpha: 0.2)
                               : AppColors.borderLight.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(
                             color: isSelected
                                 ? color
@@ -1673,7 +1673,7 @@ class _EventManageScreenState extends State<EventManageScreen>
             decoration: BoxDecoration(
               color: (color ?? AppColors.primaryLight)
                   .withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(100),
             ),
             child: Text('$count',
                 style: TextStyle(
@@ -1694,7 +1694,7 @@ class _EventManageScreenState extends State<EventManageScreen>
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: Row(

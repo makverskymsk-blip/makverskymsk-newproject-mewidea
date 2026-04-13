@@ -57,7 +57,7 @@ class ManageSportsScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Icon(Icons.tune_rounded,
                       color: AppColors.primary, size: 20),
@@ -204,7 +204,7 @@ class _SportTile extends StatelessWidget {
                 color: isOn
                     ? AppColors.primary.withValues(alpha: 0.1)
                     : t.surfaceBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: Icon(
                 sport.icon,

@@ -71,7 +71,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                           color: isSelected
                               ? const Color(0xFFFF6B35).withValues(alpha: 0.15)
                               : t.surfaceBg,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(100),
                           border: Border.all(
                             color: isSelected
                                 ? const Color(0xFFFF6B35)
@@ -178,7 +178,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                               colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)])
                           : null,
                       color: isSelected ? null : t.cardBg,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                         color: isSelected ? Colors.transparent : t.borderLight,
                       ),
@@ -255,7 +255,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                           padding: const EdgeInsets.only(right: 16),
                           decoration: BoxDecoration(
                             color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child:
                               const Icon(Icons.delete_rounded, color: Colors.red, size: 18),
@@ -267,7 +267,7 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: t.cardBg,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(100),
                             border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
                             boxShadow: [
                               BoxShadow(

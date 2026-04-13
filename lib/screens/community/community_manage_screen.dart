@@ -45,7 +45,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: AppColors.of(context).borderLight.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(100),
                           ),
                           child: const Icon(Icons.arrow_back_ios_new_rounded,
                               size: 18),
@@ -160,7 +160,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: t.cardBg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(100),
           border: Border.all(color: t.borderLight),
         ),
         child: Row(
@@ -229,11 +229,11 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                       color: isActive
                           ? AppColors.primary.withValues(alpha: 0.15)
                           : AppColors.of(context).borderLight.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                     child: logoUrl != null && logoUrl.isNotEmpty
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(100),
                             child: Image.network(
                               logoUrl,
                               width: 48, height: 48,
@@ -647,7 +647,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                   gradient: const LinearGradient(
                     colors: [Color(0xFF00D4AA), Color(0xFF00B894)],
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: const Icon(Icons.account_balance_wallet_rounded,
                     color: Colors.white, size: 16),
@@ -672,10 +672,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.2)),
+                        color: AppColors.accent.withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -703,10 +703,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.2)),
+                        color: AppColors.error.withValues(alpha: 0.3)),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -743,7 +743,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                         AppColors.of(context).surfaceBg,
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: bankBalance >= 0
                           ? AppColors.accent.withValues(alpha: 0.15)
@@ -785,10 +785,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.25)),
+                        color: AppColors.accent.withValues(alpha: 0.3)),
                   ),
                   child: const Icon(Icons.add_circle_outline_rounded,
                       color: AppColors.accent, size: 20),
@@ -805,10 +805,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.2)),
+                        color: AppColors.error.withValues(alpha: 0.3)),
                   ),
                   child: const Icon(Icons.remove_circle_outline_rounded,
                       color: AppColors.error, size: 20),
@@ -905,12 +905,12 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                         color: color, fontWeight: FontWeight.w700),
                     labelText: 'Сумма',
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: BorderSide(
                           color: AppColors.borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: BorderSide(color: color),
                     ),
                   ),
@@ -961,12 +961,12 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                     prefixIcon: Icon(Icons.description_outlined,
                         color: color.withValues(alpha: 0.5), size: 18),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: BorderSide(
                           color: AppColors.borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       borderSide: BorderSide(color: color),
                     ),
                   ),
@@ -1026,7 +1026,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                       color: isTopUp
                           ? null
                           : AppColors.error.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(100),
                       border: isTopUp
                           ? null
                           : Border.all(
@@ -1084,7 +1084,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         ),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         duration: const Duration(seconds: 4),
       ),
     );
