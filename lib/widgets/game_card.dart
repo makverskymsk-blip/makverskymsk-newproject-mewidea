@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'glass_card.dart';
-import 'glass_button.dart';
 
 class GameCard extends StatelessWidget {
   final String format;
@@ -164,11 +163,66 @@ class GameCard extends StatelessWidget {
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            child: GlassButton(
-              text: isUserRegistered ? 'Отменить запись' : 'Участвовать',
-              color: isUserRegistered ? AppColors.error : AppColors.primary,
-              icon: isUserRegistered ? Icons.close : Icons.check_circle_outline,
-              onPressed: onParticipate,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onParticipate,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: isUserRegistered
+                        ? null
+                        : AppColors.primaryGradient,
+                    color: isUserRegistered
+                        ? AppColors.error.withValues(alpha: 0.12)
+                        : null,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isUserRegistered
+                          ? AppColors.error.withValues(alpha: 0.5)
+                          : Colors.transparent,
+                      width: isUserRegistered ? 1.5 : 1,
+                    ),
+                    boxShadow: isUserRegistered
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: -2,
+                            ),
+                          ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isUserRegistered
+                            ? Icons.close_rounded
+                            : Icons.check_circle_rounded,
+                        size: 18,
+                        color: isUserRegistered
+                            ? AppColors.error
+                            : Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        isUserRegistered ? 'Отменить запись' : 'Участвовать',
+                        style: TextStyle(
+                          color: isUserRegistered
+                              ? AppColors.error
+                              : Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],

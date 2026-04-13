@@ -22,19 +22,18 @@ class WalletScreen extends StatelessWidget {
     final txList = wallet.getUserTransactions(user?.id ?? '');
     final bank = community.activeCommunity?.bankBalance ?? 0;
 
-    return Stack(
-      children: [
-        _buildBg(context),
-        SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+    return Scaffold(
+      backgroundColor: AppColors.of(context).scaffoldBg,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
                 _buildHeader(),
                 const SizedBox(height: 32),
-                Text('Мой Кошелёк', style: Theme.of(context).textTheme.headlineMedium),
+                Text('Мой Кошелёк', style: Theme.of(context).textTheme.headlineMedium?.copyWith(decoration: TextDecoration.none)),
                 const SizedBox(height: 24),
 
                 // Balance card
@@ -42,26 +41,14 @@ class WalletScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // Actions
-                Row(
-                  children: [
-                    Expanded(
-                      child: GlassButton(
-                        text: 'Пополнить',
-                        icon: Icons.add_rounded,
-                        color: AppColors.accent,
-                        onPressed: () => _showTopUp(context, auth),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GlassButton(
-                        text: 'Вывести',
-                        icon: Icons.arrow_upward_rounded,
-                        isOutlined: true,
-                        onPressed: () {},
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: GlassButton(
+                    text: 'Пополнить',
+                    icon: Icons.add_rounded,
+                    color: AppColors.accent,
+                    onPressed: () => _showTopUp(context, auth),
+                  ),
                 ),
                 const SizedBox(height: 28),
 
@@ -73,7 +60,7 @@ class WalletScreen extends StatelessWidget {
                 // Transactions
                 const Text(
                   'Последние операции',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, decoration: TextDecoration.none),
                 ),
                 const SizedBox(height: 16),
 
@@ -81,22 +68,19 @@ class WalletScreen extends StatelessWidget {
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.only(top: 30),
-                      child: Text('Операций пока нет', style: TextStyle(color: AppColors.textHint)),
+                      child: Text('Операций пока нет', style: TextStyle(color: AppColors.textHint, decoration: TextDecoration.none)),
                     ),
                   )
                 else
-                  ...txList.take(10).map((tx) => _buildTxTile(tx)),
+                  ...txList.take(10).map((tx) => _buildTxTile(context, tx)),
 
                 const SizedBox(height: 120),
               ],
             ),
           ),
-        ),
-      ],
+      ),
     );
   }
-
-  Widget _buildBg(BuildContext context) => Container(color: AppColors.of(context).scaffoldBg);
 
   Widget _buildHeader() => Row(
         children: [
@@ -110,7 +94,7 @@ class WalletScreen extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           const Text('PERFORMANCE LAB',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, decoration: TextDecoration.none)),
         ],
       );
 
@@ -133,7 +117,7 @@ class WalletScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Текущий баланс',
-              style: TextStyle(color: Colors.white70, fontSize: 14)),
+              style: TextStyle(color: Colors.white70, fontSize: 14, decoration: TextDecoration.none)),
           const SizedBox(height: 10),
           Text(
             Helpers.formatCurrency(balance),
@@ -141,6 +125,7 @@ class WalletScreen extends StatelessWidget {
               color: balance < 0 ? AppColors.error : Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.w800,
+              decoration: TextDecoration.none,
             ),
           ),
           const SizedBox(height: 20),
@@ -148,7 +133,7 @@ class WalletScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('ID: 4502-8831',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  style: TextStyle(color: Colors.white70, fontSize: 13, decoration: TextDecoration.none)),
               const Icon(Icons.contactless_rounded, color: Colors.white, size: 26),
             ],
           ),
@@ -187,17 +172,18 @@ class WalletScreen extends StatelessWidget {
               children: [
                 Text('Общий банк',
                     style: TextStyle(
-                        color: AppColors.textSecondary, fontSize: 12)),
+                        color: AppColors.textSecondary, fontSize: 12, decoration: TextDecoration.none)),
                 Text(
                   Helpers.formatCurrency(bank),
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.accent,
+                    decoration: TextDecoration.none,
                   ),
                 ),
                 Text(communityName,
-                    style: const TextStyle(color: AppColors.textHint, fontSize: 11)),
+                    style: const TextStyle(color: AppColors.textHint, fontSize: 11, decoration: TextDecoration.none)),
               ],
             ),
           ),
@@ -206,13 +192,13 @@ class WalletScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTxTile(dynamic tx) {
+  Widget _buildTxTile(BuildContext context, dynamic tx) {
     final isIncome = tx.isIncome;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.backgroundCard.withValues(alpha: 0.5),
+        color: AppColors.of(context).surfaceBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.borderLight.withValues(alpha: 0.5)),
       ),
@@ -270,19 +256,10 @@ class WalletScreen extends StatelessWidget {
           content: TextField(
             controller: ctrl,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: AppColors.textPrimary),
-            decoration: InputDecoration(
+            style: TextStyle(color: AppColors.of(context).textPrimary),
+            decoration: const InputDecoration(
               labelText: 'Сумма (₽)',
-              labelStyle: TextStyle(color: AppColors.textHint),
-              prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.borderLight),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
+              prefixIcon: Icon(Icons.attach_money, color: AppColors.primary),
             ),
           ),
           actions: [

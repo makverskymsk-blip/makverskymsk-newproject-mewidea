@@ -165,7 +165,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontSize: 28,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 3,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -173,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Управляй командой',
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textHint,
+                        color: AppColors.of(context).textHint,
                         letterSpacing: 1,
                       ),
                     ),
@@ -290,25 +289,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildField(
       TextEditingController ctrl, String label, IconData icon,
       {bool obscure = false}) {
+    final t = AppColors.of(context);
     return TextField(
       controller: ctrl,
       obscureText: obscure,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(color: t.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: AppColors.textHint),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide:
-              BorderSide(color: AppColors.borderLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        filled: true,
-        fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
       ),
     );
   }
@@ -334,25 +322,11 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: resetEmailController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
+              style: TextStyle(color: AppColors.of(context).textPrimary),
+              decoration: const InputDecoration(
                 labelText: 'Email',
-                labelStyle: TextStyle(
-                    color: AppColors.textHint),
-                prefixIcon: const Icon(Icons.email_outlined,
+                prefixIcon: Icon(Icons.email_outlined,
                     color: AppColors.primary, size: 20),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                      color: AppColors.borderLight),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      const BorderSide(color: AppColors.primary),
-                ),
-                filled: true,
-                fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
               ),
             ),
           ],

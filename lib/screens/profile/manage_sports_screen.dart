@@ -93,6 +93,7 @@ class ManageSportsScreen extends StatelessWidget {
           // ─── List ───
           Expanded(
             child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
               scrollController: scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               itemCount: allSports.length,
@@ -226,7 +227,7 @@ class _SportTile extends StatelessWidget {
             ),
 
             // Toggle switch
-            Switch.adaptive(
+            Switch(
               value: isOn,
               activeTrackColor: AppColors.primary,
               onChanged: canToggle ? (_) => onToggle() : null,

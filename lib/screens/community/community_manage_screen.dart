@@ -10,6 +10,7 @@ import '../../widgets/glass_button.dart';
 import '../../widgets/glass_card.dart';
 import 'members_screen.dart';
 import 'subscription_screen.dart';
+import 'community_chat_screen.dart';
 
 class CommunityManageScreen extends StatefulWidget {
   const CommunityManageScreen({super.key});
@@ -127,6 +128,10 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                 _tabChip(Icons.people_alt_rounded, 'Участники',
                                     () => Navigator.push(context,
                                         MaterialPageRoute(builder: (_) => const MembersScreen()))),
+                                const SizedBox(width: 10),
+                                _tabChip(Icons.chat_rounded, 'Чат',
+                                    () => Navigator.push(context,
+                                        MaterialPageRoute(builder: (_) => const CommunityChatScreen()))),
                                 const SizedBox(width: 10),
                                 // Future tabs will go here
                               ],
@@ -277,14 +282,16 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.35), width: 1),
                           ),
                           child: const Text('Активно',
                               style: TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w700)),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3)),
                         ),
                       if (isOwner) ...[
                         const SizedBox(width: 6),
@@ -292,14 +299,16 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.35), width: 1),
                           ),
                           child: const Text('Владелец',
                               style: TextStyle(
                                   color: AppColors.primaryLight,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w700)),
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3)),
                         ),
                       ],
                     ],
@@ -320,8 +329,9 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.accent.withValues(alpha: 0.35), width: 1),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -333,7 +343,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                   style: TextStyle(
                                       color: AppColors.accent,
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w700)),
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.3)),
                             ],
                           ),
                         ),
@@ -601,25 +612,14 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
   Widget _dialogField(
       TextEditingController ctrl, String label, IconData icon,
       {bool isNumber = false}) {
+    final t = AppColors.of(context);
     return TextField(
       controller: ctrl,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(color: t.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: AppColors.textHint),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide:
-              BorderSide(color: AppColors.borderLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        filled: true,
-        fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
       ),
     );
   }
@@ -627,16 +627,6 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
   InputDecoration _dropdownDecor(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: AppColors.textHint),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide:
-            BorderSide(color: AppColors.borderLight),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary),
-      ),
     );
   }
 
@@ -852,12 +842,12 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.backgroundCard.withValues(alpha: 0.95),
+              color: AppColors.of(context).cardBg,
               borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(28)),
               border: Border(
                 top: BorderSide(
-                    color: AppColors.borderLight),
+                    color: AppColors.of(context).borderLight),
               ),
             ),
             child: Column(
@@ -904,8 +894,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                   controller: amountCtrl,
                   keyboardType: TextInputType.number,
                   autofocus: true,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 24),
+                  style: TextStyle(
+                      color: AppColors.of(context).textPrimary, fontSize: 24),
                   decoration: InputDecoration(
                     hintText: '0',
                     hintStyle: TextStyle(
@@ -914,8 +904,6 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                     suffixStyle: TextStyle(
                         color: color, fontWeight: FontWeight.w700),
                     labelText: 'Сумма',
-                    labelStyle: TextStyle(
-                        color: AppColors.textHint),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(
@@ -925,9 +913,6 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(color: color),
                     ),
-                    filled: true,
-                    fillColor:
-                        AppColors.backgroundCard.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -967,7 +952,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                 // Description field
                 TextField(
                   controller: descCtrl,
-                  style: const TextStyle(color: AppColors.textPrimary),
+                  style: TextStyle(color: AppColors.of(context).textPrimary),
                   decoration: InputDecoration(
                     hintText:
                         isTopUp ? 'Причина пополнения' : 'Причина списания',
@@ -984,9 +969,6 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(color: color),
                     ),
-                    filled: true,
-                    fillColor:
-                        AppColors.backgroundCard.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 20),

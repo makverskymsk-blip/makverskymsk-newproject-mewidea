@@ -640,7 +640,7 @@ class _EventManageScreenState extends State<EventManageScreen>
           maxHeight: MediaQuery.of(context).size.height * 0.5,
         ),
         decoration: BoxDecoration(
-          color: AppColors.backgroundCard.withValues(alpha: 0.95),
+          color: AppColors.of(context).cardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(
@@ -812,7 +812,7 @@ class _EventManageScreenState extends State<EventManageScreen>
             maxHeight: MediaQuery.of(context).size.height * 0.6,
           ),
           decoration: BoxDecoration(
-            color: AppColors.backgroundCard.withValues(alpha: 0.95),
+            color: AppColors.of(context).cardBg,
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(28)),
           ),
@@ -962,10 +962,14 @@ class _EventManageScreenState extends State<EventManageScreen>
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: im.isCompleted
-                        ? AppColors.accent.withValues(alpha: 0.12)
-                        : AppColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: im.isCompleted
+                          ? AppColors.accent.withValues(alpha: 0.35)
+                          : AppColors.warning.withValues(alpha: 0.35),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     im.isCompleted ? 'Завершён' : 'В процессе',
@@ -975,6 +979,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                           : AppColors.warning,
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),

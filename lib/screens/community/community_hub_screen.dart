@@ -126,7 +126,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
                     Text(
                       'Создайте новое или присоединитесь по коду',
                       style: TextStyle(
-                        color: AppColors.textHint,
+                        color: AppColors.of(context).textHint,
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
@@ -215,19 +215,10 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
           _field(_nameCtrl, 'Название сообщества', Icons.group_rounded),
           const SizedBox(height: 14),
           DropdownButtonFormField<SportCategory>(
-            dropdownColor: Colors.white,
+            dropdownColor: AppColors.of(context).dialogBg,
             initialValue: _selectedSport,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Вид спорта',
-              labelStyle: TextStyle(color: AppColors.textHint),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(color: AppColors.borderLight),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.primary),
-              ),
             ),
             items: SportCategory.values
                 .map((c) => DropdownMenuItem(value: c, child: Text(c.displayName)))
@@ -251,7 +242,7 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
           Text(
             'Попросите код у владельца сообщества',
             style: TextStyle(
-                color: AppColors.textHint, fontSize: 12),
+                color: AppColors.of(context).textHint, fontSize: 12),
           ),
         ],
       ),
@@ -260,24 +251,14 @@ class _CommunityHubScreenState extends State<CommunityHubScreen> {
 
   Widget _field(TextEditingController ctrl, String label, IconData icon,
       {bool isNumber = false}) {
+    final t = AppColors.of(context);
     return TextField(
       controller: ctrl,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: const TextStyle(color: AppColors.textPrimary),
+      style: TextStyle(color: t.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: AppColors.textHint),
         prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.borderLight),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary),
-        ),
-        filled: true,
-        fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
       ),
     );
   }

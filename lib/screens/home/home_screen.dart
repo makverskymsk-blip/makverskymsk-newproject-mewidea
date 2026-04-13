@@ -373,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? _selectedCategory!
         : visibleSports.first;
     return SizedBox(
-      height: 46,
+      height: 32,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: visibleSports.length,
@@ -384,12 +384,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => setState(() => _selectedCategory = cat),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 gradient: isSelected ? AppColors.primaryGradient : null,
                 color: isSelected ? null : t.cardBg,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected ? Colors.transparent : t.borderLight,
                 ),
@@ -397,8 +397,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? [
                         BoxShadow(
                           color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
                         ),
                       ]
                     : [
@@ -406,21 +406,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: t.isDark
                               ? Colors.black.withValues(alpha: 0.15)
                               : Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
                       ],
               ),
               child: Row(
                 children: [
-                  Icon(cat.icon, size: 16,
+                  Icon(cat.icon, size: 13,
                       color: isSelected ? Colors.white : t.textHint),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 5),
                   Text(
                     cat.displayName,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 12,
+                      fontSize: 11,
                       color: isSelected ? Colors.white : t.textSecondary,
                     ),
                   ),

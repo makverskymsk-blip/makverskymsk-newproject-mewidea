@@ -7,6 +7,7 @@ import 'providers/community_provider.dart';
 import 'providers/matches_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/training_provider.dart';
+import 'providers/notification_provider.dart';
 import 'screens/auth/login_screen.dart';
 
 import 'screens/main_navigation.dart';
@@ -69,7 +70,10 @@ class SportsClubApp extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               final tp = context.read<TrainingProvider>();
               final mp = context.read<MatchesProvider>();
+              final np = context.read<NotificationProvider>();
               final user = auth.currentUser!;
+              auth.setNotificationProvider(np);
+              mp.setNotificationProvider(np);
               tp.init(user.id, initialXp: user.trainingXp, initialLevel: user.trainingLevel);
               mp.loadMatches(null, []); // No community — only personal events
             });
@@ -110,6 +114,8 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
     try {
       final communityProv = context.read<CommunityProvider>();
       final authProv = context.read<AuthProvider>();
+      final notifProv = context.read<NotificationProvider>();
+      authProv.setNotificationProvider(notifProv);
       await communityProv
           .loadUserCommunities(widget.communityIds)
           .timeout(const Duration(seconds: 5));
@@ -129,6 +135,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
         final cid = communityProv.activeCommunity!.id;
         if (!mounted) return;
         final matchesProv = context.read<MatchesProvider>();
+        matchesProv.setNotificationProvider(notifProv);
         await Future.wait([
           matchesProv.loadMatches(cid, widget.communityIds).timeout(const Duration(seconds: 5)),
           communityProv.loadSubscriptions(cid).timeout(const Duration(seconds: 5)),

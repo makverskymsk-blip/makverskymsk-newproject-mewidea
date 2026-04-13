@@ -1,4 +1,6 @@
 
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,9 @@ import 'providers/theme_provider.dart';
 import 'providers/match_events_provider.dart';
 import 'providers/training_provider.dart';
 import 'providers/sport_prefs_provider.dart';
+import 'providers/notification_provider.dart';
+import 'providers/friends_provider.dart';
+import 'providers/chat_provider.dart';
 
 
 /// Запуск напрямую (по умолчанию — prod).
@@ -21,9 +26,32 @@ Future<void> main() async {
   await appMain();
 }
 
+/// Глобальный обработчик ошибок — перехватывает все необработанные исключения.
+void _setupErrorHandlers() {
+  // Flutter framework errors (widget build, layout, rendering)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('┌──── FLUTTER ERROR ────');
+    debugPrint('│ ${details.exception}');
+    debugPrint('│ ${details.stack?.toString().split('\n').take(5).join('\n│ ')}');
+    debugPrint('└───────────────────────');
+    // TODO: отправить в Sentry / Crashlytics
+  };
+
+  // Platform errors (async errors outside Flutter framework)
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('┌──── PLATFORM ERROR ────');
+    debugPrint('│ $error');
+    debugPrint('│ ${stack.toString().split('\n').take(5).join('\n│ ')}');
+    debugPrint('└────────────────────────');
+    // TODO: отправить в Sentry / Crashlytics
+    return true; // prevent app crash
+  };
+}
+
 /// Общая точка входа, вызываемая из main_dev / main_prod.
 Future<void> appMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _setupErrorHandlers();
 
   final cfg = AppConfig.instance;
   try {
@@ -59,6 +87,9 @@ Future<void> appMain() async {
         ChangeNotifierProvider(create: (_) => MatchEventsProvider()),
         ChangeNotifierProvider(create: (_) => TrainingProvider()),
         ChangeNotifierProvider(create: (_) => SportPrefsProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => FriendsProvider()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: const SportsClubApp(),
     ),

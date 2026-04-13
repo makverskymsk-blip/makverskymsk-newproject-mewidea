@@ -36,28 +36,57 @@ class AppTheme {
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppThemeColors.light.surfaceBg,
+        labelStyle: TextStyle(color: AppThemeColors.light.textHint),
+        hintStyle: TextStyle(color: AppThemeColors.light.textHint),
+        prefixIconColor: AppColors.primary,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: AppThemeColors.light.borderLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
       textTheme: TextTheme(
         headlineLarge: TextStyle(
           fontSize: 32, fontWeight: FontWeight.w800,
           letterSpacing: -0.5, color: AppThemeColors.light.textPrimary,
+          decoration: TextDecoration.none,
         ),
         headlineMedium: TextStyle(
           fontSize: 26, fontWeight: FontWeight.bold,
           color: AppThemeColors.light.textPrimary,
+          decoration: TextDecoration.none,
         ),
         titleLarge: TextStyle(
           fontSize: 20, fontWeight: FontWeight.w700,
           letterSpacing: 0.5, color: AppThemeColors.light.textPrimary,
+          decoration: TextDecoration.none,
         ),
         titleMedium: TextStyle(
           fontSize: 16, fontWeight: FontWeight.w600,
           color: AppThemeColors.light.textPrimary,
+          decoration: TextDecoration.none,
         ),
-        bodyLarge: TextStyle(fontSize: 16, color: AppThemeColors.light.textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, color: AppThemeColors.light.textSecondary),
+        bodyLarge: TextStyle(fontSize: 16, color: AppThemeColors.light.textPrimary, decoration: TextDecoration.none),
+        bodyMedium: TextStyle(fontSize: 14, color: AppThemeColors.light.textSecondary, decoration: TextDecoration.none),
         labelSmall: TextStyle(
           fontSize: 11, fontWeight: FontWeight.w600,
           letterSpacing: 1.0, color: AppThemeColors.light.textHint,
+          decoration: TextDecoration.none,
         ),
       ),
     );
@@ -96,28 +125,57 @@ class AppTheme {
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppThemeColors.dark.surfaceBg.withValues(alpha: 0.7),
+        labelStyle: TextStyle(color: AppThemeColors.dark.textHint),
+        hintStyle: TextStyle(color: AppThemeColors.dark.textHint),
+        prefixIconColor: AppColors.primary,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: AppThemeColors.dark.borderLight.withValues(alpha: 0.7)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
       textTheme: TextTheme(
         headlineLarge: TextStyle(
           fontSize: 32, fontWeight: FontWeight.w800,
           letterSpacing: -0.5, color: AppThemeColors.dark.textPrimary,
+          decoration: TextDecoration.none,
         ),
         headlineMedium: TextStyle(
           fontSize: 26, fontWeight: FontWeight.bold,
           color: AppThemeColors.dark.textPrimary,
+          decoration: TextDecoration.none,
         ),
         titleLarge: TextStyle(
           fontSize: 20, fontWeight: FontWeight.w700,
           letterSpacing: 0.5, color: AppThemeColors.dark.textPrimary,
+          decoration: TextDecoration.none,
         ),
         titleMedium: TextStyle(
           fontSize: 16, fontWeight: FontWeight.w600,
           color: AppThemeColors.dark.textPrimary,
+          decoration: TextDecoration.none,
         ),
-        bodyLarge: TextStyle(fontSize: 16, color: AppThemeColors.dark.textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, color: AppThemeColors.dark.textSecondary),
+        bodyLarge: TextStyle(fontSize: 16, color: AppThemeColors.dark.textPrimary, decoration: TextDecoration.none),
+        bodyMedium: TextStyle(fontSize: 14, color: AppThemeColors.dark.textSecondary, decoration: TextDecoration.none),
         labelSmall: TextStyle(
           fontSize: 11, fontWeight: FontWeight.w600,
           letterSpacing: 1.0, color: AppThemeColors.dark.textHint,
+          decoration: TextDecoration.none,
         ),
       ),
     );

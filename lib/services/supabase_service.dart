@@ -8,6 +8,10 @@ import '../models/subscription.dart';
 import '../models/transaction.dart' as app_tx;
 
 class SupabaseService {
+  static final SupabaseService _instance = SupabaseService._internal();
+  factory SupabaseService() => _instance;
+  SupabaseService._internal();
+
   final SupabaseClient _supabase = Supabase.instance.client;
 
   // ===== AVATAR UPLOAD =====
@@ -83,6 +87,7 @@ class SupabaseService {
       'age': user.age,
       'training_xp': user.trainingXp,
       'training_level': user.trainingLevel,
+      'is_public_profile': user.isPublicProfile,
       'created_at': DateTime.now().toIso8601String(),
     });
   }
@@ -117,6 +122,7 @@ class SupabaseService {
       age: response['age'],
       trainingXp: response['training_xp'] ?? 0,
       trainingLevel: response['training_level'] ?? 1,
+      isPublicProfile: response['is_public_profile'] ?? true,
     );
   }
 
@@ -134,6 +140,7 @@ class SupabaseService {
       'weightKg': 'weight_kg',
       'trainingXp': 'training_xp',
       'trainingLevel': 'training_level',
+      'isPublicProfile': 'is_public_profile',
     };
     data.forEach((key, value) {
       mappedData[keyMap[key] ?? key] = value;
@@ -1123,5 +1130,253 @@ class SupabaseService {
       'training_xp': xp,
       'training_level': level,
     }).eq('id', userId);
+  }
+
+  // ===== FOLLOWS =====
+
+  /// Follow a user. If target has public profile → status='accepted', else 'pending'.
+  Future<void> followUser(String followerId, String followingId, {required bool targetIsPublic}) async {
+    await _supabase.from('follows').upsert({
+      'follower_id': followerId,
+      'following_id': followingId,
+      'status': targetIsPublic ? 'accepted' : 'pending',
+    }, onConflict: 'follower_id,following_id');
+  }
+
+  /// Unfollow / cancel request
+  Future<void> unfollowUser(String followerId, String followingId) async {
+    await _supabase.from('follows')
+        .delete()
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId);
+  }
+
+  /// Accept a follow request (for closed profiles)
+  Future<void> acceptFollowRequest(String followId) async {
+    await _supabase.from('follows').update({
+      'status': 'accepted',
+    }).eq('id', followId);
+  }
+
+  /// Reject a follow request
+  Future<void> rejectFollowRequest(String followId) async {
+    await _supabase.from('follows').delete().eq('id', followId);
+  }
+
+  /// Get my followers (people who follow me) — accepted only
+  Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
+    final response = await _supabase
+        .from('follows')
+        .select()
+        .eq('following_id', userId)
+        .eq('status', 'accepted')
+        .order('created_at', ascending: false);
+    // Enrich with user data
+    final results = <Map<String, dynamic>>[];
+    for (final row in response) {
+      final userResp = await _supabase
+          .from('users')
+          .select('id, name, avatar_url, position, sport_positions, is_public_profile')
+          .eq('id', row['follower_id'])
+          .maybeSingle();
+      results.add({...row, 'follower': userResp});
+    }
+    return results;
+  }
+
+  /// Get people I'm following — accepted only
+  Future<List<Map<String, dynamic>>> getFollowing(String userId) async {
+    final response = await _supabase
+        .from('follows')
+        .select()
+        .eq('follower_id', userId)
+        .eq('status', 'accepted')
+        .order('created_at', ascending: false);
+    final results = <Map<String, dynamic>>[];
+    for (final row in response) {
+      final userResp = await _supabase
+          .from('users')
+          .select('id, name, avatar_url, position, sport_positions, is_public_profile')
+          .eq('id', row['following_id'])
+          .maybeSingle();
+      results.add({...row, 'following': userResp});
+    }
+    return results;
+  }
+
+  /// Get pending follow requests to me (for closed profiles)
+  Future<List<Map<String, dynamic>>> getPendingFollowRequests(String userId) async {
+    final response = await _supabase
+        .from('follows')
+        .select()
+        .eq('following_id', userId)
+        .eq('status', 'pending')
+        .order('created_at', ascending: false);
+    final results = <Map<String, dynamic>>[];
+    for (final row in response) {
+      final userResp = await _supabase
+          .from('users')
+          .select('id, name, avatar_url, position')
+          .eq('id', row['follower_id'])
+          .maybeSingle();
+      results.add({...row, 'follower': userResp});
+    }
+    return results;
+  }
+
+  /// Get follow counts for a user
+  Future<Map<String, int>> getFollowCounts(String userId) async {
+    final followers = await _supabase
+        .from('follows')
+        .select()
+        .eq('following_id', userId)
+        .eq('status', 'accepted');
+    final following = await _supabase
+        .from('follows')
+        .select()
+        .eq('follower_id', userId)
+        .eq('status', 'accepted');
+    final pending = await _supabase
+        .from('follows')
+        .select()
+        .eq('following_id', userId)
+        .eq('status', 'pending');
+    return {
+      'followers': (followers as List).length,
+      'following': (following as List).length,
+      'pending': (pending as List).length,
+    };
+  }
+
+  /// Check relationship status between two users
+  /// Returns: null, 'pending', 'accepted'
+  Future<String?> getFollowStatus(String followerId, String followingId) async {
+    final response = await _supabase
+        .from('follows')
+        .select('status')
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId)
+        .maybeSingle();
+    return response?['status'];
+  }
+
+  /// Check if two users are mutual followers (friends)
+  Future<bool> areMutualFollowers(String userId1, String userId2) async {
+    final f1 = await getFollowStatus(userId1, userId2);
+    final f2 = await getFollowStatus(userId2, userId1);
+    return f1 == 'accepted' && f2 == 'accepted';
+  }
+
+  /// Check if target user has public profile
+  Future<bool> isUserPublic(String userId) async {
+    final response = await _supabase
+        .from('users')
+        .select('is_public_profile')
+        .eq('id', userId)
+        .maybeSingle();
+    return response?['is_public_profile'] ?? true;
+  }
+
+  /// Search users by name (for follow search)
+  Future<List<Map<String, dynamic>>> searchUsers(String query, {int limit = 20}) async {
+    if (query.trim().isEmpty) return [];
+    final response = await _supabase
+        .from('users')
+        .select('id, name, avatar_url, position, is_public_profile')
+        .ilike('name', '%${query.trim()}%')
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // ═══════════ CHAT / MESSAGES ═══════════
+
+  /// Expose supabase client for realtime subscriptions
+  SupabaseClient get client => _supabase;
+
+  /// Generate consistent direct chat ID from two user IDs
+  static String getDirectChatId(String userId1, String userId2) {
+    final sorted = [userId1, userId2]..sort();
+    return '${sorted[0]}_${sorted[1]}';
+  }
+
+  /// Send a message
+  Future<Map<String, dynamic>?> sendMessage({
+    required String chatType,
+    required String chatId,
+    required String senderId,
+    required String content,
+    String messageType = 'text',
+    String? mediaUrl,
+  }) async {
+    final response = await _supabase.from('messages').insert({
+      'chat_type': chatType,
+      'chat_id': chatId,
+      'sender_id': senderId,
+      'content': content,
+      'message_type': messageType,
+      if (mediaUrl != null) 'media_url': mediaUrl,
+    }).select().single();
+    return response;
+  }
+
+  /// Get messages for a chat with pagination
+  Future<List<Map<String, dynamic>>> getMessages(
+    String chatId, {
+    int limit = 50,
+    DateTime? before,
+  }) async {
+    var query = _supabase
+        .from('messages')
+        .select()
+        .eq('chat_id', chatId)
+        .eq('is_deleted', false)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    if (before != null) {
+      query = _supabase
+          .from('messages')
+          .select()
+          .eq('chat_id', chatId)
+          .eq('is_deleted', false)
+          .lt('created_at', before.toIso8601String())
+          .order('created_at', ascending: false)
+          .limit(limit);
+    }
+
+    final response = await query;
+    // Enrich with sender data
+    final results = <Map<String, dynamic>>[];
+    // Collect unique sender IDs
+    final senderIds = <String>{};
+    for (final row in response) {
+      senderIds.add(row['sender_id'] ?? '');
+    }
+    // Batch fetch sender profiles
+    final senderProfiles = <String, Map<String, dynamic>>{};
+    if (senderIds.isNotEmpty) {
+      final profiles = await _supabase
+          .from('users')
+          .select('id, name, avatar_url')
+          .inFilter('id', senderIds.toList());
+      for (final p in profiles) {
+        senderProfiles[p['id']] = p;
+      }
+    }
+    for (final row in response) {
+      results.add({
+        ...row,
+        'sender': senderProfiles[row['sender_id']],
+      });
+    }
+    return results;
+  }
+
+  /// Soft-delete a message
+  Future<void> deleteMessage(String messageId) async {
+    await _supabase.from('messages').update({
+      'is_deleted': true,
+      'content': 'Сообщение удалено',
+    }).eq('id', messageId);
   }
 }

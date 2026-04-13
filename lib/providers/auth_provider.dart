@@ -1,7 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
+import '../models/app_notification.dart';
 import '../services/supabase_service.dart';
+import 'notification_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -9,6 +11,11 @@ class AuthProvider extends ChangeNotifier {
   UserProfile? _currentUser;
   bool _isLoading = true;
   dynamic _userRealtimeChannel;
+  NotificationProvider? _notifProv;
+
+  void setNotificationProvider(NotificationProvider prov) {
+    _notifProv = prov;
+  }
 
   UserProfile? get currentUser => _currentUser;
   bool get isLoggedIn => _supabase.auth.currentUser != null && _currentUser != null;
@@ -168,10 +175,24 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> updateBalance(double amount) async {
-    if (_currentUser != null) {
-      _currentUser!.balance += amount;
+    if (_currentUser == null) return;
+    final prevBalance = _currentUser!.balance;
+    _currentUser!.balance += amount;
+    notifyListeners();
+    try {
       await _db.updateUser(_currentUser!.id, {'balance': _currentUser!.balance});
+      _notifProv?.add(
+        type: amount >= 0 ? NotificationType.balanceTopUp : NotificationType.balanceCharge,
+        title: amount >= 0 ? 'Баланс пополнен' : 'Списание',
+        body: amount >= 0
+            ? '+${amount.toInt()} ₽ — текущий баланс ${_currentUser!.balance.toInt()} ₽'
+            : '${amount.toInt()} ₽ — текущий баланс ${_currentUser!.balance.toInt()} ₽',
+      );
+    } catch (e) {
+      // Rollback
+      _currentUser!.balance = prevBalance;
       notifyListeners();
+      debugPrint('AUTH: updateBalance rollback — $e');
     }
   }
 
@@ -190,32 +211,53 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> updatePosition(String position) async {
-    if (_currentUser != null) {
-      _currentUser!.position = position;
+    if (_currentUser == null) return;
+    final prevPosition = _currentUser!.position;
+    _currentUser!.position = position;
+    notifyListeners();
+    try {
       await _db.updateUser(_currentUser!.id, {'position': position});
+    } catch (e) {
+      _currentUser!.position = prevPosition;
       notifyListeners();
+      debugPrint('AUTH: updatePosition rollback — $e');
     }
   }
 
   /// Update position for a specific sport
   Future<void> updateSportPosition(String sportName, String position) async {
-    if (_currentUser != null) {
-      _currentUser!.setPositionForSport(sportName, position);
+    if (_currentUser == null) return;
+    final prevPosition = _currentUser!.position;
+    final prevSportPositions = Map<String, String>.from(_currentUser!.sportPositions);
+    _currentUser!.setPositionForSport(sportName, position);
+    notifyListeners();
+    try {
       await _db.updateUser(_currentUser!.id, {
         'position': _currentUser!.position,
         'sportPositions': _currentUser!.sportPositions,
       });
+    } catch (e) {
+      _currentUser!.position = prevPosition;
+      _currentUser!.sportPositions
+        ..clear()
+        ..addAll(prevSportPositions);
       notifyListeners();
+      debugPrint('AUTH: updateSportPosition rollback — $e');
     }
   }
 
   Future<void> addCommunityToUser(String communityId) async {
-    if (_currentUser != null && !_currentUser!.communityIds.contains(communityId)) {
-      _currentUser!.communityIds.add(communityId);
+    if (_currentUser == null || _currentUser!.communityIds.contains(communityId)) return;
+    _currentUser!.communityIds.add(communityId);
+    notifyListeners();
+    try {
       await _db.updateUser(_currentUser!.id, {
         'communityIds': _currentUser!.communityIds,
       });
+    } catch (e) {
+      _currentUser!.communityIds.remove(communityId);
       notifyListeners();
+      debugPrint('AUTH: addCommunityToUser rollback — $e');
     }
   }
 
@@ -232,6 +274,11 @@ class AuthProvider extends ChangeNotifier {
   /// Update a single field on the user profile (e.g. gender, height_cm, weight_kg, age)
   Future<void> updateUserField(String field, dynamic value) async {
     if (_currentUser == null) return;
+    // Save snapshot for rollback
+    final prevGender = _currentUser!.gender;
+    final prevHeight = _currentUser!.heightCm;
+    final prevWeight = _currentUser!.weightKg;
+    final prevAge = _currentUser!.age;
     // Update local model
     switch (field) {
       case 'gender':
@@ -247,15 +294,31 @@ class AuthProvider extends ChangeNotifier {
         _currentUser!.age = value as int?;
         break;
     }
-    await _db.updateUser(_currentUser!.id, {field: value});
     notifyListeners();
+    try {
+      await _db.updateUser(_currentUser!.id, {field: value});
+    } catch (e) {
+      // Rollback
+      _currentUser!.gender = prevGender;
+      _currentUser!.heightCm = prevHeight;
+      _currentUser!.weightKg = prevWeight;
+      _currentUser!.age = prevAge;
+      notifyListeners();
+      debugPrint('AUTH: updateUserField($field) rollback — $e');
+    }
   }
 
   Future<void> updateAvatar(String url) async {
-    if (_currentUser != null) {
-      _currentUser!.avatarUrl = url;
+    if (_currentUser == null) return;
+    final prevUrl = _currentUser!.avatarUrl;
+    _currentUser!.avatarUrl = url;
+    notifyListeners();
+    try {
       await _db.updateUser(_currentUser!.id, {'avatarUrl': url});
+    } catch (e) {
+      _currentUser!.avatarUrl = prevUrl;
       notifyListeners();
+      debugPrint('AUTH: updateAvatar rollback — $e');
     }
   }
 

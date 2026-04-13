@@ -23,6 +23,11 @@ import '../../providers/matches_provider.dart';
 import '../../widgets/avatar_viewer.dart';
 import '../wallet/wallet_screen.dart';
 import 'gender_selector_screen.dart';
+import '../../widgets/theme_switch.dart';
+import '../../providers/notification_provider.dart';
+import '../notifications/notifications_screen.dart';
+import '../../providers/friends_provider.dart';
+import 'friends_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -109,6 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final auth = context.read<AuthProvider>();
       if (auth.uid != null) {
         context.read<StatsProvider>().loadPlayerStatsFromDb(auth.uid!);
+        context.read<FriendsProvider>().loadCounts(auth.uid!);
       }
     }
   }
@@ -185,16 +191,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildBalance(user?.balance ?? 0),
               const SizedBox(height: 16),
 
-              // ─── Community ───
+              // ─── Community (with subscription inside) ───
               if (community.activeCommunity != null)
-                _buildCommunityCard(context, community)
+                _buildCommunityCard(context, community, sub, user?.id)
               else
                 _buildNoCommunity(context),
               const SizedBox(height: 16),
-
-              // ─── Subscription ───
-              if (sub != null) _buildSubscription(sub),
-              if (sub != null) const SizedBox(height: 16),
 
               // ─── Menu ───
               _buildMenu(context, auth),
@@ -221,10 +223,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : null,
       child: Container(
         margin: const EdgeInsets.only(left: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: t.borderLight),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: t.borderLight, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -416,7 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildSportSelector() {
     final t = AppColors.of(context);
     return SizedBox(
-      height: 46,
+      height: 32,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
@@ -436,12 +438,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: isSelected ? AppColors.primaryGradient : null,
                   color: isSelected ? null : t.cardBg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected ? Colors.transparent : t.borderLight,
                   ),
@@ -449,8 +451,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? [
                           BoxShadow(
                             color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
                           ),
                         ]
                       : [
@@ -458,8 +460,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             color: t.isDark
                                 ? Colors.black.withValues(alpha: 0.15)
                                 : Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
                           ),
                         ],
                 ),
@@ -467,15 +469,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Icon(
                       sport.icon,
-                      size: 16,
+                      size: 13,
                       color: isSelected ? Colors.white : t.textHint,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 5),
                     Text(
                       sport.displayName,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                        fontSize: 11,
                         color: isSelected ? Colors.white : t.textSecondary,
                       ),
                     ),
@@ -488,14 +490,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           GestureDetector(
             onTap: () => ManageSportsScreen.show(context),
             child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: t.surfaceBg,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: t.borderLight),
               ),
-              child: Icon(Icons.tune_rounded, size: 16, color: t.textHint),
+              child: Icon(Icons.tune_rounded, size: 14, color: t.textHint),
             ),
           ),
           // Training tab
@@ -870,7 +872,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(width: 12),
-        // Name + ID + Community
+        // Name + ID + Community + Position
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,38 +893,156 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(color: t.textHint, fontSize: 12),
                   ),
                   _buildCommunityChip(),
+                  const SizedBox(width: 6),
+                  // Position badge (inline, small)
+                  GestureDetector(
+                    onTap: () => _showPositionDialog(context, context.read<AuthProvider>()),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: posColor.withValues(alpha: 0.35), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(posIcon, size: 10, color: posColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            posAbbr,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: posColor,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
+              const SizedBox(height: 6),
+              // Follower / Following counters
+              _buildFollowCounters(),
             ],
           ),
         ),
-        // Position tag (enhanced)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: posColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: posColor.withValues(alpha: 0.25)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(posIcon, size: 14, color: posColor),
-              const SizedBox(width: 5),
-              Text(
-                posAbbr,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: posColor,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
+        const ThemeSwitch(),
       ],
     );
+  }
+
+  // ─────────── FOLLOW COUNTERS ───────────
+
+  Widget _buildFollowCounters() {
+    final friendsProv = context.watch<FriendsProvider>();
+    final t = AppColors.of(context);
+    final auth = context.read<AuthProvider>();
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const FriendsScreen())),
+      child: Row(
+        children: [
+          Text(
+            '${friendsProv.followersCount}',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              color: t.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            _pluralFollowers(friendsProv.followersCount),
+            style: TextStyle(color: t.textHint, fontSize: 12),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '${friendsProv.followingCount}',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+              color: t.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            _pluralFollowing(friendsProv.followingCount),
+            style: TextStyle(color: t.textHint, fontSize: 12),
+          ),
+          if (friendsProv.pendingCount > 0) ...[
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.warning.withValues(alpha: 0.4), width: 1),
+              ),
+              child: Text(
+                '+${friendsProv.pendingCount}',
+                style: const TextStyle(
+                  color: AppColors.warning,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+          // Privacy icon
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => _toggleProfileVisibility(auth),
+            child: Icon(
+              (auth.currentUser?.isPublicProfile ?? true)
+                  ? Icons.public_rounded
+                  : Icons.lock_rounded,
+              size: 14,
+              color: t.textHint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _pluralFollowers(int n) {
+    if (n % 10 == 1 && n % 100 != 11) return 'подписчик';
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) {
+      return 'подписчика';
+    }
+    return 'подписчиков';
+  }
+
+  String _pluralFollowing(int _) => 'подписок';
+
+  void _toggleProfileVisibility(AuthProvider auth) async {
+    final current = auth.currentUser?.isPublicProfile ?? true;
+    final newVal = !current;
+    auth.currentUser?.isPublicProfile = newVal;
+    setState(() {}); // trigger UI rebuild
+    try {
+      await SupabaseService().updateUser(auth.uid!, {
+        'isPublicProfile': newVal,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newVal
+                ? 'Профиль открыт — подписка без одобрения'
+                : 'Профиль закрыт — подписка по запросу'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('PROFILE: toggle visibility error: $e');
+    }
   }
 
   // ─────────── LAST MATCHES ───────────
@@ -1053,88 +1173,218 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.history_rounded,
-                  size: 18, color: AppColors.textSecondary),
-              const SizedBox(width: 8),
-              const Text('Последние матчи',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.history_rounded,
+                    size: 16, color: AppColors.primary),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text('Последние матчи',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: const Color(0xFF43A047).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: const Color(0xFF43A047).withValues(alpha: 0.15)),
                 ),
                 child: Text(
                   '${wins}В ${draws}Н ${losses}П',
                   style: const TextStyle(
-                    color: Color(0xFF43A047), fontSize: 11, fontWeight: FontWeight.w700,
+                    color: Color(0xFF43A047),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          ...display.map((m) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                // Result indicator
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: m.result.color.withValues(alpha: 0.1),
-                    border: Border.all(color: m.result.color.withValues(alpha: 0.3)),
-                  ),
-                  child: Center(
-                    child: Text(m.result.letter,
-                        style: TextStyle(color: m.result.color,
-                            fontWeight: FontWeight.w800, fontSize: 12)),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Team names & score
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(m.myTeamName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: t.textPrimary,
+          const SizedBox(height: 12),
+          ...display.map((m) {
+            final Color resultColor;
+            final IconData resultIcon;
+            if (m.result == _MatchResult.win) {
+              resultColor = const Color(0xFF00E676);
+              resultIcon = Icons.emoji_events_rounded;
+            } else if (m.result == _MatchResult.draw) {
+              resultColor = const Color(0xFFFFB300);
+              resultIcon = Icons.handshake_rounded;
+            } else {
+              resultColor = const Color(0xFFFF5252);
+              resultIcon = Icons.trending_down_rounded;
+            }
+            final isWin = m.result == _MatchResult.win;
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Stack(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: t.cardBg.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: t.isDark
+                              ? Colors.black.withValues(alpha: 0.15)
+                              : Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        // Neon edge
+                        Container(
+                          width: 3,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(2),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                resultColor.withValues(alpha: 0.8),
+                                resultColor.withValues(alpha: 0.2),
+                              ],
                             ),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Text(
-                          '${m.myScore}:${m.oppScore}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: m.result.color,
+                            boxShadow: [
+                              BoxShadow(
+                                color: resultColor.withValues(alpha: 0.35),
+                                blurRadius: 5,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // My team avatar
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: m.myColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                color: m.myColor.withValues(alpha: 0.3)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              m.myTeamName.isNotEmpty
+                                  ? m.myTeamName[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                color: m.myColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Team names
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _capitalize(m.myTeamName),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: t.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Row(
+                                children: [
+                                  Icon(resultIcon,
+                                      size: 10,
+                                      color: resultColor.withValues(alpha: 0.7)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    'vs ${_capitalize(m.oppTeamName)}',
+                                    style: TextStyle(
+                                      color: t.textSecondary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: 'monospace',
+                                      letterSpacing: 0.3,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Score capsule — flat, no border
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: resultColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '${m.myScore}:${m.oppScore}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: resultColor,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Win gradient overlay
+                  if (isWin)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          gradient: RadialGradient(
+                            center: Alignment.topLeft,
+                            radius: 1.5,
+                            colors: [
+                              resultColor.withValues(alpha: 0.04),
+                              Colors.transparent,
+                            ],
                           ),
                         ),
                       ),
-                      Flexible(
-                        child: Text(m.oppTeamName,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: t.textSecondary,
-                            ),
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )),
+                    ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
+
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s.split(' ').map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + w.substring(1);
+    }).join(' ');
   }
 
   // ─────────── ACHIEVEMENTS ───────────
@@ -1322,71 +1572,157 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ─────────── COMMUNITY ───────────
 
   Widget _buildCommunityCard(
-      BuildContext context, CommunityProvider community) {
+      BuildContext context, CommunityProvider community, dynamic sub, String? userId) {
+    final t = AppColors.of(context);
     return GestureDetector(
       onTap: () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const CommunityManageScreen())),
       child: GlassCard(
-        child: Row(
+        child: Column(
           children: [
-            Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: community.activeCommunity!.logoUrl != null &&
-                      community.activeCommunity!.logoUrl!.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        community.activeCommunity!.logoUrl!,
-                        width: 42, height: 42,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                            Icons.groups_rounded,
-                            color: AppColors.primary, size: 22),
-                      ),
-                    )
-                  : const Icon(Icons.groups_rounded,
-                      color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(community.activeCommunity!.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(
-                    'Код: ${community.activeCommunity!.inviteCode} • ${community.activeCommunity!.totalMembers} уч.',
-                    style: const TextStyle(
-                        color: AppColors.textHint, fontSize: 12),
+            // ─── Community row ───
+            Row(
+              children: [
+                Container(
+                  width: 42, height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const MembersScreen())),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2)),
+                  child: community.activeCommunity!.logoUrl != null &&
+                          community.activeCommunity!.logoUrl!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            community.activeCommunity!.logoUrl!,
+                            width: 42, height: 42,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                                Icons.groups_rounded,
+                                color: AppColors.primary, size: 22),
+                          ),
+                        )
+                      : const Icon(Icons.groups_rounded,
+                          color: AppColors.primary, size: 22),
                 ),
-                child: const Icon(Icons.people_alt_rounded,
-                    color: AppColors.primary, size: 16),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(community.activeCommunity!.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Код: ${community.activeCommunity!.inviteCode} • ${community.activeCommunity!.totalMembers} уч.',
+                        style: const TextStyle(
+                            color: AppColors.textHint, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const MembersScreen())),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: const Icon(Icons.people_alt_rounded,
+                        color: AppColors.primary, size: 16),
+                  ),
+                ),
+              ],
             ),
+            // ─── Subscription row (personalized) ───
+            if (sub != null && userId != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Builder(builder: (_) {
+                  final isSignedUp = sub.hasUser(userId);
+                  final entryCount = sub.entries.length;
+                  final perPlayer = entryCount > 0
+                      ? sub.effectiveRent / entryCount
+                      : sub.effectiveRent;
+                  final _matches = sub.entries
+                      .where((e) => e.userId == userId)
+                      .toList();
+                  final userEntry = _matches.isNotEmpty ? _matches.first : null;
+                  final isPaid = userEntry?.paymentStatus == SubscriptionPaymentStatus.paid;
+                  final isCalculated = sub.isCalculated;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: t.borderLight.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSignedUp
+                              ? Icons.check_circle_rounded
+                              : Icons.card_membership_rounded,
+                          color: isSignedUp ? AppColors.primary : t.textHint,
+                          size: 15,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isSignedUp ? 'Абонемент' : 'Не записан',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: isSignedUp ? t.textPrimary : t.textHint,
+                          ),
+                        ),
+                        if (isSignedUp) ...[
+                          Text(
+                            ' • ',
+                            style: TextStyle(color: t.textHint, fontSize: 11),
+                          ),
+                          if (isCalculated && isPaid)
+                            Text('Оплачено ✓',
+                                style: TextStyle(
+                                    color: AppColors.success,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600))
+                          else if (isCalculated)
+                            Text('К оплате',
+                                style: TextStyle(
+                                    color: AppColors.warning,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600))
+                          else
+                            Text('$entryCount чел.',
+                                style: TextStyle(
+                                    color: t.textHint,
+                                    fontSize: 11)),
+                        ],
+                        const Spacer(),
+                        Text(
+                          '~${Helpers.formatCurrency(perPlayer)}',
+                          style: TextStyle(
+                            color: isSignedUp ? t.textPrimary : t.textHint,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+
 
   // ─────────── NO COMMUNITY ───────────
 
@@ -1436,97 +1772,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ─────────── SUBSCRIPTION ───────────
-
-  Widget _buildSubscription(dynamic sub) {
-    return GlassCard(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.card_membership_rounded,
-                color: AppColors.accent, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Абонемент',
-                    style: TextStyle(fontWeight: FontWeight.w600)),
-                Text(
-                  'Записано: ${sub.entries.length} чел. • Аренда: ${Helpers.formatCurrency(sub.totalRent)}',
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ─────────── MENU ───────────
 
   Widget _buildMenu(BuildContext context, AuthProvider auth) {
-    final themeProv = context.watch<ThemeProvider>();
     final t = AppColors.of(context);
 
     return Column(
       children: [
-        // Dark mode toggle
-        Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          decoration: BoxDecoration(
-            color: t.cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: t.isDark
-                    ? Colors.black.withValues(alpha: 0.18)
-                    : Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-                spreadRadius: -3,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(
-                themeProv.isDark
-                    ? Icons.dark_mode_rounded
-                    : Icons.light_mode_rounded,
-                color: themeProv.isDark
-                    ? const Color(0xFFFFB800)
-                    : const Color(0xFF546E7A),
-                size: 22,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  themeProv.isDark ? 'Тёмная тема' : 'Светлая тема',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
-                  ),
-                ),
-              ),
-              Switch.adaptive(
-                value: themeProv.isDark,
-                activeTrackColor: AppColors.primary,
-                onChanged: (_) => themeProv.toggle(),
-              ),
-            ],
-          ),
-        ),
         _menuTile(Icons.directions_run_rounded, 'Моя дистанция',
             () => _showDistanceSheet(context)),
         _menuTile(Icons.account_balance_wallet_rounded, 'Кошелёк',
@@ -1537,7 +1790,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (_) => const GenderSelectorScreen()))),
         _menuTile(Icons.tune_rounded, 'Мои виды спорта',
             () => ManageSportsScreen.show(context)),
-        _menuTile(Icons.notifications_none_rounded, 'Уведомления', () {}),
+        _menuTile(Icons.people_outline_rounded, 'Друзья и подписки',
+            () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const FriendsScreen()))),
+        _buildNotificationTile(context),
         Divider(
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
         _menuTile(Icons.explore_rounded, 'Список сообществ',
@@ -1552,6 +1808,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _menuTile(Icons.logout_rounded, 'Выйти', () => auth.logout(),
             isDestructive: true),
       ],
+    );
+  }
+
+  Widget _buildNotificationTile(BuildContext context) {
+    final t = AppColors.of(context);
+    final notifProv = context.watch<NotificationProvider>();
+    final unread = notifProv.unreadCount;
+    return ListTile(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const NotificationsScreen())),
+      contentPadding: EdgeInsets.zero,
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(Icons.notifications_none_rounded,
+              color: t.textSecondary, size: 22),
+          if (unread > 0)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: AppColors.error,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Text(
+                  unread > 9 ? '9+' : '$unread',
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Text('Уведомления', style: TextStyle(color: t.textPrimary, fontSize: 14)),
+      trailing: Icon(Icons.chevron_right_rounded, color: t.borderLight, size: 20),
     );
   }
 

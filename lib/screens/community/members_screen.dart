@@ -9,6 +9,7 @@ import '../../providers/community_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/avatar_viewer.dart';
+import '../profile/public_profile_screen.dart';
 
 
 class MembersScreen extends StatefulWidget {
@@ -564,7 +565,7 @@ class _MembersScreenState extends State<MembersScreen>
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.backgroundCard.withValues(alpha: 0.5),
+                  color: AppColors.of(context).surfaceBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                       color: AppColors.borderLight.withValues(alpha: 0.5)),
@@ -663,16 +664,17 @@ class _MembersScreenState extends State<MembersScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
       ),
       child: Text(
         label,
         style: TextStyle(
           color: color,
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
         ),
       ),
     );
@@ -734,283 +736,284 @@ class _MembersScreenState extends State<MembersScreen>
         ? const Color(0xFF22C55E).withValues(alpha: 0.2)
         : t.borderLight;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+    return GestureDetector(
+      onTap: () {
+        // Don't navigate to own profile
+        if (user.id != currentUserId) {
+          Navigator.push(context,
+            MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: user.id)));
+        }
+      },
+      child: Container(
+      margin: const EdgeInsets.only(bottom: 6),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         color: paidBg,
-        border: Border.all(color: paidBorder),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: paidBorder, width: 0.8),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
           children: [
-            Row(
-              children: [
-                // Avatar
-                GestureDetector(
-                  onTap: () {
-                    if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
-                      openAvatarViewer(
-                        context,
-                        avatarUrl: user.avatarUrl!,
-                        heroTag: 'member_avatar_${user.id}',
-                        userName: user.name,
-                      );
-                    }
-                  },
-                  child: Hero(
-                    tag: 'member_avatar_${user.id}',
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: roleColor.withValues(alpha: 0.1),
-                        border: Border.all(
-                          color: roleColor.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                user.avatarUrl!,
-                                width: 44, height: 44, fit: BoxFit.cover,
-                                errorBuilder: (c2, e2, st2) => Center(
-                                  child: Text(
-                                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                                    style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Center(
+            // Avatar (compact 36px)
+            GestureDetector(
+              onTap: () {
+                if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+                  openAvatarViewer(
+                    context,
+                    avatarUrl: user.avatarUrl!,
+                    heroTag: 'member_avatar_${user.id}',
+                    userName: user.name,
+                  );
+                }
+              },
+              child: Hero(
+                tag: 'member_avatar_${user.id}',
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: roleColor.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: roleColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.avatarUrl!,
+                            width: 36, height: 36, fit: BoxFit.cover,
+                            errorBuilder: (c2, e2, st2) => Center(
                               child: Text(
                                 user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                                style: TextStyle(color: roleColor, fontSize: 18, fontWeight: FontWeight.w700),
+                                style: TextStyle(color: roleColor, fontSize: 14, fontWeight: FontWeight.w700),
                               ),
                             ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Name + Status
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              user.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                color: t.textPrimary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
                           ),
-                          if (isUserOwner) ...[
-                            const SizedBox(width: 4),
-                            const Icon(Icons.star_rounded,
-                              size: 14, color: Color(0xFFFFB800)),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          // Role badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: roleColor.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: roleColor.withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(roleIcon, size: 10, color: roleColor),
-                                const SizedBox(width: 3),
-                                Text(roleLabel,
-                                  style: TextStyle(
-                                    color: roleColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (hasSubscription) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF22C55E).withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                    color: const Color(0xFF22C55E).withValues(alpha: 0.2)),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified_rounded,
-                                      size: 10, color: Color(0xFF22C55E)),
-                                  SizedBox(width: 3),
-                                  Text('Активен',
-                                    style: TextStyle(
-                                      color: Color(0xFF22C55E),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          const Spacer(),
-                          Text(
-                            '${user.balance.toInt()} \u20BD',
-                            style: TextStyle(
-                              color: user.balance >= 0
-                                  ? AppColors.textSecondary
-                                  : AppColors.error,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Action menu
-                if (isOwner || isAdmin)
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert_rounded,
-                        color: t.textHint, size: 20),
-                    color: t.dialogBg,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: t.borderLight),
-                    ),
-                    itemBuilder: (ctx) => [
-                      if (isAdmin || isOwner) ...[
-                        const PopupMenuItem(
-                          value: 'topup',
-                          child: Row(children: [
-                            Icon(Icons.add_circle_outline_rounded,
-                                color: AppColors.accent, size: 18),
-                            SizedBox(width: 8),
-                            Text('Пополнить баланс'),
-                          ]),
-                        ),
-                        const PopupMenuItem(
-                          value: 'deduct',
-                          child: Row(children: [
-                            Icon(Icons.remove_circle_outline_rounded,
-                                color: AppColors.error, size: 18),
-                            SizedBox(width: 8),
-                            Text('Списать средства'),
-                          ]),
-                        ),
-                      ],
-                      if (isOwner && user.id != currentUserId) ...[
-                        PopupMenuItem(
-                          value: role == UserRole.admin ? 'demote' : 'promote',
-                          child: Row(children: [
-                            Icon(
-                              role == UserRole.admin
-                                  ? Icons.person_remove_alt_1_rounded
-                                  : Icons.admin_panel_settings_rounded,
-                              color: role == UserRole.admin
-                                  ? AppColors.warning
-                                  : AppColors.primary,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(role == UserRole.admin
-                                ? 'Снять админа'
-                                : 'Назначить админом'),
-                          ]),
-                        ),
-                      ],
-                    ],
-                    onSelected: (value) => _onMenuAction(
-                      value, user, communityProv, auth,
-                    ),
-                  ),
-              ],
-            ),
-
-            // Subscription months
-            if (userSubs.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Container(height: 1, color: AppColors.borderLight.withValues(alpha: 0.5)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.calendar_month_rounded,
-                      size: 13, color: AppColors.textHint),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: userSubs.map((sub) {
-                        final now = DateTime.now();
-                        final isCurrent =
-                            sub.month == now.month && sub.year == now.year;
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isCurrent
-                                ? AppColors.accent.withValues(alpha: 0.08)
-                                : Colors.grey.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: isCurrent
-                                  ? AppColors.accent.withValues(alpha: 0.25)
-                                  : AppColors.borderLight,
-                            ),
-                          ),
+                        )
+                      : Center(
                           child: Text(
-                            '${_monthShort(sub.month)} ${sub.year % 100}',
-                            style: TextStyle(
-                              color: isCurrent
-                                  ? AppColors.accent
-                                  : AppColors.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: TextStyle(color: roleColor, fontSize: 14, fontWeight: FontWeight.w700),
                           ),
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Name + role/status row
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Name row
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          user.name,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: t.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isUserOwner) ...[
+                        const SizedBox(width: 3),
+                        const Icon(Icons.star_rounded,
+                          size: 12, color: Color(0xFFFFB800)),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  // Badges row
+                  Row(
+                    children: [
+                      // Role badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: roleColor.withValues(alpha: 0.35), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(roleIcon, size: 9, color: roleColor),
+                            const SizedBox(width: 3),
+                            Text(roleLabel,
+                              style: TextStyle(
+                                color: roleColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (hasSubscription) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFF22C55E).withValues(alpha: 0.35), width: 1),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_rounded,
+                                  size: 9, color: Color(0xFF22C55E)),
+                              SizedBox(width: 3),
+                              Text('Активен',
+                                style: TextStyle(
+                                  color: Color(0xFF22C55E),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      // Subscription month chips inline
+                      if (userSubs.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.calendar_month_rounded,
+                            size: 10, color: AppColors.textHint),
+                        const SizedBox(width: 3),
+                        ...userSubs.take(3).map((sub) {
+                          final now = DateTime.now();
+                          final isCurrent =
+                              sub.month == now.month && sub.year == now.year;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 3),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: isCurrent
+                                    ? AppColors.accent.withValues(alpha: 0.08)
+                                    : Colors.grey.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: isCurrent
+                                      ? AppColors.accent.withValues(alpha: 0.25)
+                                      : AppColors.borderLight,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                '${_monthShort(sub.month)} ${sub.year % 100}',
+                                style: TextStyle(
+                                  color: isCurrent
+                                      ? AppColors.accent
+                                      : AppColors.textSecondary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
+
+            // Balance
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Text(
+                '${user.balance.toInt()} \u20BD',
+                style: TextStyle(
+                  color: user.balance >= 0
+                      ? AppColors.textSecondary
+                      : AppColors.error,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+
+            // Action menu
+            if (isOwner || isAdmin)
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded,
+                    color: t.textHint, size: 18),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                color: t.dialogBg,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: t.borderLight),
+                ),
+                itemBuilder: (ctx) => [
+                  if (isAdmin || isOwner) ...[
+                    const PopupMenuItem(
+                      value: 'topup',
+                      child: Row(children: [
+                        Icon(Icons.add_circle_outline_rounded,
+                            color: AppColors.accent, size: 18),
+                        SizedBox(width: 8),
+                        Text('Пополнить баланс'),
+                      ]),
+                    ),
+                    const PopupMenuItem(
+                      value: 'deduct',
+                      child: Row(children: [
+                        Icon(Icons.remove_circle_outline_rounded,
+                            color: AppColors.error, size: 18),
+                        SizedBox(width: 8),
+                        Text('Списать средства'),
+                      ]),
+                    ),
+                  ],
+                  if (isOwner && user.id != currentUserId) ...[
+                    PopupMenuItem(
+                      value: role == UserRole.admin ? 'demote' : 'promote',
+                      child: Row(children: [
+                        Icon(
+                          role == UserRole.admin
+                              ? Icons.person_remove_alt_1_rounded
+                              : Icons.admin_panel_settings_rounded,
+                          color: role == UserRole.admin
+                              ? AppColors.warning
+                              : AppColors.primary,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(role == UserRole.admin
+                            ? 'Снять админа'
+                            : 'Назначить админом'),
+                      ]),
+                    ),
+                  ],
+                ],
+                onSelected: (value) => _onMenuAction(
+                  value, user, communityProv, auth,
+                ),
+              ),
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -1194,7 +1197,7 @@ class _MembersScreenState extends State<MembersScreen>
                   ),
                   filled: true,
                   fillColor:
-                      AppColors.backgroundCard.withValues(alpha: 0.6),
+                      AppColors.of(context).surfaceBg,
                 ),
               ),
               const SizedBox(height: 12),

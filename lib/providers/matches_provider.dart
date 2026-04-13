@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/sport_match.dart';
 import '../models/enums.dart';
+import '../models/app_notification.dart';
 import '../services/supabase_service.dart';
+import 'notification_provider.dart';
 
 /// Предопределённые цвета для команд
 const teamColors = [
@@ -23,6 +25,11 @@ class MatchesProvider extends ChangeNotifier {
   String? _currentCommunityId;
   List<String> _userCommunityIds = [];
   dynamic _realtimeSubscription;
+  NotificationProvider? _notifProv;
+
+  void setNotificationProvider(NotificationProvider prov) {
+    _notifProv = prov;
+  }
 
   List<SportMatch> get matches => _matches;
   List<SportMatch> get completedEvents => _completedEvents;
@@ -220,6 +227,12 @@ class MatchesProvider extends ChangeNotifier {
       _matches.add(match);
     }
     notifyListeners();
+    _notifProv?.add(
+      type: NotificationType.eventCreated,
+      title: 'Новое событие',
+      body: '${match.category.displayName} ${match.format} — ${match.location}',
+      payload: {'matchId': match.id},
+    );
   }
 
   // ============================================================
@@ -462,6 +475,12 @@ class MatchesProvider extends ChangeNotifier {
       'is_completed': true,
     });
     notifyListeners();
+    _notifProv?.add(
+      type: NotificationType.eventCompleted,
+      title: 'Событие завершено',
+      body: '${match.category.displayName} ${match.format} — результаты записаны',
+      payload: {'matchId': matchId},
+    );
     debugPrint('EVENT: Completed event $matchId');
   }
 }

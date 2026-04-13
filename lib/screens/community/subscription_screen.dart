@@ -397,7 +397,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       builder: (ctx) => Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.backgroundCard.withValues(alpha: 0.95),
+            color: AppColors.of(context).cardBg,
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border(
@@ -520,8 +520,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                 controller: rentCtrl,
                 keyboardType: TextInputType.number,
                 autofocus: true,
-                style: const TextStyle(
-                    color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: AppColors.of(context).textPrimary, fontSize: 22, fontWeight: FontWeight.w700),
                 decoration: InputDecoration(
                   suffixText: '₽',
                   suffixStyle: const TextStyle(
@@ -529,20 +529,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       fontWeight: FontWeight.w700,
                       fontSize: 18),
                   labelText: 'Стоимость аренды',
-                  labelStyle: TextStyle(color: AppColors.textHint),
                   prefixIcon: const Icon(Icons.attach_money,
                       color: AppColors.primary, size: 22),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        BorderSide(color: AppColors.borderLight),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.primary),
-                  ),
-                  filled: true,
-                  fillColor: AppColors.backgroundCard.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -1017,7 +1005,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
             decoration: BoxDecoration(
               color: bankBalance > 0
                   ? AppColors.accent.withValues(alpha: 0.12)
-                  : AppColors.backgroundCard.withValues(alpha: 0.5),
+                  : AppColors.of(context).surfaceBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: bankBalance > 0

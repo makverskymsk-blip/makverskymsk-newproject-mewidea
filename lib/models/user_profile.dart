@@ -25,6 +25,9 @@ class UserProfile {
   int trainingXp;
   int trainingLevel;
 
+  // ─── Social ───
+  bool isPublicProfile;  // true = open (instant follow), false = closed (requires approval)
+
   UserProfile({
     required this.id,
     required this.name,
@@ -45,6 +48,7 @@ class UserProfile {
     this.age,
     this.trainingXp = 0,
     this.trainingLevel = 1,
+    this.isPublicProfile = true,
   })  : communityIds = communityIds ?? [],
         sportPositions = sportPositions ?? {},
         createdAt = createdAt ?? DateTime.now();

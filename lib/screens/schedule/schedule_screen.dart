@@ -53,12 +53,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Расписание', style: Theme.of(context).textTheme.headlineMedium),
-                    SizedBox(
-                      width: 150,
-                      child: GlassButton(
-                        text: 'Создать',
-                        icon: Icons.add_rounded,
-                        onPressed: () => _showCreateDialog(context, matchesProv, communityProv),
+                    GestureDetector(
+                      onTap: () => _showCreateDialog(context, matchesProv, communityProv),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_rounded, color: AppColors.primary, size: 16),
+                            SizedBox(width: 4),
+                            Text('Создать',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                )),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -324,14 +340,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   const SizedBox(height: 16),
 
                   // Format selector
-                  const Text('Формат игры',
-                      style: TextStyle(color: AppColors.textHint, fontSize: 12)),
+                  Text('Формат игры',
+                      style: TextStyle(color: AppColors.of(context).textHint, fontSize: 12)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
                     runSpacing: 6,
                     children: formats.map((f) {
                       final isSelected = selectedFormat == f;
+                      final t = AppColors.of(context);
                       return GestureDetector(
                         onTap: () => setDialogState(() {
                           selectedFormat = f;
@@ -344,19 +361,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primary.withValues(alpha: 0.2)
-                                : AppColors.borderLight.withValues(alpha: 0.5),
+                                : t.surfaceBg.withValues(alpha: 0.6),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
-                                  : AppColors.borderLight,
+                                  : t.borderLight.withValues(alpha: 0.6),
                               width: isSelected ? 2 : 1,
                             ),
                           ),
                           child: Text(
                             f,
                             style: TextStyle(
-                              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                              color: isSelected ? AppColors.primary : t.textSecondary,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),
