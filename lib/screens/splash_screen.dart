@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../widgets/pl_logo.dart';
 
 /// Красивый экран загрузки с анимацией.
 /// Используется при инициализации и загрузке данных сообщества.
@@ -110,10 +111,7 @@ class _SplashScreenState extends State<SplashScreen>
                   ScaleTransition(
                     scale: _pulseAnimation,
                     child: Container(
-                      width: 100,
-                      height: 100,
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
@@ -123,11 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ],
                       ),
-                      child: const Icon(
-                        Icons.sports_soccer,
-                        color: Colors.white,
-                        size: 48,
-                      ),
+                      child: const PLLogo(size: 100),
                     ),
                   ),
 

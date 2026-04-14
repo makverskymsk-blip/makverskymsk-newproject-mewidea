@@ -1,11 +1,11 @@
 {
-    "name": "New Idea Works",
-    "short_name": "New Idea",
+    "name": "Performance Lab",
+    "short_name": "PL",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0D0D0F",
+    "theme_color": "#FF6B35",
+    "description": "Управление спортивным клубом",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

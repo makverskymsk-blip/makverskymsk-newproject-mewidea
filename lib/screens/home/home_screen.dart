@@ -11,6 +11,7 @@ import '../../utils/helpers.dart';
 import '../community/subscription_screen.dart';
 import '../community/event_manage_screen.dart';
 import '../../widgets/game_card.dart';
+import '../../widgets/pl_logo.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -173,37 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader(double balance, String? communityName, String? communityLogoUrl) {
     return Row(
       children: [
-        Container(
-          width: 42, height: 42,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFF6B35), Color(0xFFE8430A)],
-            ),
-            borderRadius: BorderRadius.circular(13),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFF6B35).withValues(alpha: 0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Text(
-              'PL',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
+        const PLLogo(size: 42),
         const SizedBox(width: 12),
         Expanded(
           child: Column(

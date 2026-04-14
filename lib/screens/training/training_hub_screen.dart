@@ -149,6 +149,35 @@ class _TrainingHubScreenState extends State<TrainingHubScreen>
                       color: t.textPrimary,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // ─── "В разработке" badge ───
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.construction_rounded,
+                            size: 10, color: AppColors.accent),
+                        const SizedBox(width: 4),
+                        Text(
+                          'beta',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accent,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const Spacer(),
                   GestureDetector(
                     onTap: _startWorkout,
