@@ -11,6 +11,7 @@ import '../../widgets/glass_card.dart';
 import 'members_screen.dart';
 import 'subscription_screen.dart';
 import 'community_chat_screen.dart';
+import '../../widgets/avatar_viewer.dart';
 
 class CommunityManageScreen extends StatefulWidget {
   const CommunityManageScreen({super.key});
@@ -219,50 +220,48 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
           children: [
             // Logo / avatar
             GestureDetector(
-              onTap: isOwner ? () => _pickAndUploadLogo(communityId) : null,
-              child: Stack(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppColors.primary.withValues(alpha: 0.15)
-                          : AppColors.of(context).borderLight.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: logoUrl != null && logoUrl.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: Image.network(
-                              logoUrl,
-                              width: 48, height: 48,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Icon(
-                                Icons.groups_rounded,
-                                color: isActive ? AppColors.primary : AppColors.of(context).textHint,
-                              ),
-                            ),
-                          )
-                        : Icon(
-                            Icons.groups_rounded,
-                            color: isActive ? AppColors.primary : AppColors.of(context).textHint,
-                          ),
+              onTap: () {
+                if (logoUrl != null && logoUrl.isNotEmpty) {
+                  openAvatarViewer(
+                    context,
+                    avatarUrl: logoUrl,
+                    heroTag: 'community_logo_$communityId',
+                    userName: name,
+                    onUpload: isOwner ? () => _pickAndUploadLogo(communityId) : null,
+                  );
+                } else if (isOwner) {
+                  _pickAndUploadLogo(communityId);
+                }
+              },
+              child: Hero(
+                tag: 'community_logo_$communityId',
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? AppColors.primary.withValues(alpha: 0.15)
+                        : AppColors.of(context).borderLight.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(100),
                   ),
-                  if (isOwner)
-                    Positioned(
-                      right: 0, bottom: 0,
-                      child: Container(
-                        width: 16, height: 16,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.of(context).cardBg, width: 1.5),
+                  child: logoUrl != null && logoUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: Image.network(
+                            logoUrl,
+                            width: 48, height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Icon(
+                              Icons.groups_rounded,
+                              color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          Icons.groups_rounded,
+                          color: isActive ? AppColors.primary : AppColors.of(context).textHint,
                         ),
-                        child: const Icon(Icons.camera_alt, size: 8, color: Colors.white),
-                      ),
-                    ),
-                ],
+                ),
               ),
             ),
             const SizedBox(width: 14),

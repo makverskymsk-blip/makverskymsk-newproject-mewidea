@@ -168,7 +168,7 @@ class GameCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: onParticipate,
-                     borderRadius: BorderRadius.circular(100),
+                     borderRadius: BorderRadius.circular(16),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
@@ -178,7 +178,7 @@ class GameCard extends StatelessWidget {
                       color: isUserRegistered
                           ? AppColors.error.withValues(alpha: 0.12)
                           : null,
-                      borderRadius: BorderRadius.circular(100),
+                      borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isUserRegistered
                           ? AppColors.error.withValues(alpha: 0.5)

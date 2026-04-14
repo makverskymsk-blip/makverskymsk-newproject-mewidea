@@ -57,35 +57,15 @@ class _ThemeSwitchState extends State<ThemeSwitch>
         builder: (context, _) {
           final t = _ctrl.value;
 
-          final borderColor = Color.lerp(
-            const Color(0xFFFFB800),
-            const Color(0xFF818CF8),
-            t,
-          )!;
-
-          final bgColor = Color.lerp(
-            const Color(0xFFFFB800).withValues(alpha: 0.08),
-            const Color(0xFF6366F1).withValues(alpha: 0.10),
-            t,
-          )!;
-
           final iconColor = Color.lerp(
             const Color(0xFFFF8C00),
             const Color(0xFF818CF8),
             t,
           )!;
 
-          return Container(
+          return SizedBox(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: bgColor,
-              border: Border.all(
-                color: borderColor.withValues(alpha: 0.45),
-                width: 1.5,
-              ),
-            ),
             child: Center(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),

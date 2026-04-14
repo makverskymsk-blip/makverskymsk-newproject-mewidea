@@ -54,6 +54,11 @@ class ChatProvider extends ChangeNotifier {
 
       _hasMore = raw.length >= _pageSize;
 
+      // Auto-cleanup old community messages (keep last 5 days)
+      if (chatType == 'community') {
+        _db.cleanupOldCommunityMessages(chatId, daysToKeep: 5);
+      }
+
       // Subscribe to realtime
       _subscribeToRealtime(chatId, myUserId);
     } catch (e) {
@@ -139,6 +144,18 @@ class ChatProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('CHAT: Error deleting message: $e');
+    }
+  }
+
+  /// Clear all messages in the current direct chat (hard-delete)
+  Future<void> clearChat() async {
+    if (_currentChatId == null || _currentChatType != 'direct') return;
+    try {
+      await _db.clearDirectChat(_currentChatId!);
+      _messages = [];
+      notifyListeners();
+    } catch (e) {
+      debugPrint('CHAT: Error clearing chat: $e');
     }
   }
 

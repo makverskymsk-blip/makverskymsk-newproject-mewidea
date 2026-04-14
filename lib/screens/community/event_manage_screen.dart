@@ -383,7 +383,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
-                              color: color,
+                              color: AppColors.of(context).textPrimary,
                             ),
                           ),
                           if (team.ratingsSubmitted) ...[
@@ -409,8 +409,9 @@ class _EventManageScreenState extends State<EventManageScreen>
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: color.withValues(alpha: 0.3)),
                       ),
                       child: Icon(Icons.person_add_rounded,
                           color: color, size: 16),
@@ -425,8 +426,9 @@ class _EventManageScreenState extends State<EventManageScreen>
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.12),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                       ),
                       child: const Icon(Icons.delete_outline_rounded,
                           color: AppColors.error, size: 16),
@@ -448,26 +450,26 @@ class _EventManageScreenState extends State<EventManageScreen>
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF6D00).withValues(alpha: 0.1),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.25)),
+                      border: Border.all(color: AppColors.of(context).borderLight),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shield_rounded, size: 12, color: Color(0xFFFF6D00)),
+                        Icon(Icons.shield_rounded, size: 12, color: AppColors.of(context).textSecondary),
                         const SizedBox(width: 4),
-                        Text(cName, style: const TextStyle(
+                        Text(cName, style: TextStyle(
                           fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Color(0xFFFF6D00),
+                          color: AppColors.of(context).textPrimary,
                         )),
                         if (!match.isCompleted) ...[
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () => prov.removeCaptainFromTeam(
                                 widget.matchId, team.id, e.value),
-                            child: const Icon(Icons.close_rounded,
-                                size: 12, color: Color(0xFFFF6D00)),
+                            child: Icon(Icons.close_rounded,
+                                size: 12, color: AppColors.of(context).textHint),
                           ),
                         ],
                       ],
@@ -485,20 +487,20 @@ class _EventManageScreenState extends State<EventManageScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6D00).withValues(alpha: 0.08),
+                    color: Colors.transparent,
                     borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: const Color(0xFFFF6D00).withValues(alpha: 0.15)),
+                    border: Border.all(color: AppColors.of(context).borderLight),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.shield_rounded, size: 14, color: Color(0xFFFF6D00)),
+                      Icon(Icons.shield_rounded, size: 14, color: AppColors.of(context).textSecondary),
                       const SizedBox(width: 6),
                       Text(
                         team.hasCaptain ? 'Добавить 2-го капитана' : 'Назначить капитана',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Color(0xFFFF6D00),
+                          color: AppColors.of(context).textSecondary,
                         ),
                       ),
                     ],
@@ -525,32 +527,32 @@ class _EventManageScreenState extends State<EventManageScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(100),
                         border: Border.all(
                             color: isCpt
-                                ? const Color(0xFFFF6D00).withValues(alpha: 0.4)
-                                : color.withValues(alpha: 0.2)),
+                                ? AppColors.of(context).textSecondary.withValues(alpha: 0.4)
+                                : AppColors.of(context).borderLight),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isCpt) ...[
-                            const Icon(Icons.shield_rounded,
-                                size: 12, color: Color(0xFFFF6D00)),
+                            Icon(Icons.shield_rounded,
+                                size: 12, color: AppColors.of(context).textSecondary),
                             const SizedBox(width: 3),
                           ],
                           Text(
                             name,
                             style: TextStyle(
-                                color: color,
+                                color: AppColors.of(context).textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600),
                           ),
                           if (!match.isCompleted) ...[
                             const SizedBox(width: 4),
                             Icon(Icons.close_rounded,
-                                size: 12, color: color.withValues(alpha: 0.6)),
+                                size: 12, color: AppColors.of(context).textHint),
                           ],
                         ],
                       ),
@@ -569,16 +571,17 @@ class _EventManageScreenState extends State<EventManageScreen>
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(100),
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.star_rounded, size: 16, color: Colors.white),
-                      SizedBox(width: 6),
+                      Icon(Icons.star_rounded, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 6),
                       Text('Оценить команду', style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       )),
@@ -1693,9 +1696,9 @@ class _EventManageScreenState extends State<EventManageScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(100),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

@@ -12,6 +12,7 @@ void openAvatarViewer(
   required String avatarUrl,
   required String heroTag,
   String? userName,
+  VoidCallback? onUpload,
 }) {
   Navigator.of(context).push(
     PageRouteBuilder(
@@ -26,6 +27,7 @@ void openAvatarViewer(
           heroTag: heroTag,
           userName: userName,
           animation: animation,
+          onUpload: onUpload,
         );
       },
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -40,12 +42,14 @@ class _AvatarViewerPage extends StatefulWidget {
   final String heroTag;
   final String? userName;
   final Animation<double> animation;
+  final VoidCallback? onUpload;
 
   const _AvatarViewerPage({
     required this.avatarUrl,
     required this.heroTag,
     this.userName,
     required this.animation,
+    this.onUpload,
   });
 
   @override
@@ -106,33 +110,62 @@ class _AvatarViewerPageState extends State<_AvatarViewerPage> {
             SafeArea(
               child: Column(
                 children: [
-                  // Close button
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: AnimatedOpacity(
-                        opacity: opacity,
-                        duration: Duration.zero,
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.2),
+                  // Top bar: upload + close
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: AnimatedOpacity(
+                      opacity: opacity,
+                      duration: Duration.zero,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Upload button (left)
+                          if (widget.onUpload != null)
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                widget.onUpload!();
+                              },
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox(width: 40),
+                          // Close button (right)
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -219,6 +252,7 @@ class _AvatarViewerPageState extends State<_AvatarViewerPage> {
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.none,
                             shadows: [
                               Shadow(
                                 color: Colors.black54,

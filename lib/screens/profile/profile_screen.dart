@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../models/match_stats.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
@@ -28,6 +30,8 @@ import '../../providers/notification_provider.dart';
 import '../notifications/notifications_screen.dart';
 import '../../providers/friends_provider.dart';
 import 'friends_screen.dart';
+import '../community/community_chat_screen.dart';
+import 'direct_messages_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -105,6 +109,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _statsLoaded = false;
   SportCategory _selectedSport = SportCategory.football;
   bool _isTrainingMode = false;
+  List<String> _widgetOrder = _defaultOrder.toList();
+  bool _showAllMatches = false;
+
+  static const _defaultOrder = [
+    'fifa_card', 'last_matches', 'achievements', 'balance', 'community',
+  ];
+
+  static const _prefsKey = 'profile_widget_order';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWidgetOrder();
+  }
+
+  Future<void> _loadWidgetOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_prefsKey);
+    if (saved != null && saved.length == _defaultOrder.length) {
+      setState(() => _widgetOrder = saved);
+    }
+  }
+
+  Future<void> _saveWidgetOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, _widgetOrder);
+  }
 
   @override
   void didChangeDependencies() {
@@ -157,46 +188,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSportSelector(),
               const SizedBox(height: 20),
 
-              // ─── Content depends on mode ───
+              // ─── Reorderable content widgets ───
               if (_isTrainingMode) ...[
-                // Training Athlete Card placeholder (Sprint 3)
                 _buildTrainingCard(user),
                 const SizedBox(height: 16),
               ] else ...[
-                // ─── Stats Card (sport-aware) ───
-                PlayerFifaCard(
-                  playerName: user?.name ?? 'Игрок',
-                  position: posAbbr,
-                  positionFull: posFull,
-                  stats: overall,
-                  sport: _selectedSport,
-                  isPremium: user?.isPremium ?? false,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PlayerStatsScreen()),
-                  ),
+                ..._buildOrderedWidgets(
+                  context, user, community, sub, statsProv,
+                  posAbbr, posFull, overall, achievements, unlockedCount,
                 ),
-                const SizedBox(height: 16),
-
-                // ─── Last Matches (inner matches from completed events) ───
-                _buildLastMatches(context),
-                const SizedBox(height: 16),
-
-                // ─── Achievements (sport-specific) ───
-                _buildAchievements(achievements, unlockedCount),
-                const SizedBox(height: 16),
               ],
-
-              // ─── Balance ───
-              _buildBalance(user?.balance ?? 0),
-              const SizedBox(height: 16),
-
-              // ─── Community (with subscription inside) ───
-              if (community.activeCommunity != null)
-                _buildCommunityCard(context, community, sub, user?.id)
-              else
-                _buildNoCommunity(context),
-              const SizedBox(height: 16),
 
               // ─── Menu ───
               _buildMenu(context, auth),
@@ -563,7 +564,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final xpNeeded = user?.xpForNextLevel ?? 500;
     final progress = user?.xpProgress ?? 0.0;
 
-    return Container(
+    return Stack(
+      children: [
+        Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -707,6 +710,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+        ),
+        // ─── "В разработке" badge ───
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF6B35), Color(0xFFFF3D00)],
+              ),
+              borderRadius: BorderRadius.circular(100),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF6B35).withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.construction_rounded,
+                    size: 12, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'В разработке',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -803,73 +846,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         // Avatar
-        Stack(
-          children: [
-            GestureDetector(
-              onTap: () {
-                if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) {
-                  openAvatarViewer(
-                    context,
-                    avatarUrl: user.avatarUrl!,
-                    heroTag: 'profile_avatar_${user.id}',
-                    userName: user.name,
-                  );
-                } else {
-                  _pickAndUploadAvatar(context);
-                }
-              },
-              child: Hero(
-                tag: 'profile_avatar_${user?.id ?? 'none'}',
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: posColor.withValues(alpha: 0.1),
-                    border: Border.all(color: posColor.withValues(alpha: 0.3)),
-                  ),
-                  child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                      ? ClipOval(
-                          child: Image.network(
-                            user.avatarUrl!,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c1, e1, st1) => Center(
-                              child: Text(
-                                (user.name).substring(0, 1).toUpperCase(),
-                                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
-                              ),
-                            ),
-                          ),
-                        )
-                      : Center(
+        GestureDetector(
+          onTap: () {
+            if (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty) {
+              openAvatarViewer(
+                context,
+                avatarUrl: user.avatarUrl!,
+                heroTag: 'profile_avatar_${user.id}',
+                userName: user.name,
+                onUpload: () => _pickAndUploadAvatar(context),
+              );
+            } else {
+              _pickAndUploadAvatar(context);
+            }
+          },
+          child: Hero(
+            tag: 'profile_avatar_${user?.id ?? 'none'}',
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: posColor.withValues(alpha: 0.1),
+                border: Border.all(color: posColor.withValues(alpha: 0.3)),
+              ),
+              child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        user.avatarUrl!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c1, e1, st1) => Center(
                           child: Text(
-                            (user?.name ?? 'И').substring(0, 1).toUpperCase(),
+                            (user.name).substring(0, 1).toUpperCase(),
                             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
                           ),
                         ),
-                ),
-              ),
+                      ),
+                    )
+                  : Center(
+                      child: Text(
+                        (user?.name ?? 'И').substring(0, 1).toUpperCase(),
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: posColor),
+                      ),
+                    ),
             ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: GestureDetector(
-                onTap: () => _pickAndUploadAvatar(context),
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: t.cardBg, width: 2),
-                  ),
-                  child: const Icon(Icons.camera_alt, size: 10, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         const SizedBox(width: 12),
         // Name + ID + Community + Position
@@ -888,10 +911,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 2),
               Row(
                 children: [
-                  Text(
-                    'ID: ${(user?.id ?? "0000").substring((user?.id ?? "0000").length - 4)}',
-                    style: TextStyle(color: t.textHint, fontSize: 12),
-                  ),
                   _buildCommunityChip(),
                   const SizedBox(width: 6),
                   // Position badge (inline, small)
@@ -1003,6 +1022,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ? Icons.public_rounded
                   : Icons.lock_rounded,
               size: 14,
+              color: t.textHint,
+            ),
+          ),
+          // DM inbox
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const DirectMessagesScreen())),
+            child: Icon(
+              Icons.mail_outline_rounded,
+              size: 16,
               color: t.textHint,
             ),
           ),
@@ -1162,7 +1192,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    final display = innerResults.take(7).toList();
+    final maxVisible = _showAllMatches ? 10 : 5;
+    final display = innerResults.take(maxVisible).toList();
+    final hasMore = innerResults.length > 5;
     final wins = display.where((m) => m.result == _MatchResult.win).length;
     final draws = display.where((m) => m.result == _MatchResult.draw).length;
     final losses = display.where((m) => m.result == _MatchResult.loss).length;
@@ -1173,16 +1205,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: const Icon(Icons.history_rounded,
-                    size: 16, color: AppColors.primary),
-              ),
+              Icon(Icons.history_rounded,
+                  size: 18, color: t.textSecondary),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text('Последние матчи',
@@ -1372,6 +1396,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             );
           }),
+          // ─── Show more / collapse button ───
+          if (hasMore)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: GestureDetector(
+                onTap: () => setState(() => _showAllMatches = !_showAllMatches),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: t.cardBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: t.borderLight),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _showAllMatches
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: t.textSecondary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _showAllMatches
+                            ? 'Свернуть'
+                            : 'Показать ещё (${(innerResults.length > 10 ? 10 : innerResults.length) - 5})',
+                        style: TextStyle(
+                          color: t.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1622,6 +1686,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 GestureDetector(
                   onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const CommunityChatScreen())),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                          color: t.borderLight),
+                    ),
+                    child: Icon(Icons.chat_rounded,
+                        color: t.textSecondary, size: 16),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const MembersScreen())),
                   child: Container(
                     padding:
@@ -1630,10 +1711,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.35)),
+                          color: t.borderLight),
                     ),
-                    child: const Icon(Icons.people_alt_rounded,
-                        color: AppColors.primary, size: 16),
+                    child: Icon(Icons.people_alt_rounded,
+                        color: t.textSecondary, size: 16),
                   ),
                 ),
               ],
@@ -1773,6 +1854,128 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
 
+  // ─────────── WIDGET ORDER HELPERS ───────────
+
+  Widget _widgetForKey(
+    String key,
+    BuildContext context,
+    dynamic user,
+    CommunityProvider community,
+    dynamic sub,
+    StatsProvider statsProv,
+    String posAbbr,
+    String posFull,
+    PlayerOverallStats overall,
+    List<Achievement> achievements,
+    int unlockedCount,
+  ) {
+    switch (key) {
+      case 'fifa_card':
+        return PlayerFifaCard(
+          playerName: user?.name ?? 'Игрок',
+          position: posAbbr,
+          positionFull: posFull,
+          stats: overall,
+          sport: _selectedSport,
+          isPremium: user?.isPremium ?? false,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PlayerStatsScreen()),
+          ),
+        );
+      case 'last_matches':
+        return _buildLastMatches(context);
+      case 'achievements':
+        return _buildAchievements(achievements, unlockedCount);
+      case 'balance':
+        return _buildBalance(user?.balance ?? 0);
+      case 'community':
+        return community.activeCommunity != null
+            ? _buildCommunityCard(context, community, sub, user?.id)
+            : _buildNoCommunity(context);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// Widgets in saved order — long-press to drag and reorder
+  List<Widget> _buildOrderedWidgets(
+    BuildContext context,
+    dynamic user,
+    CommunityProvider community,
+    dynamic sub,
+    StatsProvider statsProv,
+    String posAbbr,
+    String posFull,
+    PlayerOverallStats overall,
+    List<Achievement> achievements,
+    int unlockedCount,
+  ) {
+    final widgets = <Widget>[];
+    for (final key in _widgetOrder) {
+      widgets.add(
+        LongPressDraggable<String>(
+          data: key,
+          axis: Axis.vertical,
+          hapticFeedbackOnStart: true,
+          feedback: Material(
+            color: Colors.transparent,
+            elevation: 12,
+            shadowColor: AppColors.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width - 40,
+              child: Opacity(
+                opacity: 0.9,
+                child: _widgetForKey(
+                  key, context, user, community, sub, statsProv,
+                  posAbbr, posFull, overall, achievements, unlockedCount,
+                ),
+              ),
+            ),
+          ),
+          childWhenDragging: Opacity(
+            opacity: 0.3,
+            child: _widgetForKey(
+              key, context, user, community, sub, statsProv,
+              posAbbr, posFull, overall, achievements, unlockedCount,
+            ),
+          ),
+          onDragEnd: (_) => _saveWidgetOrder(),
+          child: DragTarget<String>(
+            onWillAcceptWithDetails: (details) => details.data != key,
+            onAcceptWithDetails: (details) {
+              final oldIndex = _widgetOrder.indexOf(details.data);
+              final newIndex = _widgetOrder.indexOf(key);
+              if (oldIndex == -1 || newIndex == -1) return;
+              setState(() {
+                _widgetOrder.removeAt(oldIndex);
+                _widgetOrder.insert(newIndex, details.data);
+              });
+              _saveWidgetOrder();
+            },
+            builder: (ctx, candidateData, rejectedData) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: candidateData.isNotEmpty
+                    ? (Matrix4.identity()..scale(0.97, 0.97))
+                    : Matrix4.identity(),
+                transformAlignment: Alignment.center,
+                child: _widgetForKey(
+                  key, context, user, community, sub, statsProv,
+                  posAbbr, posFull, overall, achievements, unlockedCount,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 16));
+    }
+    return widgets;
+  }
+
+
   // ─────────── MENU ───────────
 
   Widget _buildMenu(BuildContext context, AuthProvider auth) {
@@ -1807,6 +2010,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
         _menuTile(Icons.logout_rounded, 'Выйти', () => auth.logout(),
             isDestructive: true),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            'ID: ${auth.currentUser?.id ?? "—"}',
+            style: TextStyle(
+              color: t.textHint.withValues(alpha: 0.5),
+              fontSize: 11,
+            ),
+          ),
+        ),
       ],
     );
   }

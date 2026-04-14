@@ -31,8 +31,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   bool _isLoading = true;
   String? _followStatus; // null, 'pending', 'accepted'
   bool _isMutual = false;
+  bool _isFollowing = false;
   SportCategory _selectedSport = SportCategory.football;
   final SupabaseService _db = SupabaseService();
+
+  /// Can view full profile: mutual followers OR (public profile + I follow them)
+  bool get _canViewProfile =>
+      _isMutual || (_targetUser?.isPublicProfile == true && _isFollowing);
 
   @override
   void initState() {
@@ -48,9 +53,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       if (myUid != null && _targetUser != null) {
         _followStatus = await _db.getFollowStatus(myUid, widget.userId);
         _isMutual = await _db.areMutualFollowers(myUid, widget.userId);
+        _isFollowing = _followStatus == 'accepted';
 
-        // Load stats for target user
-        if (_isMutual) {
+        // Load stats if allowed to view profile
+        if (_canViewProfile) {
           await context.read<StatsProvider>().loadPlayerStatsFromDb(widget.userId);
         }
       }
@@ -113,7 +119,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       // Follow button (only if not own profile)
                       if (!isOwnProfile) ...[
                         _buildFollowButton(t),
-                        if (_isMutual)
+                        if (_canViewProfile)
                           Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: GestureDetector(
@@ -160,8 +166,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         const SizedBox(height: 20),
                       ],
 
-                      // Content — visible only to mutual followers
-                      if (_isMutual || isOwnProfile) ...[
+                      // Content — visible to mutual followers or public profile followers
+                      if (_canViewProfile || isOwnProfile) ...[
                         // Sport selector
                         _buildSportSelector(t),
                         const SizedBox(height: 16),
@@ -448,7 +454,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           return GestureDetector(
             onTap: () {
               setState(() => _selectedSport = sport);
-              if (_isMutual) {
+              if (_canViewProfile) {
                 context
                     .read<StatsProvider>()
                     .loadPlayerStatsForSport(widget.userId, sport);
@@ -768,7 +774,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           Text(
             _followStatus == 'pending'
                 ? 'Запрос отправлен'
-                : 'Подпишитесь, чтобы увидеть профиль',
+                : isPrivate
+                    ? 'Закрытый профиль'
+                    : 'Подпишитесь, чтобы увидеть профиль',
             style: TextStyle(
               color: AppColors.of(context).textHint,
               fontSize: 15,
@@ -778,9 +786,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _isMutual
-                ? ''
-                : 'Карточка игрока, матчи и достижения доступны только для взаимных подписчиков',
+            isPrivate
+                ? 'Карточка игрока, матчи и достижения доступны только для взаимных подписчиков'
+                : 'Подпишитесь на этого игрока, чтобы увидеть его статистику и достижения',
             style: TextStyle(
               color: AppColors.of(context).textHint.withValues(alpha: 0.6),
               fontSize: 13,

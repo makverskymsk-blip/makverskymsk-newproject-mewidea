@@ -185,8 +185,9 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -433,7 +434,7 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
                   color: rating.overallRating >= 8.0
                       ? const Color(0xFFE6A817)
                       : (rating.overallRating >= 6.0
-                          ? AppColors.textPrimary
+                          ? AppColors.of(context).textPrimary
                           : const Color(0xFFE53935)),
                 ),
               ),

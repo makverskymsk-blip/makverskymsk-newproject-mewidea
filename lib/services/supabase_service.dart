@@ -1372,11 +1372,121 @@ class SupabaseService {
     return results;
   }
 
+  /// Get all direct conversations for a user (for DM inbox)
+  /// Returns list of conversations with last message and other user info.
+  Future<List<Map<String, dynamic>>> getDirectConversations(String userId) async {
+    try {
+      // Get all direct messages where userId is either sender or part of chat_id
+      final response = await _supabase
+          .from('messages')
+          .select()
+          .eq('chat_type', 'direct')
+          .or('chat_id.ilike.%$userId%')
+          .order('created_at', ascending: false);
+
+      // Group by chat_id, keep only last message
+      final Map<String, Map<String, dynamic>> chatMap = {};
+      for (final msg in response) {
+        final chatId = msg['chat_id'] as String;
+        if (!chatMap.containsKey(chatId)) {
+          chatMap[chatId] = msg;
+        }
+      }
+
+      // Enrich with other user's profile
+      final results = <Map<String, dynamic>>[];
+      for (final entry in chatMap.entries) {
+        final chatId = entry.key;
+        final lastMsg = entry.value;
+
+        // Extract the other user's ID from chat_id (format: id1_id2, sorted)
+        final parts = chatId.split('_');
+        if (parts.length < 2) continue;
+
+        // Reconstruct both UUIDs (they may contain hyphens so we join on underscore boundaries)
+        // The chat ID format is: sortedId1_sortedId2, where IDs are UUIDs
+        String? otherUserId;
+        // Try splitting by finding the userId in the chatId
+        if (chatId.startsWith(userId)) {
+          otherUserId = chatId.substring(userId.length + 1);
+        } else if (chatId.endsWith(userId)) {
+          otherUserId = chatId.substring(0, chatId.length - userId.length - 1);
+        } else {
+          continue;
+        }
+
+        // Get the other user's profile
+        final otherUser = await _supabase
+            .from('users')
+            .select('id, name, avatar_url')
+            .eq('id', otherUserId)
+            .maybeSingle();
+
+        if (otherUser == null) continue;
+
+        results.add({
+          'chat_id': chatId,
+          'last_message': lastMsg,
+          'other_user': otherUser,
+        });
+      }
+
+      // Sort by last message time (newest first)
+      results.sort((a, b) {
+        final aTime = DateTime.parse(a['last_message']['created_at']);
+        final bTime = DateTime.parse(b['last_message']['created_at']);
+        return bTime.compareTo(aTime);
+      });
+
+      return results;
+    } catch (e) {
+      debugPrint('CHAT: Error loading direct conversations: $e');
+      return [];
+    }
+  }
+
   /// Soft-delete a message
   Future<void> deleteMessage(String messageId) async {
     await _supabase.from('messages').update({
       'is_deleted': true,
       'content': 'Сообщение удалено',
     }).eq('id', messageId);
+  }
+
+  /// Auto-cleanup: hard-delete community messages older than [daysToKeep] days.
+  /// Called automatically when opening a community chat.
+  Future<int> cleanupOldCommunityMessages(String chatId, {int daysToKeep = 3}) async {
+    final cutoff = DateTime.now().subtract(Duration(days: daysToKeep));
+    try {
+      final deleted = await _supabase
+          .from('messages')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('chat_type', 'community')
+          .lt('created_at', cutoff.toIso8601String())
+          .select('id');
+      debugPrint('CHAT CLEANUP: Deleted ${deleted.length} old messages from community $chatId (older than $daysToKeep days)');
+      return deleted.length;
+    } catch (e) {
+      debugPrint('CHAT CLEANUP ERROR: $e');
+      return 0;
+    }
+  }
+
+  /// Clear all messages in a direct chat (hard-delete).
+  Future<int> clearDirectChat(String chatId) async {
+    try {
+      final deleted = await _supabase
+          .from('messages')
+          .delete()
+          .eq('chat_id', chatId)
+          .eq('chat_type', 'direct')
+          .select('id');
+      debugPrint('CHAT CLEAR: Deleted ${deleted.length} messages from DM $chatId');
+      return deleted.length;
+    } catch (e) {
+      debugPrint('CHAT CLEAR ERROR: $e');
+      return 0;
+    }
   }
 }

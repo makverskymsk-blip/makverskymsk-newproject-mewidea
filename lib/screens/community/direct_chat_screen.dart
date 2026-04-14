@@ -121,6 +121,14 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
           ],
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete_sweep_rounded,
+                color: t.textHint, size: 22),
+            tooltip: 'Очистить чат',
+            onPressed: _showClearChatDialog,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -409,6 +417,38 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               context.read<ChatProvider>().deleteMessage(msg.id);
             },
             child: const Text('Удалить',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearChatDialog() {
+    final t = AppColors.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: t.dialogBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Очистить чат?',
+            style: TextStyle(color: t.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Все сообщения будут удалены безвозвратно для обоих участников.',
+          style: TextStyle(color: t.textHint, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Отмена', style: TextStyle(color: t.textHint)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<ChatProvider>().clearChat();
+            },
+            child: const Text('Очистить',
                 style: TextStyle(
                     color: AppColors.error, fontWeight: FontWeight.w700)),
           ),
