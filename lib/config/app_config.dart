@@ -35,7 +35,7 @@ class AppConfig {
     supabaseUrl: 'https://wviyyqzbafdgmsawrpnv.supabase.co',
     supabaseAnonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2aXl5cXpiYWZkZ21zYXdycG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDY0OTYsImV4cCI6MjA5MDg4MjQ5Nn0.18plYJSc4MgV72mkJTY0oWBewiuwrV33zfufkTGqiFg',
-    appTitle: 'New Idea Works',
+    appTitle: 'Performance Lab',
   );
 
   // ─── Development ─────────────────────────────────────────
@@ -46,6 +46,6 @@ class AppConfig {
     supabaseUrl: 'https://wviyyqzbafdgmsawrpnv.supabase.co',
     supabaseAnonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2aXl5cXpiYWZkZ21zYXdycG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDY0OTYsImV4cCI6MjA5MDg4MjQ5Nn0.18plYJSc4MgV72mkJTY0oWBewiuwrV33zfufkTGqiFg',
-    appTitle: 'New Idea Works [DEV]',
+    appTitle: 'Performance Lab [DEV]',
   );
 }

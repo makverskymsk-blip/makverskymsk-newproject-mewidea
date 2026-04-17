@@ -375,6 +375,44 @@ class CommunityProvider extends ChangeNotifier {
     return true;
   }
 
+  /// Расчёт за конкретное событие: частично погасить долг участника
+  /// на сумму [amount] и зачислить в банк сообщества.
+  Future<bool> settleEventPayment({
+    required String requesterId,
+    required String targetUserId,
+    required double amount,
+    required String eventDescription,
+  }) async {
+    if (_activeCommunity == null) return false;
+    if (!_activeCommunity!.canManageBalance(requesterId)) return false;
+    if (amount <= 0) return false;
+
+    // 1. Погасить часть долга пользователя (прибавить amount к балансу)
+    await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
+
+    // 2. Добавить в банк сообщества
+    _activeCommunity!.bankBalance += amount;
+    await _db.updateCommunityBank(
+        _activeCommunity!.id, _activeCommunity!.bankBalance);
+
+    // 3. Зарегистрировать транзакцию
+    await _db.addTransaction(
+      _activeCommunity!.id,
+      Transaction(
+        id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
+        userId: targetUserId,
+        communityId: _activeCommunity!.id,
+        type: TransactionType.topUp,
+        amount: amount,
+        status: TransactionStatus.confirmed,
+        description: 'Оплата за: $eventDescription',
+      ),
+    );
+
+    notifyListeners();
+    return true;
+  }
+
   // ============================================================
   // БАЛАНС СООБЩЕСТВА — ручное пополнение и списание
   // ============================================================

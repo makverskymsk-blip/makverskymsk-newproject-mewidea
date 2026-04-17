@@ -1,0 +1,81 @@
+{
+  "project": "Performance Lab",
+  "boards": [
+    {
+      "name": "UI / Дизайн",
+      "columns": {
+        "done": [
+          {"title": "Dark/Light тема", "description": "Полная поддержка всех экранов, диалогов, табов"},
+          {"title": "Ghost UI система", "description": "Pill-shape радиусы (100), стеклянные карточки, прозрачные бэкграунды"},
+          {"title": "PLLogo CustomPainter", "description": "Логотип PL с 4 бейджами спорта (футбол, хоккей, теннис, киберспорт)"},
+          {"title": "Splash screen анимация", "description": "Пульсирующий логотип на экране загрузки"},
+          {"title": "Иконка приложения", "description": "Сгенерирована для Android, iOS, Web (flutter_launcher_icons)"},
+          {"title": "Бейдж В разработке", "description": "WIP бейдж на модуле Тренировок"},
+          {"title": "In-app уведомления", "description": "NotificationProvider + UI для событий матчей, баланса, достижений"},
+          {"title": "FIFA карточка игрока", "description": "Цветные tier (бронза/серебро/золото/легенда)"}
+        ],
+        "todo": [
+          {"title": "Аватарки в списке участников", "description": "Показать аватарки в members_screen"},
+          {"title": "Аватарки в событиях", "description": "Показать аватарки в event_manage_screen"},
+          {"title": "Persistence темы", "description": "Сохранять выбор светлая/тёмная в shared_preferences"}
+        ]
+      }
+    },
+    {
+      "name": "Backend / Supabase",
+      "columns": {
+        "done": [
+          {"title": "Realtime подписки", "description": "communities, users, matches — автообновление данных"},
+          {"title": "Команды/матчи JSONB", "description": "event_teams и inner_matches сохраняются в БД"},
+          {"title": "RLS: members создают события", "description": "matches_insert_member с проверкой member_ids"},
+          {"title": "Аватарки Storage", "description": "Bucket avatars + загрузка + RLS политики"},
+          {"title": "Автоочистка чатов", "description": "Удаление сообщений старше 5 дней"},
+          {"title": "Очистка DM чатов", "description": "Clear Chat для личных сообщений"}
+        ],
+        "todo": [
+          {"title": "Уведомления о новом участнике", "description": "Уведомление при входе нового члена сообщества"},
+          {"title": "Pull-to-refresh fallback", "description": "Fallback при сбое Realtime подключения"},
+          {"title": "RLS аудит", "description": "Исправить 42501 ошибки при создании пользователей"},
+          {"title": "Auth Web стабильность", "description": "Исправить Invalid Refresh Token на Web платформе"}
+        ]
+      }
+    },
+    {
+      "name": "Тренировки",
+      "columns": {
+        "done": [
+          {"title": "Sprint 1: Навигация + каркас", "description": "Вкладка Тренировка в BottomNav, модели, провайдер"},
+          {"title": "Sprint 2: Логика тренировок", "description": "TrainingProvider с XP, левелингом, аналитикой"},
+          {"title": "ActiveWorkoutScreen", "description": "Таймер, подходы, weight/reps, XP-диалог"},
+          {"title": "ExerciseLibraryScreen", "description": "Фильтр по группам мышц, добавление/удаление"},
+          {"title": "TrainingAnalyticsTab", "description": "4 графика: тоннаж, дни недели, мышцы pie, XP линия"}
+        ],
+        "todo": [
+          {"title": "AI Lab — Gemini конструктор", "description": "Конструктор тренировок с помощью Google Gemini AI", "priority": "high"},
+          {"title": "Body Heatmap", "description": "Тепловая карта нагрузки мышц (силуэт тела)", "priority": "medium"},
+          {"title": "Athlete Card", "description": "Карточка атлета в профиле при выборе Тренировка", "priority": "medium"},
+          {"title": "Radar Chart для тренировок", "description": "Диаграмма: сила, выносливость, объём, частота", "priority": "low"}
+        ]
+      }
+    },
+    {
+      "name": "Инфраструктура",
+      "columns": {
+        "done": [
+          {"title": "Web деплой GitHub Pages", "description": "yourperformancelab.ru + CNAME + 404.html"},
+          {"title": "SSL/HTTPS", "description": "Сертификат через GitHub Pages"},
+          {"title": "Open Graph мета-теги", "description": "Превью ссылок в Telegram/WhatsApp/VK"},
+          {"title": "Скрипт deploy.ps1", "description": "Деплой веб-версии одной командой"},
+          {"title": "Git контроль версий", "description": "main ветка, коммиты с историей"}
+        ],
+        "todo": [
+          {"title": "Linting warnings", "description": "Исправить use_build_context_synchronously"},
+          {"title": "Push-уведомления FCM", "description": "Firebase Cloud Messaging для push-уведомлений", "priority": "low"},
+          {"title": "Google Play / App Store", "description": "Публикация в магазины приложений", "priority": "low"},
+          {"title": "Локализация EN/RU", "description": "Мультиязычность приложения", "priority": "low"},
+          {"title": "Онбординг", "description": "Обучающие экраны для новых пользователей", "priority": "low"}
+        ]
+      }
+    }
+  ]
+}

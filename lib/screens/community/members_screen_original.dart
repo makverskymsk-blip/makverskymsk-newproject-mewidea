@@ -1,13 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/community.dart';
 import '../../models/enums.dart';
-import '../../models/sport_match.dart';
 
 import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
-import '../../providers/matches_provider.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/avatar_viewer.dart';
@@ -358,527 +356,189 @@ class _MembersScreenState extends State<MembersScreen>
       );
     }
 
-    // Get all community matches for cross-referencing
-    final matchesProv = context.read<MatchesProvider>();
-    final allMatches = [...matchesProv.matches, ...matchesProv.completedEvents];
-
     return RefreshIndicator(
       onRefresh: _loadMembers,
       color: AppColors.primary,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: debtors.length,
-        itemBuilder: (ctx, i) => _debtorCard(
+        itemBuilder: (ctx, i) => _debtorTile(
           debtors[i],
           community,
           isOwner,
           isAdmin,
           communityProv,
           auth,
-          allMatches,
         ),
       ),
     );
   }
 
-  /// Card for each debtor showing their events
-  Widget _debtorCard(
+  // ── Debtor tile with settle button ──
+  Widget _debtorTile(
     UserProfile user,
     Community community,
     bool isOwner,
     bool isAdmin,
     CommunityProvider communityProv,
     AuthProvider auth,
-    List<SportMatch> allMatches,
   ) {
     final debtAmount = user.balance.abs();
     const warningRed = Color(0xFFFF4D4D);
 
-    // Find events this user is registered for in this community
-    final userEvents = allMatches
-        .where((m) =>
-            m.communityId == community.id &&
-            m.registeredPlayerIds.contains(user.id) &&
-            m.price > 0)
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: warningRed.withValues(alpha: 0.04),
+        color: warningRed.withValues(alpha: 0.05),
         border: Border.all(
-          color: warningRed.withValues(alpha: 0.18),
+          color: warningRed.withValues(alpha: 0.2),
           width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: warningRed.withValues(alpha: 0.06),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
       ),
-      child: Column(
-        children: [
-          // ── Header: avatar + name + total debt ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            child: Row(
-              children: [
-                // Avatar
-                GestureDetector(
-                  onTap: () {
-                    if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
-                      openAvatarViewer(
-                        context,
-                        avatarUrl: user.avatarUrl!,
-                        heroTag: 'debtor_avatar_${user.id}',
-                        userName: user.name,
-                      );
-                    }
-                  },
-                  child: Hero(
-                    tag: 'debtor_avatar_${user.id}',
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            warningRed.withValues(alpha: 0.25),
-                            warningRed.withValues(alpha: 0.08),
-                          ],
-                        ),
-                        border: Border.all(
-                            color: warningRed.withValues(alpha: 0.35),
-                            width: 1.5),
-                      ),
-                      child: user.avatarUrl != null &&
-                              user.avatarUrl!.isNotEmpty
-                          ? ClipOval(
-                              child: Image.network(
-                                user.avatarUrl!,
-                                width: 44,
-                                height: 44,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Center(
-                                  child: Text(
-                                    user.name.isNotEmpty
-                                        ? user.name[0].toUpperCase()
-                                        : '?',
-                                    style: TextStyle(
-                                        color: warningRed,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800),
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Center(
-                              child: Text(
-                                user.name.isNotEmpty
-                                    ? user.name[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(
-                                    color: warningRed,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800),
-                              ),
-                            ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Avatar
+            GestureDetector(
+              onTap: () {
+                if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
+                  openAvatarViewer(
+                    context,
+                    avatarUrl: user.avatarUrl!,
+                    heroTag: 'debtor_avatar_${user.id}',
+                    userName: user.name,
+                  );
+                }
+              },
+              child: Hero(
+                tag: 'debtor_avatar_${user.id}',
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        warningRed.withValues(alpha: 0.3),
+                        warningRed.withValues(alpha: 0.1),
+                      ],
                     ),
+                    border:
+                        Border.all(color: warningRed.withValues(alpha: 0.4), width: 1.5),
                   ),
-                ),
-                const SizedBox(width: 12),
-
-                // Name + total debt
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user.name,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: AppColors.of(context).textPrimary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.trending_down_rounded,
-                              size: 13, color: warningRed),
-                          const SizedBox(width: 3),
-                          Text(
-                            'Долг: −${debtAmount.toInt()} ₽',
-                            style: TextStyle(
-                              color: warningRed,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                  child: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            user.avatarUrl!,
+                            width: 50, height: 50, fit: BoxFit.cover,
+                            errorBuilder: (c1, e1, st1) => Center(
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
+                              ),
                             ),
                           ),
-                        ],
+                        )
+                      : Center(
+                          child: Text(
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: TextStyle(color: warningRed, fontSize: 20, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Name + debt
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: AppColors.of(context).textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.trending_down_rounded,
+                          size: 14, color: warningRed),
+                      const SizedBox(width: 4),
+                      Text(
+                        '−${debtAmount.toInt()} ₽',
+                        style: TextStyle(
+                          color: warningRed,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Settle button
+            if (isOwner || isAdmin)
+              GestureDetector(
+                onTap: () => _confirmSettle(user, communityProv, auth),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00E676), Color(0xFF00C853)],
+                    ),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.account_balance_wallet_rounded,
+                          size: 16, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        'Settle',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                // Settle ALL button (secondary)
-                if (isOwner || isAdmin)
-                  GestureDetector(
-                    onTap: () => _confirmSettleAll(user, communityProv, auth),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                            color:
-                                const Color(0xFF00E676).withValues(alpha: 0.4)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.done_all_rounded,
-                              size: 14, color: Color(0xFF00E676)),
-                          SizedBox(width: 4),
-                          Text(
-                            'Всё',
-                            style: TextStyle(
-                              color: Color(0xFF00E676),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // ── Events list ──
-          if (userEvents.isNotEmpty) ...[
-            Container(
-              height: 0.5,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              color: warningRed.withValues(alpha: 0.12),
-            ),
-            ...userEvents.map((match) => _eventPaymentTile(
-                  match, user, isOwner, isAdmin, communityProv, auth)),
-          ] else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-              child: Text(
-                'Нет привязанных событий',
-                style: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 12,
-                ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Individual event payment tile inside debtor card
-  Widget _eventPaymentTile(
-    SportMatch match,
-    UserProfile user,
-    bool isOwner,
-    bool isAdmin,
-    CommunityProvider communityProv,
-    AuthProvider auth,
-  ) {
-    final isPast = match.dateTime.isBefore(DateTime.now());
-    final dateStr = _formatEventDate(match.dateTime);
-    final sportIcon = match.category.icon;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      child: Row(
-        children: [
-          // Sport icon
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: (isPast
-                      ? AppColors.primary
-                      : AppColors.textHint)
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(sportIcon,
-                size: 16,
-                color: isPast ? AppColors.primary : AppColors.textHint),
-          ),
-          const SizedBox(width: 10),
-
-          // Event details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  match.format,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.of(context).textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  children: [
-                    Text(
-                      dateStr,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isPast
-                            ? AppColors.textSecondary
-                            : AppColors.textHint,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (!isPast)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: AppColors.warning.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: const Text(
-                          'Предстоит',
-                          style: TextStyle(
-                            color: AppColors.warning,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Price
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF4D4D).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Text(
-              '${match.price.toInt()} ₽',
-              style: const TextStyle(
-                color: Color(0xFFFF4D4D),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Pay button
-          if (isOwner || isAdmin)
-            GestureDetector(
-              onTap: () => _confirmSettleEvent(
-                match, user, communityProv, auth),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00E676), Color(0xFF00C853)],
-                  ),
-                  borderRadius: BorderRadius.circular(100),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E676).withValues(alpha: 0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_rounded,
-                        size: 14, color: Colors.white),
-                    SizedBox(width: 3),
-                    Text(
-                      'Оплачено',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _formatEventDate(DateTime dt) {
-    const months = [
-      '', 'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
-      'июл', 'авг', 'сен', 'окт', 'ноя', 'дек',
-    ];
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '${dt.day} ${months[dt.month]} $h:$m';
-  }
-
-  /// Confirm per-event payment
-  void _confirmSettleEvent(
-    SportMatch match,
-    UserProfile user,
-    CommunityProvider communityProv,
-    AuthProvider auth,
-  ) {
-    final dateStr = _formatEventDate(match.dateTime);
-    final amount = match.price;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.of(context).dialogBg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(color: AppColors.borderLight),
-          ),
-          title: const Text('Подтвердить оплату'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                user.name,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w700, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.of(context).surfaceBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: AppColors.borderLight.withValues(alpha: 0.5)),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Icon(match.category.icon,
-                            size: 18, color: AppColors.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            match.format,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600, fontSize: 14),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(dateStr,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13)),
-                        Text('${amount.toInt()} ₽',
-                            style: const TextStyle(
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 1,
-                      color: AppColors.borderLight.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('В банк сообщества',
-                            style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 13)),
-                        Text('+${amount.toInt()} ₽',
-                            style: const TextStyle(
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Баланс участника будет увеличен на ${amount.toInt()} ₽',
-                style: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Отмена'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final ok = await communityProv.settleEventPayment(
-                  requesterId: auth.uid!,
-                  targetUserId: user.id,
-                  amount: amount,
-                  eventDescription: '${match.format} ($dateStr)',
-                );
-                if (ok) {
-                  setState(() {
-                    user.balance += amount;
-                  });
-                  if (user.id == auth.uid) {
-                    await auth.refreshBalance();
-                  }
-                  await _loadMembers();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '${user.name} — оплата за ${match.format} подтверждена (+${amount.toInt()} ₽)'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Подтвердить',
-                  style: TextStyle(color: AppColors.success)),
-            ),
           ],
+        ),
       ),
     );
   }
 
-  /// Confirm settle ALL (legacy — обнулить весь долг)
-  void _confirmSettleAll(
+  void _confirmSettle(
     UserProfile user,
     CommunityProvider communityProv,
     AuthProvider auth,
@@ -893,7 +553,7 @@ class _MembersScreenState extends State<MembersScreen>
             borderRadius: BorderRadius.circular(24),
             side: BorderSide(color: AppColors.borderLight),
           ),
-          title: const Text('Рассчитать всё?'),
+          title: const Text('Подтвердить расчёт'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,7 +577,7 @@ class _MembersScreenState extends State<MembersScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Весь долг',
+                        const Text('Долг участника',
                             style: TextStyle(
                                 color: AppColors.textSecondary,
                                 fontSize: 13)),
@@ -951,7 +611,7 @@ class _MembersScreenState extends State<MembersScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Баланс будет обнулён, вся сумма зачислена в кассу.',
+                'Баланс участника будет обнулён, а сумма зачислена в кассу.',
                 style: TextStyle(
                   color: AppColors.textHint,
                   fontSize: 12,
@@ -973,29 +633,32 @@ class _MembersScreenState extends State<MembersScreen>
                   currentBalance: user.balance,
                 );
                 if (ok) {
+                  // Immediately update local state so UI reflects change
                   setState(() {
                     user.balance = 0;
                   });
+                  // Refresh auth balance if settling own debt
                   if (user.id == auth.uid) {
                     await auth.refreshBalance();
                   }
+                  // Reload fresh data from DB
                   await _loadMembers();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            '${user.name} — полный расчёт (+${debtAmount.toInt()} ₽ в банк)'),
+                            '${user.name} — расчёт завершён (+${debtAmount.toInt()} ₽ в банк)'),
                         backgroundColor: AppColors.success,
                       ),
                     );
                   }
                 }
               },
-              child: const Text('Рассчитать всё',
+              child: const Text('Подтвердить',
                   style: TextStyle(color: AppColors.success)),
             ),
           ],
-      ),
+    ),
     );
   }
 
