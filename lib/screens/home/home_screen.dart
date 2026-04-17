@@ -140,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 } else if (match.creatorId != null) {
                                   // External/personal → creator wallet
                                   matchesProv.routePaymentToCreator(
-                                    match.creatorId!, effectivePrice);
+                                    match.creatorId!, effectivePrice, communityId: match.communityId);
                                 }
                               } else {
                                 // Unregistering — refund user
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   );
                                 } else if (match.creatorId != null) {
                                   matchesProv.routePaymentToCreator(
-                                    match.creatorId!, -effectivePrice);
+                                    match.creatorId!, -effectivePrice, communityId: match.communityId);
                                 }
                               }
                             }

@@ -312,8 +312,126 @@ lib/
 - **_userId null** — решено через getter с fallback на `Supabase.instance.client.auth.currentUser?.id`
 - **app.dart init** — TrainingProvider.init() вызывается и при наличии community, и без
 
+### Security Fix (17 апреля 2026) — migration_security_fix.sql ✅
+
+#### Исправлено:
+- [x] `join_community` RPC — проверка `auth.uid() = p_user_id` (нельзя добавить чужого)
+- [x] `leave_community` RPC — только сам или admin/owner может кикнуть
+- [x] `match_events` INSERT/DELETE — только admin/owner сообщества
+- [x] `match_player_stats` INSERT/UPDATE — только admin/owner сообщества
+- [x] `transactions` INSERT — только `auth.uid() = user_id`
+
+#### ⚠️ Осталось исправить:
+- [x] **`increment_user_balance` RPC** — добавлен `p_community_id`, проверка admin/owner ✅
+- [x] **`add_to_user_balance` RPC** — аналогично, проверка admin/owner ✅
+- [x] Удалён fallback в `updateUserBalance` (race condition) ✅
+- [ ] Создать **отдельный DEV-инстанс** Supabase (сейчас dev = prod!)
+- [ ] Скрыть `email` из публичного SELECT или сделать отдельную view
+
 ### Следующий спринт (Sprint 3)
 - [ ] AI Lab — конструктор тренировок на Gemini
 - [ ] Body Heatmap — тепловая карта нагрузки мышц (силуэт)
 - [ ] Athlete Card — полноценная карточка в профиле (при выборе «Тренировка»)
 - [ ] Radar Chart для тренировок (сила/выносливость/объём/частота)
+
+---
+
+## Архитектурный анализ (17 апреля 2026)
+
+### Архитектурный паттерн — 4-Layer Architecture
+
+```
+UI Layer         → screens/ + widgets/ + theme/
+Business Logic   → providers/ (12 × ChangeNotifier)
+Service Layer    → services/supabase_service.dart (Singleton, 1493 LOC)
+Data / Infra     → Supabase PostgreSQL + Auth + Storage + Realtime + RPC
+```
+
+### 12 Провайдеров (зарегистрированы в MultiProvider в main.dart)
+
+| Провайдер | Зона ответственности |
+|-----------|---------------------|
+| AuthProvider | Логин/логаут, профиль, баланс, Realtime `users` |
+| CommunityProvider | CRUD сообществ, абонементы, финансы, Realtime `communities`+`subscriptions` |
+| MatchesProvider | Матчи, команды, регистрация, Inner Matches, Realtime `matches` |
+| WalletProvider | Транзакции (read-only observer) |
+| StatsProvider | Статистика FIFA-стиль, достижения, Sport Metrics |
+| ThemeProvider | Light/Dark toggle |
+| MatchEventsProvider | Голы/ассисты внутри матча |
+| TrainingProvider | Тренировки, упражнения, Training Score, аналитика |
+| SportPrefsProvider | Выбранные виды спорта |
+| NotificationProvider | In-app уведомления (memory-based) |
+| FriendsProvider | Подписчики/подписки |
+| ChatProvider | Сообщения (community chat + DM) |
+
+### 5 Бизнес-доменов
+
+#### 1. Аутентификация
+- Supabase Auth → UserProfile в таблице `users`
+- Pre-create профиля при регистрации с email confirmation
+- Realtime подписка на изменения профиля
+
+#### 2. Сообщества
+- Иерархия: Owner → Admin → Player
+- Вступление по invite-code (RPC `join_community` — атомарно)
+- Community Directory + JoinRequests (pending→accepted/rejected)
+
+#### 3. Матчи и события
+- Полный жизненный цикл: Создание → Регистрация → Команды → InnerMatches → Оценка → Завершение
+- EventTeams (JSONB, до 5 команд) + InnerMatches (JSONB, до 45 матчей)
+- Авто-завершение при `allCaptainsRated`
+- Турнирная таблица: wins×3 + draws, tiebreak по разнице мячей
+
+#### 4. Финансы (самый сложный домен)
+- **Абонемент**: `(totalRent - compensation) / entries.count = perPlayer`
+- Регистрация до 25 числа → Расчёт → Списание → Подтверждение → Зачисление в банк
+- Компенсация из банка сообщества с пересчётом цен
+- Расчёт долгов: обнуление отрицательного баланса + зачисление в банк
+- Разовый вход: `singleGamePrice` (если нет абонемента)
+
+#### 5. Тренировки
+- Training Score (0-100) = regularity×0.35 + volume×0.30 + progress×0.20 + variety×0.15
+- Библиотека упражнений (50+ default, seedable, per-user)
+- Аналитика: tonnage history, muscle distribution, cardio comparison, session durations
+
+### Ключевые формулы
+
+```
+# Абонемент
+perPlayer = (totalRent - compensationAmount) / entries.length
+
+# Training Score
+regularity: streak (7→100, 5→80, 3→50, 1→20)
+volume:     weeklyTonnage / 5000 × 100
+progress:   thisWeek/lastWeek ratio (≥1.1→100, ≥0.95→70, ≥0.8→40)
+variety:    uniqueMuscleGroups (5→100, 4→80, 3→60...)
+
+# FIFA Overall Rating
+overall = avg(ATK, PAS, DEF, SPD, SKL)  // 0-99
+ATK = 50 + (totalGoals / totalGames × 25)
+```
+
+### Паттерны
+
+1. **Optimistic Update + Rollback** — все мутации AuthProvider
+2. **Supabase Realtime** — 5 каналов (users, communities, subscriptions, matches_global, transactions)
+3. **RPC SECURITY DEFINER** — атомарные операции (баланс, вступление/выход)
+4. **Singleton SupabaseService** — единая точка доступа к БД
+
+### Критические зависимости
+
+- `app.dart` — оркестратор, инициализирует провайдеры в строгом порядке
+- `CommunityProvider` пишет баланс напрямую (минуя AuthProvider) → возможна рассинхронизация
+- enum-индексы (`SportCategory.values[int]`) хранятся в БД — нельзя переставлять!
+- `SupabaseService` (51KB) — God Object, кандидат №1 на декомпозицию
+
+### Самые большие файлы (кандидаты на рефакторинг)
+
+| Файл | Размер |
+|------|--------|
+| profile_screen.dart | 100 KB |
+| subscription_screen.dart | 74 KB |
+| event_manage_screen.dart | 66 KB |
+| supabase_service.dart | 51 KB |
+| community_manage_screen.dart | 44 KB |
+| community_provider.dart | 35 KB |

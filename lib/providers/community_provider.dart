@@ -288,7 +288,7 @@ class CommunityProvider extends ChangeNotifier {
     if (_activeCommunity == null || amount <= 0) return false;
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
-    await _db.updateUserBalance(targetUserId, amount);
+    await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
     await _db.addTransaction(
       _activeCommunity!.id,
       Transaction(
@@ -315,7 +315,7 @@ class CommunityProvider extends ChangeNotifier {
     if (_activeCommunity == null || amount <= 0) return false;
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
-    await _db.updateUserBalance(targetUserId, -amount);
+    await _db.updateUserBalance(targetUserId, -amount, communityId: _activeCommunity!.id);
     await _db.addTransaction(
       _activeCommunity!.id,
       Transaction(
@@ -350,7 +350,7 @@ class CommunityProvider extends ChangeNotifier {
     final settledAmount = currentBalance.abs();
 
     // 1. Обнулить баланс пользователя (прибавить |долг|)
-    await _db.updateUserBalance(targetUserId, settledAmount);
+    await _db.updateUserBalance(targetUserId, settledAmount, communityId: _activeCommunity!.id);
 
     // 2. Добавить в банк сообщества
     _activeCommunity!.bankBalance += settledAmount;
@@ -741,7 +741,7 @@ class CommunityProvider extends ChangeNotifier {
 
       // Списать стоимость абонемента с баланса каждого подписчика
       if (perPlayer > 0) {
-        await _db.updateUserBalance(entry.userId, -perPlayer);
+        await _db.updateUserBalance(entry.userId, -perPlayer, communityId: _activeCommunity!.id);
         await _db.addTransaction(
           _activeCommunity!.id,
           Transaction(
@@ -802,7 +802,7 @@ class CommunityProvider extends ChangeNotifier {
     final amount = entry.calculatedAmount ?? sub.perPlayerAmount;
     if (amount > 0) {
       // Вернуть списанную сумму на баланс пользователя (он оплатил вживую)
-      await _db.updateUserBalance(targetUserId, amount);
+      await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
       await _db.addTransaction(
         _activeCommunity!.id,
         Transaction(
@@ -888,7 +888,7 @@ class CommunityProvider extends ChangeNotifier {
 
     if (price == 0) return true; // абонемент — бесплатно
 
-    await _db.updateUserBalance(userId, -price);
+    await _db.updateUserBalance(userId, -price, communityId: _activeCommunity!.id);
     await _db.addTransaction(
       _activeCommunity!.id,
       Transaction(

@@ -160,7 +160,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         );
                                       } else if (match.creatorId != null) {
                                         matchesProv.routePaymentToCreator(
-                                          match.creatorId!, effectivePrice);
+                                          match.creatorId!, effectivePrice, communityId: match.communityId);
                                       }
                                     } else {
                                       authProv.updateBalance(effectivePrice);
@@ -172,7 +172,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         );
                                       } else if (match.creatorId != null) {
                                         matchesProv.routePaymentToCreator(
-                                          match.creatorId!, -effectivePrice);
+                                          match.creatorId!, -effectivePrice, communityId: match.communityId);
                                       }
                                     }
                                   }

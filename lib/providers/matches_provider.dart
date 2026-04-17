@@ -190,9 +190,9 @@ class MatchesProvider extends ChangeNotifier {
   }
 
   /// Route payment to event creator (for external/personal events)
-  Future<void> routePaymentToCreator(String creatorId, double amount) async {
+  Future<void> routePaymentToCreator(String creatorId, double amount, {String? communityId}) async {
     try {
-      await _db.addToUserBalance(creatorId, amount);
+      await _db.addToUserBalance(creatorId, amount, communityId: communityId);
       debugPrint('PAYMENT: Routed ${amount.toInt()}₽ to creator $creatorId');
     } catch (e) {
       debugPrint('PAYMENT ERROR: Failed to route to creator: $e');

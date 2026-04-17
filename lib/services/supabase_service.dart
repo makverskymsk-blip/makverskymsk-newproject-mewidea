@@ -149,40 +149,21 @@ class SupabaseService {
     await _supabase.from('users').update(mappedData).eq('id', uid);
   }
 
-  /// Обновить баланс пользователя (прибавить или вычесть amount)
-  /// Требует SQL-функцию с SECURITY DEFINER:
-  /// CREATE OR REPLACE FUNCTION increment_user_balance(user_id_param UUID, amount_param DECIMAL)
-  /// RETURNS void AS $$ BEGIN UPDATE users SET balance = balance + amount_param WHERE id = user_id_param; END; $$ LANGUAGE plpgsql SECURITY DEFINER;
-  Future<void> updateUserBalance(String uid, double amount) async {
+  /// Обновить баланс пользователя (прибавить или вычесть amount).
+  /// [communityId] — если передан, RPC проверит что вызывающий admin/owner.
+  /// Если не передан, RPC разрешит изменение только собственного баланса.
+  Future<void> updateUserBalance(String uid, double amount, {String? communityId}) async {
     try {
-      debugPrint('BALANCE: calling RPC for $uid amount=$amount');
+      debugPrint('BALANCE: calling RPC for $uid amount=$amount communityId=$communityId');
       await _supabase.rpc('increment_user_balance', params: {
         'user_id_param': uid,
         'amount_param': amount,
+        'p_community_id': communityId,
       });
       debugPrint('BALANCE: RPC success for $uid');
     } catch (e) {
       debugPrint('BALANCE: RPC FAILED for $uid: $e');
-      // Fallback: direct update (works only if RLS allows)
-      try {
-        final current = await _supabase
-            .from('users')
-            .select('balance')
-            .eq('id', uid)
-            .maybeSingle();
-        if (current != null) {
-          final newBalance = (current['balance'] as num).toDouble() + amount;
-          await _supabase
-              .from('users')
-              .update({'balance': newBalance})
-              .eq('id', uid);
-          debugPrint('BALANCE: fallback OK — $uid -> $newBalance');
-        } else {
-          debugPrint('BALANCE: user $uid not found in DB!');
-        }
-      } catch (e2) {
-        debugPrint('BALANCE: FALLBACK ALSO FAILED for $uid: $e2');
-      }
+      rethrow;
     }
   }
 
@@ -633,11 +614,13 @@ class SupabaseService {
     return channel;
   }
 
-  /// RPC: Add amount to any user's balance atomically
-  Future<void> addToUserBalance(String userId, double amount) async {
+  /// RPC: Add amount to user's balance atomically.
+  /// [communityId] — если передан, RPC проверит что вызывающий admin/owner.
+  Future<void> addToUserBalance(String userId, double amount, {String? communityId}) async {
     await _supabase.rpc('add_to_user_balance', params: {
       'target_user_id': userId,
       'amount': amount,
+      'p_community_id': communityId,
     });
   }
 
