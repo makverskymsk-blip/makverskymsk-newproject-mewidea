@@ -231,8 +231,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
 
                             // Admin: compensation section
                             if (isAdmin &&
-                                !selectedSub.isCalculated &&
-                                selectedSub.entries.isNotEmpty)
+                                !selectedSub.isCalculated)
                               _adminCompensationSection(
                                   communityProv, auth, selectedSub),
 

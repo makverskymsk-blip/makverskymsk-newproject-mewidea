@@ -364,7 +364,7 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: t.cardBg,
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
           ),
           child: Row(

@@ -11,6 +11,7 @@ import '../../widgets/glass_card.dart';
 import 'members_screen.dart';
 import 'subscription_screen.dart';
 import 'community_chat_screen.dart';
+import 'community_directory_screen.dart';
 import '../../widgets/avatar_viewer.dart';
 
 class CommunityManageScreen extends StatefulWidget {
@@ -133,8 +134,15 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                 _tabChip(Icons.chat_rounded, 'Чат',
                                     () => Navigator.push(context,
                                         MaterialPageRoute(builder: (_) => const CommunityChatScreen()))),
-                                const SizedBox(width: 10),
-                                // Future tabs will go here
+                                // Join requests tab (admin only)
+                                if (active.isAdmin(auth.uid ?? ''))
+                                  _tabChipWithBadge(
+                                    Icons.person_add_alt_1_rounded,
+                                    'Запросы',
+                                    communityProv.pendingRequestCount,
+                                    () => Navigator.push(context,
+                                        MaterialPageRoute(builder: (_) => const CommunityDirectoryScreen())),
+                                  ),
                               ],
                             ),
                           ),
@@ -176,6 +184,63 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                     fontWeight: FontWeight.w600)),
             const SizedBox(width: 6),
             Icon(Icons.chevron_right_rounded, color: t.borderLight, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tabChipWithBadge(IconData icon, String title, int count, VoidCallback onTap) {
+    final t = AppColors.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(left: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: count > 0
+              ? AppColors.primary.withValues(alpha: 0.08)
+              : t.cardBg,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(
+            color: count > 0
+                ? AppColors.primary.withValues(alpha: 0.4)
+                : t.borderLight,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                color: count > 0 ? AppColors.primary : t.textSecondary,
+                size: 18),
+            const SizedBox(width: 8),
+            Text(title,
+                style: TextStyle(
+                    color: count > 0 ? AppColors.primary : t.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+            if (count > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(width: 6),
+              Icon(Icons.chevron_right_rounded, color: t.borderLight, size: 18),
+            ],
           ],
         ),
       ),

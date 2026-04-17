@@ -889,6 +889,7 @@ class _EventManageScreenState extends State<EventManageScreen>
     final standings = match.getStandings();
 
     return ListView(
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       children: [
         // Add match button

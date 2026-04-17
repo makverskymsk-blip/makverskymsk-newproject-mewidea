@@ -24,6 +24,8 @@ class CommunityProvider extends ChangeNotifier {
   void setActiveCommunity(Community community) async {
     _activeCommunity = community;
     _subscribeToCommunityRealtime(community.id);
+    // Auto-load pending join requests for admin badge
+    loadPendingRequests(community.id);
     notifyListeners();
     // Persist selection
     final prefs = await SharedPreferences.getInstance();
@@ -50,6 +52,8 @@ class CommunityProvider extends ChangeNotifier {
     // Subscribe to realtime for the active community
     if (_activeCommunity != null) {
       _subscribeToCommunityRealtime(_activeCommunity!.id);
+      // Auto-load pending join requests for admin badge
+      loadPendingRequests(_activeCommunity!.id);
     }
     notifyListeners();
   }
