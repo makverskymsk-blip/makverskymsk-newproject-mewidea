@@ -218,20 +218,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: (balance < 0 ? AppColors.error : AppColors.accent).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(color: (balance < 0 ? AppColors.error : AppColors.accent).withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            Helpers.formatCurrency(balance),
-            style: TextStyle(
-              color: balance < 0 ? AppColors.error : AppColors.accent,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+        Text(
+          Helpers.formatCurrency(balance),
+          style: TextStyle(
+            color: balance < 0 ? AppColors.error : AppColors.accent,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
           ),
         ),
       ],

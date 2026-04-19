@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/enums.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/community_provider.dart';
+import '../../services/supabase_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_button.dart';
 import '../../widgets/glass_card.dart';
@@ -134,18 +135,19 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
                                 _tabChip(Icons.chat_rounded, 'Чат',
                                     () => Navigator.push(context,
                                         MaterialPageRoute(builder: (_) => const CommunityChatScreen()))),
-                                // Join requests tab (admin only)
-                                if (active.isAdmin(auth.uid ?? ''))
-                                  _tabChipWithBadge(
-                                    Icons.person_add_alt_1_rounded,
-                                    'Запросы',
-                                    communityProv.pendingRequestCount,
+                                const SizedBox(width: 10),
+                                _tabChip(Icons.explore_rounded, 'Каталог',
                                     () => Navigator.push(context,
-                                        MaterialPageRoute(builder: (_) => const CommunityDirectoryScreen())),
-                                  ),
+                                        MaterialPageRoute(builder: (_) => const CommunityDirectoryScreen()))),
                               ],
                             ),
                           ),
+
+                          // ── Inline pending join requests (admin only) ──
+                          if (active.isAdmin(auth.uid ?? '') && communityProv.pendingRequestCount > 0) ...[
+                            const SizedBox(height: 20),
+                            _buildInlinePendingRequests(communityProv, auth),
+                          ],
                         ],
 
                         const SizedBox(height: 40),
@@ -247,6 +249,190 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
     );
   }
 
+  /// Inline section showing pending join requests with accept/reject actions
+  Widget _buildInlinePendingRequests(CommunityProvider cp, AuthProvider auth) {
+    final t = AppColors.of(context);
+    final requests = cp.pendingRequests;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_add_alt_1_rounded,
+                color: AppColors.primary, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Заявки на вступление',
+              style: TextStyle(
+                color: t.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.error,
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text(
+                '${requests.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...requests.map((req) => _buildInlineRequestCard(req, cp, t)),
+      ],
+    );
+  }
+
+  Widget _buildInlineRequestCard(
+      Map<String, dynamic> req, CommunityProvider cp, AppThemeColors t) {
+    final userId = req['user_id'] as String;
+    final requestId = req['id'] as String;
+    final communityId = req['community_id'] as String;
+    final createdAt = DateTime.tryParse(req['created_at'] ?? '');
+
+    return FutureBuilder<List>(
+      future: SupabaseService().getUsersByIds([userId]),
+      builder: (context, snap) {
+        final userName = snap.hasData && snap.data!.isNotEmpty
+            ? snap.data!.first.name
+            : userId.substring(0, 8);
+        final avatarUrl = snap.hasData && snap.data!.isNotEmpty
+            ? snap.data!.first.avatarUrl
+            : null;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: t.cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                backgroundImage:
+                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl == null
+                    ? Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              // Name + date
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(userName,
+                        style: TextStyle(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13)),
+                    if (createdAt != null)
+                      Text(
+                        '${createdAt.day}.${createdAt.month.toString().padLeft(2, '0')}.${createdAt.year}',
+                        style: TextStyle(color: t.textHint, fontSize: 11),
+                      ),
+                  ],
+                ),
+              ),
+              // Reject
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    await cp.rejectJoinRequest(requestId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Запрос отклонён'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Ошибка: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Icon(Icons.close_rounded,
+                      color: AppColors.error, size: 18),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Accept
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    await cp.acceptJoinRequest(requestId, userId, communityId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Пользователь принят!'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Ошибка: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Icon(Icons.check_rounded,
+                      color: AppColors.success, size: 18),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _communityTile(
     String name,
     String sport,
@@ -300,33 +486,25 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
               },
               child: Hero(
                 tag: 'community_logo_$communityId',
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.primary.withValues(alpha: 0.15)
-                        : AppColors.of(context).borderLight.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: logoUrl != null && logoUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: Image.network(
-                            logoUrl,
-                            width: 48, height: 48,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(
-                              Icons.groups_rounded,
-                              color: isActive ? AppColors.primary : AppColors.of(context).textHint,
-                            ),
+                child: logoUrl != null && logoUrl.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: Image.network(
+                          logoUrl,
+                          width: 48, height: 48,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.groups_rounded,
+                            color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+                            size: 28,
                           ),
-                        )
-                      : Icon(
-                          Icons.groups_rounded,
-                          color: isActive ? AppColors.primary : AppColors.of(context).textHint,
                         ),
-                ),
+                      )
+                    : Icon(
+                        Icons.groups_rounded,
+                        color: isActive ? AppColors.primary : AppColors.of(context).textHint,
+                        size: 28,
+                      ),
               ),
             ),
             const SizedBox(width: 14),
@@ -705,17 +883,8 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00D4AA), Color(0xFF00B894)],
-                  ),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: const Icon(Icons.account_balance_wallet_rounded,
-                    color: Colors.white, size: 16),
-              ),
+              const Icon(Icons.account_balance_wallet_rounded,
+                  color: AppColors.accent, size: 22),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(

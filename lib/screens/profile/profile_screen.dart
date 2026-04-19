@@ -32,6 +32,7 @@ import '../../providers/friends_provider.dart';
 import 'friends_screen.dart';
 import '../community/community_chat_screen.dart';
 import 'direct_messages_screen.dart';
+import '../../providers/chat_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1085,7 +1086,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
-    // Extract inner match results for this user
+    // Extract each inner match result individually
     final innerResults = <_InnerMatchResult>[];
     for (final event in completedEvents) {
       // Check if user participated at all
@@ -1104,7 +1105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (userTeamIdx < 0 && !isRegistered) continue;
 
       if (userTeamIdx >= 0 && event.innerMatches.isNotEmpty) {
-        // User is in a team — show inner match results
+        // User is in a team — show each inner match individually
         for (final im in event.innerMatches) {
           if (!im.isCompleted) continue;
           if (im.team1Index != userTeamIdx && im.team2Index != userTeamIdx) continue;
@@ -1597,18 +1598,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GlassCard(
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: (balance >= 0 ? AppColors.accent : AppColors.error)
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_rounded,
-              color: balance >= 0 ? AppColors.accent : AppColors.error,
-              size: 22,
-            ),
+          Icon(
+            Icons.account_balance_wallet_rounded,
+            color: balance >= 0 ? AppColors.accent : AppColors.error,
+            size: 26,
           ),
           const SizedBox(width: 14),
           Column(
@@ -1638,6 +1631,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildCommunityCard(
       BuildContext context, CommunityProvider community, dynamic sub, String? userId) {
     final t = AppColors.of(context);
+    
+    // Watch ChatProvider for unread badge updates
+    final chatProv = context.watch<ChatProvider>();
+    if (community.activeCommunity != null && userId != null) {
+      // Start background listener (post-frame to avoid build-phase async)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        chatProv.startBackgroundListener(
+          chatId: community.activeCommunity!.id,
+          myUserId: userId,
+        );
+      });
+    }
     return GestureDetector(
       onTap: () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const CommunityManageScreen())),
@@ -1647,28 +1652,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // ─── Community row ───
             Row(
               children: [
-                Container(
-                  width: 42, height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                  child: community.activeCommunity!.logoUrl != null &&
-                          community.activeCommunity!.logoUrl!.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: Image.network(
-                            community.activeCommunity!.logoUrl!,
-                            width: 42, height: 42,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                                Icons.groups_rounded,
-                                color: AppColors.primary, size: 22),
-                          ),
-                        )
-                      : const Icon(Icons.groups_rounded,
-                          color: AppColors.primary, size: 22),
-                ),
+                community.activeCommunity!.logoUrl != null &&
+                        community.activeCommunity!.logoUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(100),
+                        child: Image.network(
+                          community.activeCommunity!.logoUrl!,
+                          width: 42, height: 42,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.groups_rounded,
+                              color: AppColors.primary, size: 26),
+                        ),
+                      )
+                    : const Icon(Icons.groups_rounded,
+                        color: AppColors.primary, size: 26),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -1687,17 +1685,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 GestureDetector(
                   onTap: () => Navigator.push(context,
                       MaterialPageRoute(builder: (_) => const CommunityChatScreen())),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                          color: t.borderLight),
-                    ),
-                    child: Icon(Icons.chat_rounded,
-                        color: t.textSecondary, size: 16),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                          border: Border.all(
+                              color: t.borderLight),
+                        ),
+                        child: Icon(Icons.chat_rounded,
+                            color: t.textSecondary, size: 16),
+                      ),
+                      if (community.activeCommunity != null &&
+                          chatProv.unreadCountFor(community.activeCommunity!.id) > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Text(
+                              '${chatProv.unreadCountFor(community.activeCommunity!.id) > 9 ? "9+" : chatProv.unreadCountFor(community.activeCommunity!.id)}',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -1717,6 +1740,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: t.textSecondary, size: 16),
                   ),
                 ),
+                // Join requests icon (admin only, with badge)
+                if (community.activeCommunity!.isAdmin(userId ?? '') &&
+                    community.pendingRequestCount > 0) ...[
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => const CommunityManageScreen())),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.4)),
+                          ),
+                          child: const Icon(Icons.person_add_alt_1_rounded,
+                              color: AppColors.primary, size: 16),
+                        ),
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Text(
+                              '${community.pendingRequestCount}',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             // ─── Subscription row (personalized) ───

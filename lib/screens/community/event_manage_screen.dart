@@ -49,22 +49,7 @@ class _EventManageScreenState extends State<EventManageScreen>
     }
 
     return Scaffold(
-      floatingActionButton: !match.isCompleted && match.innerMatches.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MatchLiveScreen(match: match),
-                ),
-              ),
-              backgroundColor: AppColors.error,
-              icon: const Icon(Icons.fiber_manual_record, size: 14, color: Colors.white),
-              label: const Text('LIVE', style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              )),
-            )
-          : null,
+      floatingActionButton: null,
       body: Stack(
         children: [
           Container(color: AppColors.of(context).scaffoldBg),
@@ -81,12 +66,14 @@ class _EventManageScreenState extends State<EventManageScreen>
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.borderLight.withValues(alpha: 0.5),
+                            color: AppColors.of(context).cardBg,
                             borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: AppColors.of(context).borderLight),
                           ),
-                          child: const Icon(
+                          child: Icon(
                               Icons.arrow_back_ios_new_rounded,
-                              size: 18),
+                              size: 18,
+                              color: AppColors.of(context).textPrimary),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -113,23 +100,12 @@ class _EventManageScreenState extends State<EventManageScreen>
                       if (!match.isCompleted)
                         GestureDetector(
                           onTap: () => _completeEvent(matchesProv),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(100),
-                              border: Border.all(
-                                  color: AppColors.accent
-                                      .withValues(alpha: 0.3)),
-                            ),
-                            child: const Text(
-                              'Завершить',
-                              style: TextStyle(
-                                color: AppColors.accent,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
+                          child: const Text(
+                            'Завершить',
+                            style: TextStyle(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
                             ),
                           ),
                         ),
@@ -1033,18 +1009,19 @@ class _EventManageScreenState extends State<EventManageScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.borderLight.withValues(alpha: 0.5),
+                      color: AppColors.of(context).cardBg,
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
                           color:
-                              AppColors.borderLight),
+                              AppColors.of(context).borderLight),
                     ),
                     child: Text(
                       '$s1 : $s2',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 4,
+                        color: AppColors.of(context).textPrimary,
                       ),
                     ),
                   ),
@@ -1071,6 +1048,41 @@ class _EventManageScreenState extends State<EventManageScreen>
                 ),
               ],
             ),
+
+            // LIVE button — inside the match card
+            if (!im.isCompleted && !match.isCompleted) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MatchLiveScreen(match: match),
+                  ),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.fiber_manual_record, size: 10, color: AppColors.error),
+                      const SizedBox(width: 6),
+                      Text('LIVE', style: TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                        letterSpacing: 1,
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1275,13 +1287,12 @@ class _EventManageScreenState extends State<EventManageScreen>
                         decoration: BoxDecoration(
                           color: isSelected
                               ? color.withValues(alpha: 0.2)
-                              : AppColors.borderLight.withValues(alpha: 0.5),
+                              : AppColors.of(context).cardBg,
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
                             color: isSelected
                                 ? color
-                                : Colors.white
-                                    .withValues(alpha: 0.1),
+                                : AppColors.of(context).borderLight,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -1292,7 +1303,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                  color: color,
+                                  color: isSelected ? color : AppColors.of(context).textHint,
                                   shape: BoxShape.circle),
                             ),
                             const SizedBox(width: 8),
@@ -1300,7 +1311,7 @@ class _EventManageScreenState extends State<EventManageScreen>
                                 style: TextStyle(
                                     color: isSelected
                                         ? color
-                                        : AppColors.textSecondary,
+                                        : AppColors.of(context).textPrimary,
                                     fontWeight: FontWeight.w600)),
                           ],
                         ),

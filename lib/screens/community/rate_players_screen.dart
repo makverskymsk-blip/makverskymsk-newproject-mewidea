@@ -593,28 +593,78 @@ class _RatePlayersScreenState extends State<RatePlayersScreen> {
       final communityId = match.communityId ?? '';
       final sportStr = _sport.name;
       final statsList = <Map<String, dynamic>>[];
+      final eventsProv = context.read<MatchEventsProvider>();
 
       for (final entry in _ratings.entries) {
         final pid = entry.key;
         final r = entry.value;
 
-        statsList.add({
-          'community_id': communityId,
-          'match_id': match.id,
-          'user_id': pid,
-          'user_name': r.name,
-          'goals': r.goals,
-          'assists': r.assists,
-          'saves': r.saves,
-          'attack_rating': r.attackRating,
-          'defense_rating': r.defenseRating,
-          'speed_rating': r.speedRating,
-          'overall_rating': r.overallRating,
-          'is_win': r.isWin,
-          'is_draw': r.isDraw,
-          'is_mvp': _mvpPlayerId == pid,
-          'sport_category': sportStr,
-        });
+        // Find which team this player is on
+        int playerTeamIdx = -1;
+        for (int ti = 0; ti < match.eventTeams.length; ti++) {
+          if (match.eventTeams[ti].hasPlayer(pid)) {
+            playerTeamIdx = ti;
+            break;
+          }
+        }
+
+        // Get completed inner matches this player participated in
+        final playerInnerMatches = match.innerMatches.where((im) {
+          if (!im.isCompleted) return false;
+          return im.team1Index == playerTeamIdx || im.team2Index == playerTeamIdx;
+        }).toList();
+
+        if (playerInnerMatches.isNotEmpty && playerTeamIdx >= 0) {
+          // Write one record per inner match
+          for (final im in playerInnerMatches) {
+            final isTeam1 = im.team1Index == playerTeamIdx;
+            final myScore = isTeam1 ? im.team1Score : im.team2Score;
+            final oppScore = isTeam1 ? im.team2Score : im.team1Score;
+
+            final bool imWin = myScore > oppScore;
+            final bool imDraw = myScore == oppScore;
+
+            // Get per-inner-match stats from live events
+            final imStats = eventsProv.getPlayerStatsForInnerMatch(pid, im.id);
+
+            statsList.add({
+              'community_id': communityId,
+              'match_id': match.id,
+              'user_id': pid,
+              'user_name': r.name,
+              'goals': imStats['goals'] ?? 0,
+              'assists': imStats['assists'] ?? 0,
+              'saves': imStats['saves'] ?? 0,
+              'attack_rating': r.attackRating,
+              'defense_rating': r.defenseRating,
+              'speed_rating': r.speedRating,
+              'overall_rating': r.overallRating,
+              'is_win': imWin,
+              'is_draw': imDraw,
+              'is_mvp': _mvpPlayerId == pid,
+              'sport_category': sportStr,
+            });
+          }
+        } else {
+          // Fallback: no inner matches or player not in a team — write 1 event-level record
+          statsList.add({
+            'community_id': communityId,
+            'match_id': match.id,
+            'user_id': pid,
+            'user_name': r.name,
+            'goals': r.goals,
+            'assists': r.assists,
+            'saves': r.saves,
+            'attack_rating': r.attackRating,
+            'defense_rating': r.defenseRating,
+            'speed_rating': r.speedRating,
+            'overall_rating': r.overallRating,
+            'is_win': r.isWin,
+            'is_draw': r.isDraw,
+            'is_mvp': _mvpPlayerId == pid,
+            'sport_category': sportStr,
+          });
+        }
       }
 
       // Save to Supabase

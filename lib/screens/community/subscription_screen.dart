@@ -108,12 +108,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.borderLight.withValues(alpha: 0.5),
+                              color: AppColors.of(context).cardBg,
                               borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: AppColors.of(context).borderLight),
                             ),
-                            child: const Icon(
+                            child: Icon(
                                 Icons.arrow_back_ios_new_rounded,
-                                size: 18),
+                                size: 18,
+                                color: AppColors.of(context).textPrimary),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -157,13 +159,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.borderLight.withValues(alpha: 0.5),
+                              color: AppColors.of(context).cardBg,
                               borderRadius: BorderRadius.circular(100),
                               border: Border.all(
-                                color: AppColors.borderLight),
+                                color: AppColors.of(context).borderLight),
                             ),
-                            child: const Icon(Icons.refresh_rounded,
-                                size: 20, color: AppColors.textSecondary),
+                            child: Icon(Icons.refresh_rounded,
+                                size: 20, color: AppColors.of(context).textSecondary),
                           ),
                         ),
                         // Admin: add month button

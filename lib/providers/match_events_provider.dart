@@ -52,6 +52,21 @@ class MatchEventsProvider extends ChangeNotifier {
     };
   }
 
+  /// Stats for a player in a specific inner match only
+  Map<String, int> getPlayerStatsForInnerMatch(String playerId, String innerMatchId) {
+    final counts = <String, int>{};
+    for (final e in _events) {
+      if (e.playerId != playerId || e.innerMatchId != innerMatchId) continue;
+      final key = e.eventType.value;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return {
+      'goals': (counts['goal'] ?? 0) + (counts['kill'] ?? 0) + (counts['ace'] ?? 0),
+      'assists': (counts['assist'] ?? 0) + (counts['winner'] ?? 0),
+      'saves': (counts['save'] ?? 0) + (counts['block'] ?? 0),
+    };
+  }
+
   /// Load events from DB and subscribe to realtime
   Future<void> loadEvents(String matchId) async {
     _currentMatchId = matchId;

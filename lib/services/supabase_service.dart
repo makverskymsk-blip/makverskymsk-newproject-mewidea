@@ -355,6 +355,15 @@ class SupabaseService {
     await _supabase.from('join_requests').delete().eq('id', requestId);
   }
 
+  /// Admin accepts a join request (atomically updates status + adds user to community)
+  Future<void> adminAcceptJoinRequest(String requestId, String userId, String communityId) async {
+    await _supabase.rpc('admin_accept_join_request', params: {
+      'p_request_id': requestId,
+      'p_user_id': userId,
+      'p_community_id': communityId,
+    });
+  }
+
   // ===== SUBSCRIPTIONS =====
 
   Future<String> saveSubscription(
@@ -1470,6 +1479,168 @@ class SupabaseService {
     } catch (e) {
       debugPrint('CHAT CLEAR ERROR: $e');
       return 0;
+    }
+  }
+
+  // ===== ONE-TIME MIGRATION: Split event-level stats into per-inner-match stats =====
+
+  /// Recalculate old match_player_stats: replace 1 record per event
+  /// with N records per inner match (one for each match the player played in).
+  Future<Map<String, int>> migrateStatsToPerInnerMatch() async {
+    int deleted = 0;
+    int inserted = 0;
+    int skipped = 0;
+
+    try {
+      // 1. Get ALL existing match_player_stats
+      final allStats = await _supabase
+          .from('match_player_stats')
+          .select()
+          .order('created_at', ascending: true);
+
+      debugPrint('MIGRATION: Found ${allStats.length} existing records');
+
+      // 2. Group by match_id
+      final byMatch = <String, List<Map<String, dynamic>>>{};
+      for (final row in allStats) {
+        final matchId = row['match_id'] as String? ?? '';
+        byMatch.putIfAbsent(matchId, () => []).add(Map<String, dynamic>.from(row));
+      }
+
+      debugPrint('MIGRATION: ${byMatch.length} unique matches');
+
+      // 3. Process each match
+      for (final matchId in byMatch.keys) {
+        final records = byMatch[matchId]!;
+
+        // Load the match data
+        SportMatch? match;
+        try {
+          final matchData = await _supabase
+              .from('matches')
+              .select()
+              .eq('id', matchId)
+              .maybeSingle();
+          if (matchData != null) {
+            match = _parseMatch(matchData);
+          }
+        } catch (e) {
+          debugPrint('MIGRATION: Could not load match $matchId: $e');
+        }
+
+        if (match == null || match.innerMatches.isEmpty || match.eventTeams.length < 2) {
+          // No inner matches — keep existing record as-is
+          skipped += records.length;
+          debugPrint('MIGRATION: Skipping match $matchId (no inner matches)');
+          continue;
+        }
+
+        // Load live events for this match (for per-inner-match goals/assists/saves)
+        List<Map<String, dynamic>> liveEvents = [];
+        try {
+          liveEvents = await getMatchEvents(matchId);
+        } catch (_) {}
+
+        // Helper: get per-inner-match stats for a player from live events
+        Map<String, int> getImStats(String playerId, String innerMatchId) {
+          int goals = 0, assists = 0, saves = 0;
+          for (final e in liveEvents) {
+            if (e['player_id'] != playerId) continue;
+            if (e['inner_match_id'] != innerMatchId) continue;
+            final type = e['event_type'] as String? ?? '';
+            if (type == 'goal' || type == 'kill' || type == 'ace') goals++;
+            if (type == 'assist' || type == 'winner') assists++;
+            if (type == 'save' || type == 'block') saves++;
+          }
+          return {'goals': goals, 'assists': assists, 'saves': saves};
+        }
+
+        // Process each player record for this match
+        for (final record in records) {
+          final pid = record['user_id'] as String? ?? '';
+
+          // Find player's team
+          int playerTeamIdx = -1;
+          for (int ti = 0; ti < match.eventTeams.length; ti++) {
+            if (match.eventTeams[ti].hasPlayer(pid)) {
+              playerTeamIdx = ti;
+              break;
+            }
+          }
+
+          if (playerTeamIdx < 0) {
+            skipped++;
+            continue;
+          }
+
+          // Find completed inner matches this player was in
+          final playerInnerMatches = match.innerMatches.where((im) {
+            if (!im.isCompleted) return false;
+            return im.team1Index == playerTeamIdx || im.team2Index == playerTeamIdx;
+          }).toList();
+
+          if (playerInnerMatches.length <= 1) {
+            // 0 or 1 inner match — keep existing record, just fix win/loss if needed
+            if (playerInnerMatches.length == 1) {
+              final im = playerInnerMatches.first;
+              final isTeam1 = im.team1Index == playerTeamIdx;
+              final myScore = isTeam1 ? im.team1Score : im.team2Score;
+              final oppScore = isTeam1 ? im.team2Score : im.team1Score;
+              // Update is_win/is_draw based on actual match score
+              await _supabase.from('match_player_stats').update({
+                'is_win': myScore > oppScore,
+                'is_draw': myScore == oppScore,
+              }).eq('id', record['id']);
+            }
+            skipped++;
+            continue;
+          }
+
+          // Multiple inner matches → delete old record, insert new per-match records
+          final oldId = record['id'];
+          await _supabase.from('match_player_stats').delete().eq('id', oldId);
+          deleted++;
+
+          final newRecords = <Map<String, dynamic>>[];
+          for (final im in playerInnerMatches) {
+            final isTeam1 = im.team1Index == playerTeamIdx;
+            final myScore = isTeam1 ? im.team1Score : im.team2Score;
+            final oppScore = isTeam1 ? im.team2Score : im.team1Score;
+            final imStats = getImStats(pid, im.id);
+
+            newRecords.add({
+              'community_id': record['community_id'],
+              'match_id': matchId,
+              'user_id': pid,
+              'user_name': record['user_name'],
+              'goals': imStats['goals'] ?? 0,
+              'assists': imStats['assists'] ?? 0,
+              'saves': imStats['saves'] ?? 0,
+              'attack_rating': record['attack_rating'] ?? 6.0,
+              'defense_rating': record['defense_rating'] ?? 6.0,
+              'speed_rating': record['speed_rating'] ?? 6.0,
+              'overall_rating': record['overall_rating'] ?? 6.0,
+              'is_win': myScore > oppScore,
+              'is_draw': myScore == oppScore,
+              'is_mvp': record['is_mvp'] ?? false,
+              'sport_category': record['sport_category'] ?? 'football',
+            });
+          }
+
+          if (newRecords.isNotEmpty) {
+            await _supabase.from('match_player_stats').insert(newRecords);
+            inserted += newRecords.length;
+          }
+
+          debugPrint('MIGRATION: Player $pid in match $matchId: 1 → ${newRecords.length} records');
+        }
+      }
+
+      debugPrint('MIGRATION DONE: deleted=$deleted, inserted=$inserted, skipped=$skipped');
+      return {'deleted': deleted, 'inserted': inserted, 'skipped': skipped};
+    } catch (e) {
+      debugPrint('MIGRATION ERROR: $e');
+      rethrow;
     }
   }
 }

@@ -18,6 +18,7 @@ import 'providers/sport_prefs_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/friends_provider.dart';
 import 'providers/chat_provider.dart';
+import 'services/supabase_service.dart';
 
 
 /// Запуск напрямую (по умолчанию — prod).

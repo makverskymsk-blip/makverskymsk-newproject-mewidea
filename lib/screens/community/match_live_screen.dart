@@ -59,15 +59,21 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Header
+                // Header — always visible at top
                 _buildHeader(t),
-                // Score board
-                _buildScoreBoard(t, match, eventsProv),
-                // Action buttons
-                _buildActionButtons(t, match),
-                // Event feed
+                // Scrollable content
                 Expanded(
-                  child: _buildEventFeed(t, eventsProv),
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      // Score board (scrolls with content)
+                      _buildScoreBoard(t, match, eventsProv),
+                      // Action buttons
+                      _buildActionButtons(t, match),
+                      // Event feed (inline, not nested scroll)
+                      _buildEventFeedInline(t, eventsProv),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -153,6 +159,64 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
           final s1 = scores[im.team1Index] ?? 0;
           final s2 = scores[im.team2Index] ?? 0;
 
+          // Compact row for completed matches
+          if (im.isCompleted) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: t.cardBg,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: t.borderLight.withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    // Team 1 name
+                    Expanded(
+                      child: Text(t1.name, style: TextStyle(
+                        color: t.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ), textAlign: TextAlign.right, overflow: TextOverflow.ellipsis),
+                    ),
+                    // Score
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: t.surfaceBg,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text('$s1 : $s2', style: TextStyle(
+                          color: t.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'monospace',
+                        )),
+                      ),
+                    ),
+                    // Team 2 name
+                    Expanded(
+                      child: Text(t2.name, style: TextStyle(
+                        color: t.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ), overflow: TextOverflow.ellipsis),
+                    ),
+                    // Completed badge
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8),
+                      child: Text('✅', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          // Full-size card for active matches
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GlassCard(
@@ -239,7 +303,6 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
                       ],
                     ),
                     // Complete match button
-                    if (!im.isCompleted && _isAdmin)
                       Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: GestureDetector(
@@ -266,12 +329,6 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
                             ),
                           ),
                         ),
-                      ),
-                    if (im.isCompleted)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text('✅ Матч завершён', style: TextStyle(
-                          color: t.textHint, fontSize: 11)),
                       ),
                   ],
                 ),
@@ -367,7 +424,9 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
               fontWeight: FontWeight.w700,
             )),
             const SizedBox(height: 12),
-            ...match.innerMatches.map((im) {
+            ...([...match.innerMatches]
+              ..sort((a, b) => a.isCompleted == b.isCompleted ? 0 : (a.isCompleted ? 1 : -1)))
+              .map((im) {
               final t1 = match.eventTeams[im.team1Index].name;
               final t2 = match.eventTeams[im.team2Index].name;
               return ListTile(
@@ -543,6 +602,38 @@ class _MatchLiveScreenState extends State<MatchLiveScreen> {
         ));
       }
     }
+  }
+
+  /// Renders event feed inline (no nested scroll) for use inside ListView
+  Widget _buildEventFeedInline(AppThemeColors t, MatchEventsProvider eventsProv) {
+    final events = eventsProv.events.reversed.toList();
+
+    if (events.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.sports_soccer_outlined, size: 60, color: t.borderLight),
+              const SizedBox(height: 12),
+              Text('Событий пока нет', style: TextStyle(
+                color: t.textHint, fontSize: 14)),
+              const SizedBox(height: 4),
+              Text('Нажмите на кнопку выше, чтобы записать', style: TextStyle(
+                color: t.textHint, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Column(
+        children: events.map((e) => _eventTile(t, e)).toList(),
+      ),
+    );
   }
 
   Widget _buildEventFeed(AppThemeColors t, MatchEventsProvider eventsProv) {

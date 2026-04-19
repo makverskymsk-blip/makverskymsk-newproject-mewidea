@@ -1342,6 +1342,17 @@ class _MembersScreenState extends State<MembersScreen>
                       ]),
                     ),
                   ],
+                  // Kick member (admin/owner, not self, not owner)
+                  if ((isOwner || isAdmin) && user.id != currentUserId && role != UserRole.owner)
+                    const PopupMenuItem(
+                      value: 'kick',
+                      child: Row(children: [
+                        Icon(Icons.person_off_rounded,
+                            color: AppColors.error, size: 18),
+                        SizedBox(width: 8),
+                        Text('Исключить', style: TextStyle(color: AppColors.error)),
+                      ]),
+                    ),
                 ],
                 onSelected: (value) => _onMenuAction(
                   value, user, communityProv, auth,
@@ -1471,6 +1482,39 @@ class _MembersScreenState extends State<MembersScreen>
                     content: Text(
                         '${user.name} больше не администратор'),
                     backgroundColor: AppColors.warning,
+                  ),
+                );
+              }
+            }
+          },
+        );
+        break;
+      case 'kick':
+        _confirmAction(
+          'Исключить участника?',
+          '${user.name} будет удалён из сообщества.',
+          () async {
+            try {
+              final community = context.read<CommunityProvider>().activeCommunity;
+              if (community == null) return;
+              await communityProv.kickMember(community.id, user.id);
+              setState(() {
+                _members.removeWhere((m) => m.id == user.id);
+              });
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${user.name} исключён из сообщества'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Ошибка: $e'),
+                    backgroundColor: AppColors.error,
                   ),
                 );
               }

@@ -16,6 +16,12 @@ class ChatProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _hasMore = true;
   RealtimeChannel? _channel;
+  
+  // Unread message tracking
+  final Map<String, int> _unreadCounts = {};
+  final Map<String, DateTime> _lastReadTimestamps = {};
+  RealtimeChannel? _bgChannel;
+  String? _bgChatId;
 
   static const int _pageSize = 50;
 
@@ -23,6 +29,9 @@ class ChatProvider extends ChangeNotifier {
   String? get currentChatId => _currentChatId;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
+  
+  /// Get unread count for a specific chat
+  int unreadCountFor(String chatId) => _unreadCounts[chatId] ?? 0;
 
   /// Open a chat: load messages + subscribe to realtime
   Future<void> openChat({
@@ -53,6 +62,12 @@ class ChatProvider extends ChangeNotifier {
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
       _hasMore = raw.length >= _pageSize;
+
+      // Mark chat as read
+      _unreadCounts[chatId] = 0;
+      _lastReadTimestamps[chatId] = DateTime.now();
+      // Background listener stays running — its callback already skips
+      // messages while _currentChatId == chatId, so no duplicates.
 
       // Auto-cleanup old community messages (keep last 5 days)
       if (chatType == 'community') {
@@ -214,9 +229,75 @@ class ChatProvider extends ChangeNotifier {
         .subscribe();
   }
 
+  /// Start listening for new messages in the background (for unread badge).
+  /// Call this from main screens to track unread counts without opening the chat.
+  Future<void> startBackgroundListener({
+    required String chatId,
+    required String myUserId,
+  }) async {
+    // Don't start background listener if chat is already open
+    if (_currentChatId == chatId) return;
+    // Don't start if already listening
+    if (_bgChatId == chatId) return;
+    
+    _stopBackgroundListener();
+    _bgChatId = chatId;
+    
+    // If no last read, load last message time to establish baseline
+    if (!_lastReadTimestamps.containsKey(chatId)) {
+      try {
+        final raw = await _db.getMessages(chatId, limit: 1);
+        if (raw.isNotEmpty) {
+          final lastMsg = DateTime.tryParse(raw.first['created_at'] ?? '');
+          _lastReadTimestamps[chatId] = lastMsg ?? DateTime.now();
+        } else {
+          _lastReadTimestamps[chatId] = DateTime.now();
+        }
+        _unreadCounts[chatId] = 0;
+      } catch (_) {
+        _lastReadTimestamps[chatId] = DateTime.now();
+        _unreadCounts[chatId] = 0;
+      }
+    }
+    
+    _bgChannel = _db.client
+        .channel('chat_bg:$chatId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chat_id',
+            value: chatId,
+          ),
+          callback: (payload) {
+            final newRow = payload.newRecord;
+            if (newRow.isEmpty) return;
+            // Don't count own messages
+            if (newRow['sender_id'] == myUserId) return;
+            // Don't count if chat is currently open
+            if (_currentChatId == chatId) return;
+            
+            _unreadCounts[chatId] = (_unreadCounts[chatId] ?? 0) + 1;
+            notifyListeners();
+          },
+        )
+        .subscribe();
+  }
+  
+  void _stopBackgroundListener() {
+    if (_bgChannel != null) {
+      _db.client.removeChannel(_bgChannel!);
+      _bgChannel = null;
+      _bgChatId = null;
+    }
+  }
+
   @override
   void dispose() {
     closeChat();
+    _stopBackgroundListener();
     super.dispose();
   }
 }

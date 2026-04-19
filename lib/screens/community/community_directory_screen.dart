@@ -427,14 +427,25 @@ class _CommunityDirectoryScreenState extends State<CommunityDirectoryScreen>
               // Accept
               IconButton(
                 onPressed: () async {
-                  await cp.acceptJoinRequest(requestId, userId, communityId);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Пользователь принят!'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
+                  try {
+                    await cp.acceptJoinRequest(requestId, userId, communityId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Пользователь принят!'),
+                          backgroundColor: AppColors.success,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Ошибка: $e'),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
                   }
                 },
                 icon: const Icon(Icons.check_rounded, color: AppColors.success, size: 22),

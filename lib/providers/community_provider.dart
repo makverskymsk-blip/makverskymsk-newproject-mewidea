@@ -115,12 +115,16 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<void> acceptJoinRequest(String requestId, String userId, String communityId) async {
-    await _db.updateJoinRequestStatus(requestId, 'accepted');
-    // Also add the user to the community
-    await _db.joinCommunity(communityId, userId);
-    // Reload
-    if (_activeCommunity != null) {
-      await loadPendingRequests(_activeCommunity!.id);
+    try {
+      // Atomic RPC: updates request status + adds user to community
+      await _db.adminAcceptJoinRequest(requestId, userId, communityId);
+      // Reload pending requests
+      if (_activeCommunity != null) {
+        await loadPendingRequests(_activeCommunity!.id);
+      }
+    } catch (e) {
+      debugPrint('ACCEPT JOIN REQUEST ERROR: $e');
+      rethrow;
     }
   }
 
@@ -229,6 +233,19 @@ class CommunityProvider extends ChangeNotifier {
     _communities.removeWhere((c) => c.id == communityId);
     if (_activeCommunity?.id == communityId) {
       _activeCommunity = _communities.isNotEmpty ? _communities.first : null;
+    }
+    notifyListeners();
+  }
+
+  /// Kick a member from the community (admin/owner only).
+  /// Uses the same leave_community RPC which already checks admin rights.
+  Future<void> kickMember(String communityId, String userId) async {
+    await _db.leaveCommunity(communityId, userId);
+    // Update local community data
+    final idx = _communities.indexWhere((c) => c.id == communityId);
+    if (idx >= 0) {
+      _communities[idx].memberIds.remove(userId);
+      _communities[idx].adminIds.remove(userId);
     }
     notifyListeners();
   }
