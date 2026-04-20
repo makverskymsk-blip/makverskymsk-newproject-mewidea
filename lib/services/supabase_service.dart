@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/community.dart';
@@ -31,10 +32,10 @@ class SupabaseService {
       final url = _supabase.storage.from('avatars').getPublicUrl(path);
       // Add cache buster to force reload
       final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('AVATAR: Uploaded to $publicUrl');
+      appLog('AVATAR: Uploaded to $publicUrl');
       return publicUrl;
     } catch (e) {
-      debugPrint('AVATAR ERROR: $e');
+      appLog('AVATAR ERROR: $e');
       return null;
     }
   }
@@ -52,10 +53,10 @@ class SupabaseService {
       );
       final url = _supabase.storage.from('avatars').getPublicUrl(path);
       final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
-      debugPrint('LOGO: Uploaded to $publicUrl');
+      appLog('LOGO: Uploaded to $publicUrl');
       return publicUrl;
     } catch (e) {
-      debugPrint('LOGO ERROR: $e');
+      appLog('LOGO ERROR: $e');
       return null;
     }
   }
@@ -154,15 +155,15 @@ class SupabaseService {
   /// Если не передан, RPC разрешит изменение только собственного баланса.
   Future<void> updateUserBalance(String uid, double amount, {String? communityId}) async {
     try {
-      debugPrint('BALANCE: calling RPC for $uid amount=$amount communityId=$communityId');
+      appLog('BALANCE: calling RPC for $uid amount=$amount communityId=$communityId');
       await _supabase.rpc('increment_user_balance', params: {
         'user_id_param': uid,
         'amount_param': amount,
         'p_community_id': communityId,
       });
-      debugPrint('BALANCE: RPC success for $uid');
+      appLog('BALANCE: RPC success for $uid');
     } catch (e) {
-      debugPrint('BALANCE: RPC FAILED for $uid: $e');
+      appLog('BALANCE: RPC FAILED for $uid: $e');
       rethrow;
     }
   }
@@ -594,7 +595,7 @@ class SupabaseService {
         schema: 'public',
         table: 'matches',
         callback: (payload) {
-          debugPrint('REALTIME: matches changed — ${payload.eventType}');
+          appLog('REALTIME: matches changed — ${payload.eventType}');
           onChanged();
         },
       )
@@ -615,7 +616,7 @@ class SupabaseService {
           value: communityId,
         ),
         callback: (payload) {
-          debugPrint('REALTIME: matches changed — ${payload.eventType}');
+          appLog('REALTIME: matches changed — ${payload.eventType}');
           onChanged();
         },
       )
@@ -646,7 +647,7 @@ class SupabaseService {
           value: communityId,
         ),
         callback: (payload) {
-          debugPrint('REALTIME: subscriptions changed — ${payload.eventType}');
+          appLog('REALTIME: subscriptions changed — ${payload.eventType}');
           onChanged();
         },
       )
@@ -667,7 +668,7 @@ class SupabaseService {
           value: communityId,
         ),
         callback: (payload) {
-          debugPrint('REALTIME: community changed — ${payload.eventType}');
+          appLog('REALTIME: community changed — ${payload.eventType}');
           onChanged();
         },
       )
@@ -688,7 +689,7 @@ class SupabaseService {
           value: userId,
         ),
         callback: (payload) {
-          debugPrint('REALTIME: user profile changed — ${payload.eventType}');
+          appLog('REALTIME: user profile changed — ${payload.eventType}');
           onChanged();
         },
       )
@@ -728,7 +729,7 @@ class SupabaseService {
       final list = json is List ? json : [];
       return list.map((e) => EventTeam.fromJson(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
-      debugPrint('PARSE: Failed to parse event_teams: $e');
+      appLog('PARSE: Failed to parse event_teams: $e');
       return [];
     }
   }
@@ -739,7 +740,7 @@ class SupabaseService {
       final list = json is List ? json : [];
       return list.map((e) => InnerMatch.fromJson(Map<String, dynamic>.from(e))).toList();
     } catch (e) {
-      debugPrint('PARSE: Failed to parse inner_matches: $e');
+      appLog('PARSE: Failed to parse inner_matches: $e');
       return [];
     }
   }
@@ -787,7 +788,7 @@ class SupabaseService {
   Future<void> saveMatchPlayerStats(List<Map<String, dynamic>> statsList) async {
     if (statsList.isEmpty) return;
     await _supabase.from('match_player_stats').insert(statsList);
-    debugPrint('STATS: Saved ${statsList.length} player stats records');
+    appLog('STATS: Saved ${statsList.length} player stats records');
   }
 
   /// Get aggregated stats for a player (all-time or filtered by sport)
@@ -846,7 +847,7 @@ class SupabaseService {
         'loss_count': lossCount,
       };
     } catch (e) {
-      debugPrint('STATS ERROR: Failed to get aggregate stats: $e');
+      appLog('STATS ERROR: Failed to get aggregate stats: $e');
       return null;
     }
   }
@@ -878,7 +879,7 @@ class SupabaseService {
         'total_distance': (row['total_distance'] ?? 0.0).toDouble(),
       };
     } catch (e) {
-      debugPrint('STATS RPC ERROR: $e');
+      appLog('STATS RPC ERROR: $e');
       // Fallback to client-side aggregation
       return getPlayerAggregateStats(userId, sportCategory: sportCategory);
     }
@@ -902,7 +903,7 @@ class SupabaseService {
           .limit(limit);
       return List<Map<String, dynamic>>.from(data);
     } catch (e) {
-      debugPrint('STATS ERROR: Failed to get match history: $e');
+      appLog('STATS ERROR: Failed to get match history: $e');
       return [];
     }
   }
@@ -943,7 +944,7 @@ class SupabaseService {
             value: matchId,
           ),
           callback: (payload) {
-            debugPrint('REALTIME: match_events changed — ${payload.eventType}');
+            appLog('REALTIME: match_events changed — ${payload.eventType}');
             onChanged();
           },
         )
@@ -1432,7 +1433,7 @@ class SupabaseService {
 
       return results;
     } catch (e) {
-      debugPrint('CHAT: Error loading direct conversations: $e');
+      appLog('CHAT: Error loading direct conversations: $e');
       return [];
     }
   }
@@ -1457,10 +1458,10 @@ class SupabaseService {
           .eq('chat_type', 'community')
           .lt('created_at', cutoff.toIso8601String())
           .select('id');
-      debugPrint('CHAT CLEANUP: Deleted ${deleted.length} old messages from community $chatId (older than $daysToKeep days)');
+      appLog('CHAT CLEANUP: Deleted ${deleted.length} old messages from community $chatId (older than $daysToKeep days)');
       return deleted.length;
     } catch (e) {
-      debugPrint('CHAT CLEANUP ERROR: $e');
+      appLog('CHAT CLEANUP ERROR: $e');
       return 0;
     }
   }
@@ -1474,10 +1475,10 @@ class SupabaseService {
           .eq('chat_id', chatId)
           .eq('chat_type', 'direct')
           .select('id');
-      debugPrint('CHAT CLEAR: Deleted ${deleted.length} messages from DM $chatId');
+      appLog('CHAT CLEAR: Deleted ${deleted.length} messages from DM $chatId');
       return deleted.length;
     } catch (e) {
-      debugPrint('CHAT CLEAR ERROR: $e');
+      appLog('CHAT CLEAR ERROR: $e');
       return 0;
     }
   }
@@ -1498,7 +1499,7 @@ class SupabaseService {
           .select()
           .order('created_at', ascending: true);
 
-      debugPrint('MIGRATION: Found ${allStats.length} existing records');
+      appLog('MIGRATION: Found ${allStats.length} existing records');
 
       // 2. Group by match_id
       final byMatch = <String, List<Map<String, dynamic>>>{};
@@ -1507,7 +1508,7 @@ class SupabaseService {
         byMatch.putIfAbsent(matchId, () => []).add(Map<String, dynamic>.from(row));
       }
 
-      debugPrint('MIGRATION: ${byMatch.length} unique matches');
+      appLog('MIGRATION: ${byMatch.length} unique matches');
 
       // 3. Process each match
       for (final matchId in byMatch.keys) {
@@ -1525,13 +1526,13 @@ class SupabaseService {
             match = _parseMatch(matchData);
           }
         } catch (e) {
-          debugPrint('MIGRATION: Could not load match $matchId: $e');
+          appLog('MIGRATION: Could not load match $matchId: $e');
         }
 
         if (match == null || match.innerMatches.isEmpty || match.eventTeams.length < 2) {
           // No inner matches — keep existing record as-is
           skipped += records.length;
-          debugPrint('MIGRATION: Skipping match $matchId (no inner matches)');
+          appLog('MIGRATION: Skipping match $matchId (no inner matches)');
           continue;
         }
 
@@ -1632,14 +1633,14 @@ class SupabaseService {
             inserted += newRecords.length;
           }
 
-          debugPrint('MIGRATION: Player $pid in match $matchId: 1 → ${newRecords.length} records');
+          appLog('MIGRATION: Player $pid in match $matchId: 1 → ${newRecords.length} records');
         }
       }
 
-      debugPrint('MIGRATION DONE: deleted=$deleted, inserted=$inserted, skipped=$skipped');
+      appLog('MIGRATION DONE: deleted=$deleted, inserted=$inserted, skipped=$skipped');
       return {'deleted': deleted, 'inserted': inserted, 'skipped': skipped};
     } catch (e) {
-      debugPrint('MIGRATION ERROR: $e');
+      appLog('MIGRATION ERROR: $e');
       rethrow;
     }
   }

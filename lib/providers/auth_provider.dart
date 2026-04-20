@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
@@ -34,10 +35,10 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _checkInitialAuth() async {
     final user = _supabase.auth.currentUser;
-    debugPrint('AUTH INIT: currentUser = ${user?.id}');
+    appLog('AUTH INIT: currentUser = ${user?.id}');
     
     if (user == null) {
-      debugPrint('AUTH INIT: No session, showing login');
+      appLog('AUTH INIT: No session, showing login');
       _isLoading = false;
       _initialCheckDone = true;
       notifyListeners();
@@ -49,13 +50,13 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = await _db.getUser(user.id).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
-          debugPrint('AUTH INIT: getUser timed out');
+          appLog('AUTH INIT: getUser timed out');
           return null;
         },
       );
 
       if (_currentUser == null) {
-        debugPrint('AUTH INIT: No profile in DB, creating...');
+        appLog('AUTH INIT: No profile in DB, creating...');
         _currentUser = UserProfile(
           id: user.id,
           name: user.userMetadata?['full_name'] ?? 'Игрок',
@@ -64,19 +65,19 @@ class AuthProvider extends ChangeNotifier {
         );
         try {
           await _db.createUser(_currentUser!).timeout(const Duration(seconds: 5));
-          debugPrint('AUTH INIT: Profile created!');
+          appLog('AUTH INIT: Profile created!');
         } catch (e) {
-          debugPrint('AUTH INIT: Create failed: $e');
+          appLog('AUTH INIT: Create failed: $e');
         }
       } else {
-        debugPrint('AUTH INIT: Profile loaded: ${_currentUser!.name}');
+        appLog('AUTH INIT: Profile loaded: ${_currentUser!.name}');
       }
       // Subscribe to realtime user profile changes
       if (_currentUser != null) {
         _subscribeToUserRealtime(_currentUser!.id);
       }
     } catch (e) {
-      debugPrint('AUTH INIT ERROR: $e');
+      appLog('AUTH INIT ERROR: $e');
     }
 
     _isLoading = false;
@@ -87,7 +88,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _onAuthStateChanged(User? supabaseUser) async {
     try {
       if (supabaseUser != null) {
-        debugPrint('AUTH STATE: User changed: ${supabaseUser.id}');
+        appLog('AUTH STATE: User changed: ${supabaseUser.id}');
         _currentUser = await _db.getUser(supabaseUser.id);
         if (_currentUser == null) {
           _currentUser = UserProfile(
@@ -106,7 +107,7 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = null;
       }
     } catch (e) {
-      debugPrint('AUTH STATE ERROR: $e');
+      appLog('AUTH STATE ERROR: $e');
     }
     _isLoading = false;
     notifyListeners();
@@ -126,13 +127,13 @@ class AuthProvider extends ChangeNotifier {
 
   Future<String?> register(String name, String email, String password) async {
     try {
-      debugPrint('AUTH: Starting registration for $email');
+      appLog('AUTH: Starting registration for $email');
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
         data: {'full_name': name},
       );
-      debugPrint('AUTH: SignUp response: user=${response.user?.id}, session=${response.session != null}');
+      appLog('AUTH: SignUp response: user=${response.user?.id}, session=${response.session != null}');
 
       if (response.user != null && response.session != null) {
         // Session exists — email confirmation disabled or auto-confirmed
@@ -142,9 +143,9 @@ class AuthProvider extends ChangeNotifier {
           email: email,
           balance: 0,
         );
-        debugPrint('AUTH: Creating user profile in DB...');
+        appLog('AUTH: Creating user profile in DB...');
         await _db.createUser(_currentUser!);
-        debugPrint('AUTH: User profile created!');
+        appLog('AUTH: User profile created!');
         notifyListeners();
         return null; // success — logged in
       } else if (response.user != null && response.session == null) {
@@ -158,18 +159,18 @@ class AuthProvider extends ChangeNotifier {
             balance: 0,
           );
           await _db.createUser(profile);
-          debugPrint('AUTH: Profile pre-created, awaiting email confirmation');
+          appLog('AUTH: Profile pre-created, awaiting email confirmation');
         } catch (e) {
-          debugPrint('AUTH: Pre-create profile failed (may already exist): $e');
+          appLog('AUTH: Pre-create profile failed (may already exist): $e');
         }
         return 'EMAIL_CONFIRM'; // special marker for UI
       }
       return 'Неизвестная ошибка регистрации';
     } on AuthException catch (e) {
-      debugPrint('AUTH ERROR (AuthException): ${e.message}');
+      appLog('AUTH ERROR (AuthException): ${e.message}');
       return _mapAuthError(e.message);
     } catch (e) {
-      debugPrint('AUTH ERROR (General): $e');
+      appLog('AUTH ERROR (General): $e');
       return 'Ошибка: $e';
     }
   }
@@ -192,7 +193,7 @@ class AuthProvider extends ChangeNotifier {
       // Rollback
       _currentUser!.balance = prevBalance;
       notifyListeners();
-      debugPrint('AUTH: updateBalance rollback — $e');
+      appLog('AUTH: updateBalance rollback — $e');
     }
   }
 
@@ -206,7 +207,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('AUTH: refreshBalance error: $e');
+      appLog('AUTH: refreshBalance error: $e');
     }
   }
 
@@ -220,7 +221,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _currentUser!.position = prevPosition;
       notifyListeners();
-      debugPrint('AUTH: updatePosition rollback — $e');
+      appLog('AUTH: updatePosition rollback — $e');
     }
   }
 
@@ -242,7 +243,7 @@ class AuthProvider extends ChangeNotifier {
         ..clear()
         ..addAll(prevSportPositions);
       notifyListeners();
-      debugPrint('AUTH: updateSportPosition rollback — $e');
+      appLog('AUTH: updateSportPosition rollback — $e');
     }
   }
 
@@ -257,7 +258,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _currentUser!.communityIds.remove(communityId);
       notifyListeners();
-      debugPrint('AUTH: addCommunityToUser rollback — $e');
+      appLog('AUTH: addCommunityToUser rollback — $e');
     }
   }
 
@@ -304,7 +305,7 @@ class AuthProvider extends ChangeNotifier {
       _currentUser!.weightKg = prevWeight;
       _currentUser!.age = prevAge;
       notifyListeners();
-      debugPrint('AUTH: updateUserField($field) rollback — $e');
+      appLog('AUTH: updateUserField($field) rollback — $e');
     }
   }
 
@@ -318,7 +319,7 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _currentUser!.avatarUrl = prevUrl;
       notifyListeners();
-      debugPrint('AUTH: updateAvatar rollback — $e');
+      appLog('AUTH: updateAvatar rollback — $e');
     }
   }
 
@@ -355,11 +356,11 @@ class AuthProvider extends ChangeNotifier {
       final fresh = await _db.getUser(userId);
       if (fresh != null && _currentUser != null) {
         _currentUser = fresh;
-        debugPrint('REALTIME: User profile refreshed — balance=${fresh.balance}, communities=${fresh.communityIds.length}');
+        appLog('REALTIME: User profile refreshed — balance=${fresh.balance}, communities=${fresh.communityIds.length}');
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('REALTIME: Failed to refresh user profile: $e');
+      appLog('REALTIME: Failed to refresh user profile: $e');
     }
   }
 

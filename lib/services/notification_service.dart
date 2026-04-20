@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 
 class NotificationService {
@@ -9,17 +10,17 @@ class NotificationService {
 
   /// Placeholder for initialization.
   Future<String?> initialize() async {
-    debugPrint('Notifications: Firebase Messaging was removed. Migration to another provider required.');
+    appLog('Notifications: Firebase Messaging was removed. Migration to another provider required.');
     return null;
   }
 
   /// Subscribe to community topic (placeholder).
   Future<void> subscribeToCommunity(String communityId) async {
-    debugPrint('Notifications: Subscribe attempt to $communityId (FCM disabled)');
+    appLog('Notifications: Subscribe attempt to $communityId (FCM disabled)');
   }
 
   /// Unsubscribe from community topic (placeholder).
   Future<void> unsubscribeFromCommunity(String communityId) async {
-    debugPrint('Notifications: Unsubscribe attempt from $communityId (FCM disabled)');
+    appLog('Notifications: Unsubscribe attempt from $communityId (FCM disabled)');
   }
 }

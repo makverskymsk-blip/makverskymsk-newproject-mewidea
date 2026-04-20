@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/enums.dart';
@@ -61,7 +62,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         }
       }
     } catch (e) {
-      debugPrint('PUBLIC_PROFILE: Error loading: $e');
+      appLog('PUBLIC_PROFILE: Error loading: $e');
     }
     if (mounted) setState(() => _isLoading = false);
   }

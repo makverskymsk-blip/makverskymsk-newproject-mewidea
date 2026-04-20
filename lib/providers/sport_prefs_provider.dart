@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -91,7 +92,7 @@ class SportPrefsProvider extends ChangeNotifier {
             !SportCategory.values.any((s) => s.name == name));
       }
     } catch (e) {
-      debugPrint('SPORT_PREFS: load error: $e');
+      appLog('SPORT_PREFS: load error: $e');
     }
 
     _initialized = true;
@@ -110,7 +111,7 @@ class SportPrefsProvider extends ChangeNotifier {
         jsonEncode(_hidden.toList()),
       );
     } catch (e) {
-      debugPrint('SPORT_PREFS: persist error: $e');
+      appLog('SPORT_PREFS: persist error: $e');
     }
   }
 }

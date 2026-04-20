@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
 
@@ -43,7 +44,7 @@ class FriendsProvider extends ChangeNotifier {
         _loadCounts(myUserId),
       ]);
     } catch (e) {
-      debugPrint('FRIENDS: Error loading: $e');
+      appLog('FRIENDS: Error loading: $e');
     }
 
     _isLoading = false;
@@ -63,10 +64,10 @@ class FriendsProvider extends ChangeNotifier {
     try {
       final isPublic = await _db.isUserPublic(targetUserId);
       await _db.followUser(myUserId, targetUserId, targetIsPublic: isPublic);
-      debugPrint('FRIENDS: followed $targetUserId (public=$isPublic)');
+      appLog('FRIENDS: followed $targetUserId (public=$isPublic)');
       await loadAll(myUserId);
     } catch (e) {
-      debugPrint('FRIENDS: follow error: $e');
+      appLog('FRIENDS: follow error: $e');
     }
   }
 
@@ -74,10 +75,10 @@ class FriendsProvider extends ChangeNotifier {
   Future<void> unfollowUser(String myUserId, String targetUserId) async {
     try {
       await _db.unfollowUser(myUserId, targetUserId);
-      debugPrint('FRIENDS: unfollowed $targetUserId');
+      appLog('FRIENDS: unfollowed $targetUserId');
       await loadAll(myUserId);
     } catch (e) {
-      debugPrint('FRIENDS: unfollow error: $e');
+      appLog('FRIENDS: unfollow error: $e');
     }
   }
 
@@ -85,10 +86,10 @@ class FriendsProvider extends ChangeNotifier {
   Future<void> acceptRequest(String myUserId, String followId) async {
     try {
       await _db.acceptFollowRequest(followId);
-      debugPrint('FRIENDS: accepted request $followId');
+      appLog('FRIENDS: accepted request $followId');
       await loadAll(myUserId);
     } catch (e) {
-      debugPrint('FRIENDS: accept error: $e');
+      appLog('FRIENDS: accept error: $e');
     }
   }
 
@@ -96,10 +97,10 @@ class FriendsProvider extends ChangeNotifier {
   Future<void> rejectRequest(String myUserId, String followId) async {
     try {
       await _db.rejectFollowRequest(followId);
-      debugPrint('FRIENDS: rejected request $followId');
+      appLog('FRIENDS: rejected request $followId');
       await loadAll(myUserId);
     } catch (e) {
-      debugPrint('FRIENDS: reject error: $e');
+      appLog('FRIENDS: reject error: $e');
     }
   }
 
@@ -130,7 +131,7 @@ class FriendsProvider extends ChangeNotifier {
         );
       }).toList();
     } catch (e) {
-      debugPrint('FRIENDS: _loadFollowers error: $e');
+      appLog('FRIENDS: _loadFollowers error: $e');
     }
   }
 
@@ -148,7 +149,7 @@ class FriendsProvider extends ChangeNotifier {
         );
       }).toList();
     } catch (e) {
-      debugPrint('FRIENDS: _loadFollowing error: $e');
+      appLog('FRIENDS: _loadFollowing error: $e');
     }
   }
 
@@ -166,7 +167,7 @@ class FriendsProvider extends ChangeNotifier {
         );
       }).toList();
     } catch (e) {
-      debugPrint('FRIENDS: _loadPendingRequests error: $e');
+      appLog('FRIENDS: _loadPendingRequests error: $e');
     }
   }
 
@@ -177,7 +178,7 @@ class FriendsProvider extends ChangeNotifier {
       _followingCount = counts['following'] ?? 0;
       _pendingCount = counts['pending'] ?? 0;
     } catch (e) {
-      debugPrint('FRIENDS: _loadCounts error: $e');
+      appLog('FRIENDS: _loadCounts error: $e');
     }
   }
 }

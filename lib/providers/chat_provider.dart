@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -77,7 +78,7 @@ class ChatProvider extends ChangeNotifier {
       // Subscribe to realtime
       _subscribeToRealtime(chatId, myUserId);
     } catch (e) {
-      debugPrint('CHAT: Error loading messages: $e');
+      appLog('CHAT: Error loading messages: $e');
     }
 
     _isLoading = false;
@@ -109,7 +110,7 @@ class ChatProvider extends ChangeNotifier {
       _hasMore = raw.length >= _pageSize;
       _messages = [...older, ..._messages];
     } catch (e) {
-      debugPrint('CHAT: Error loading more: $e');
+      appLog('CHAT: Error loading more: $e');
     }
 
     _isLoading = false;
@@ -131,7 +132,7 @@ class ChatProvider extends ChangeNotifier {
       );
       // Message will arrive via realtime subscription
     } catch (e) {
-      debugPrint('CHAT: Error sending message: $e');
+      appLog('CHAT: Error sending message: $e');
     }
   }
 
@@ -158,7 +159,7 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('CHAT: Error deleting message: $e');
+      appLog('CHAT: Error deleting message: $e');
     }
   }
 
@@ -170,7 +171,7 @@ class ChatProvider extends ChangeNotifier {
       _messages = [];
       notifyListeners();
     } catch (e) {
-      debugPrint('CHAT: Error clearing chat: $e');
+      appLog('CHAT: Error clearing chat: $e');
     }
   }
 

@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/match_stats.dart';
@@ -1072,7 +1073,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      debugPrint('PROFILE: toggle visibility error: $e');
+      appLog('PROFILE: toggle visibility error: $e');
     }
   }
 

@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -632,7 +633,7 @@ class _CommunityManageScreenState extends State<CommunityManageScreen> {
         ),
       );
     } catch (e) {
-      debugPrint('LOGO PICK ERROR: $e');
+      appLog('LOGO PICK ERROR: $e');
     }
   }
 

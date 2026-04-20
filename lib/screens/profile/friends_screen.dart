@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           });
         }
       } catch (e) {
-        debugPrint('SEARCH: error $e');
+        appLog('SEARCH: error $e');
         if (mounted) setState(() => _isSearching = false);
       }
     });

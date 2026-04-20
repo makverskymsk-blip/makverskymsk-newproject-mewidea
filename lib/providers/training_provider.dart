@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/default_exercises.dart';
@@ -60,11 +61,11 @@ class TrainingProvider extends ChangeNotifier {
           .toList();
 
       if (toAdd.isEmpty) {
-        debugPrint('TRAINING: All default exercises already exist, skipping seed');
+        appLog('TRAINING: All default exercises already exist, skipping seed');
         return;
       }
 
-      debugPrint('TRAINING: Seeding ${toAdd.length} default exercises…');
+      appLog('TRAINING: Seeding ${toAdd.length} default exercises…');
       for (final ex in toAdd) {
         await _db.createExercise({
           'user_id': userId,
@@ -76,9 +77,9 @@ class TrainingProvider extends ChangeNotifier {
       }
       // Reload exercises from DB to get proper IDs
       await loadExercises(userId);
-      debugPrint('TRAINING: Seeding complete — ${_exercises.length} exercises loaded');
+      appLog('TRAINING: Seeding complete — ${_exercises.length} exercises loaded');
     } catch (e) {
-      debugPrint('TRAINING: seedDefaultExercises error: $e');
+      appLog('TRAINING: seedDefaultExercises error: $e');
     }
   }
 
@@ -92,7 +93,7 @@ class TrainingProvider extends ChangeNotifier {
       _exercises = data.map((d) => Exercise.fromMap(d)).toList();
       notifyListeners();
     } catch (e) {
-      debugPrint('TRAINING: loadExercises error: $e');
+      appLog('TRAINING: loadExercises error: $e');
     }
   }
 
@@ -103,11 +104,11 @@ class TrainingProvider extends ChangeNotifier {
     String notes = '',
   }) async {
     if (userId == null) {
-      debugPrint('TRAINING: addExercise FAILED — userId is null!');
+      appLog('TRAINING: addExercise FAILED — userId is null!');
       return null;
     }
     try {
-      debugPrint('TRAINING: addExercise "$name" for user $userId');
+      appLog('TRAINING: addExercise "$name" for user $userId');
       final result = await _db.createExercise({
         'user_id': userId,
         'name': name,
@@ -115,14 +116,14 @@ class TrainingProvider extends ChangeNotifier {
         'secondary_muscles': secondaryMuscles ?? <String>[],
         'notes': notes,
       });
-      debugPrint('TRAINING: addExercise SUCCESS — id=${result['id']}');
+      appLog('TRAINING: addExercise SUCCESS — id=${result['id']}');
       final exercise = Exercise.fromMap(result);
       _exercises.insert(0, exercise);
       notifyListeners();
       return exercise;
     } catch (e, stack) {
-      debugPrint('TRAINING: addExercise ERROR: $e');
-      debugPrint('TRAINING: stack: $stack');
+      appLog('TRAINING: addExercise ERROR: $e');
+      appLog('TRAINING: stack: $stack');
       return null;
     }
   }
@@ -134,7 +135,7 @@ class TrainingProvider extends ChangeNotifier {
       _exercises.removeWhere((e) => e.id == exerciseId);
       notifyListeners();
     } catch (e) {
-      debugPrint('TRAINING: removeExercise error: $e');
+      appLog('TRAINING: removeExercise error: $e');
     }
   }
 
@@ -177,12 +178,12 @@ class TrainingProvider extends ChangeNotifier {
           session.xpEarned = xp;
           try {
             await _db.updateWorkoutSession(session.id, {'xp_earned': xp});
-            debugPrint('TRAINING: Auto-fixed xpEarned=$xp for session ${session.id}');
+            appLog('TRAINING: Auto-fixed xpEarned=$xp for session ${session.id}');
           } catch (_) {}
         }
       }
     } catch (e) {
-      debugPrint('TRAINING: loadSessions error: $e');
+      appLog('TRAINING: loadSessions error: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -194,14 +195,14 @@ class TrainingProvider extends ChangeNotifier {
       final data = await _db.getWorkoutSets(session.id);
       session.sets = data.map((d) => WorkoutSet.fromMap(d)).toList();
     } catch (e) {
-      debugPrint('TRAINING: _loadSetsForSession error: $e');
+      appLog('TRAINING: _loadSetsForSession error: $e');
     }
   }
 
   /// Start a new workout session
   Future<bool> startWorkout(String userId, String name) async {
     if (_activeSession != null) {
-      debugPrint('TRAINING: Cannot start — session already active');
+      appLog('TRAINING: Cannot start — session already active');
       return false;
     }
     try {
@@ -213,10 +214,10 @@ class TrainingProvider extends ChangeNotifier {
       _activeSession = WorkoutSession.fromMap(result);
       _sessions.insert(0, _activeSession!);
       notifyListeners();
-      debugPrint('TRAINING: Started session ${_activeSession!.id}');
+      appLog('TRAINING: Started session ${_activeSession!.id}');
       return true;
     } catch (e) {
-      debugPrint('TRAINING: startWorkout error: $e');
+      appLog('TRAINING: startWorkout error: $e');
       return false;
     }
   }
@@ -249,10 +250,10 @@ class TrainingProvider extends ChangeNotifier {
       final newSet = WorkoutSet.fromMap(result);
       _activeSession!.sets.add(newSet);
       notifyListeners();
-      debugPrint('TRAINING: Added set #$setOrder — $exerciseName ${clampedWeight}kg × $clampedReps');
+      appLog('TRAINING: Added set #$setOrder — $exerciseName ${clampedWeight}kg × $clampedReps');
       return newSet;
     } catch (e) {
-      debugPrint('TRAINING: addSet error: $e');
+      appLog('TRAINING: addSet error: $e');
       return null;
     }
   }
@@ -265,7 +266,7 @@ class TrainingProvider extends ChangeNotifier {
       _activeSession!.sets.removeWhere((s) => s.id == setId);
       notifyListeners();
     } catch (e) {
-      debugPrint('TRAINING: removeSet error: $e');
+      appLog('TRAINING: removeSet error: $e');
     }
   }
 
@@ -308,12 +309,12 @@ class TrainingProvider extends ChangeNotifier {
       notifyListeners();
 
       final score = trainingScore.round();
-      debugPrint('TRAINING: Finished! Duration=${durationMin}m, '
+      appLog('TRAINING: Finished! Duration=${durationMin}m, '
           'Sets=$totalSets, Tonnage=${totalTonnage.toStringAsFixed(0)}kg, '
           'Score=$score');
       return score;
     } catch (e) {
-      debugPrint('TRAINING: finishWorkout error: $e');
+      appLog('TRAINING: finishWorkout error: $e');
       return 0;
     }
   }
@@ -334,7 +335,7 @@ class TrainingProvider extends ChangeNotifier {
       _activeSession = null;
       notifyListeners();
     } catch (e) {
-      debugPrint('TRAINING: cancelWorkout error: $e');
+      appLog('TRAINING: cancelWorkout error: $e');
     }
   }
 
@@ -344,9 +345,9 @@ class TrainingProvider extends ChangeNotifier {
       await _db.deleteWorkoutSession(sessionId);
       _sessions.removeWhere((s) => s.id == sessionId);
       notifyListeners();
-      debugPrint('TRAINING: Deleted session $sessionId');
+      appLog('TRAINING: Deleted session $sessionId');
     } catch (e) {
-      debugPrint('TRAINING: deleteSession error: $e');
+      appLog('TRAINING: deleteSession error: $e');
     }
   }
 

@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,7 +72,7 @@ class CommunityProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('LOGO UPLOAD ERROR: $e');
+      appLog('LOGO UPLOAD ERROR: $e');
       return false;
     }
   }
@@ -123,7 +124,7 @@ class CommunityProvider extends ChangeNotifier {
         await loadPendingRequests(_activeCommunity!.id);
       }
     } catch (e) {
-      debugPrint('ACCEPT JOIN REQUEST ERROR: $e');
+      appLog('ACCEPT JOIN REQUEST ERROR: $e');
       rethrow;
     }
   }
@@ -161,11 +162,11 @@ class CommunityProvider extends ChangeNotifier {
         if (_activeCommunity?.id == communityId) {
           _activeCommunity = fresh;
         }
-        debugPrint('REALTIME: Community refreshed — ${fresh.memberIds.length + fresh.adminIds.length} members');
+        appLog('REALTIME: Community refreshed — ${fresh.memberIds.length + fresh.adminIds.length} members');
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('REALTIME: Failed to refresh community: $e');
+      appLog('REALTIME: Failed to refresh community: $e');
     }
   }
 
@@ -506,18 +507,18 @@ class CommunityProvider extends ChangeNotifier {
     double? totalRent,
   }) async {
     if (_activeCommunity == null) {
-      debugPrint('SUB: BLOCKED - activeCommunity is null');
+      appLog('SUB: BLOCKED - activeCommunity is null');
       return false;
     }
     if (!_activeCommunity!.canManageBalance(requesterId)) {
-      debugPrint('SUB: BLOCKED - canManageBalance=false, requesterId=$requesterId, ownerId=${_activeCommunity!.ownerId}, adminIds=${_activeCommunity!.adminIds}');
+      appLog('SUB: BLOCKED - canManageBalance=false, requesterId=$requesterId, ownerId=${_activeCommunity!.ownerId}, adminIds=${_activeCommunity!.adminIds}');
       return false;
     }
 
     // Нельзя открыть на прошлый месяц
     final now = DateTime.now();
     if (year < now.year || (year == now.year && month < now.month)) {
-      debugPrint('SUB: BLOCKED - past month: $month/$year vs now ${now.month}/${now.year}');
+      appLog('SUB: BLOCKED - past month: $month/$year vs now ${now.month}/${now.year}');
       return false;
     }
 
@@ -529,7 +530,7 @@ class CommunityProvider extends ChangeNotifier {
             s.year == year)
         .firstOrNull;
     if (existing != null) {
-      debugPrint('SUB: BLOCKED - already exists: ${existing.id} for $month/$year, communityId=${existing.communityId}');
+      appLog('SUB: BLOCKED - already exists: ${existing.id} for $month/$year, communityId=${existing.communityId}');
       return false;
     }
 
@@ -551,7 +552,7 @@ class CommunityProvider extends ChangeNotifier {
       totalRent: sub.totalRent,
     );
     _subscriptions.add(savedSub);
-    debugPrint('SUB: CREATED subscription for $month/$year with rent=${sub.totalRent}, id=$realId');
+    appLog('SUB: CREATED subscription for $month/$year with rent=${sub.totalRent}, id=$realId');
     notifyListeners();
     return true;
   }
@@ -567,11 +568,11 @@ class CommunityProvider extends ChangeNotifier {
     try {
       await _db.deleteSubscription(subscriptionId);
       _subscriptions.removeWhere((s) => s.id == subscriptionId);
-      debugPrint('SUB: DELETED subscription id=$subscriptionId');
+      appLog('SUB: DELETED subscription id=$subscriptionId');
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('SUB: DELETE error: $e');
+      appLog('SUB: DELETE error: $e');
       return false;
     }
   }
@@ -661,7 +662,7 @@ class CommunityProvider extends ChangeNotifier {
         .firstOrNull;
     final result = sub?.hasUser(userId) ?? false;
     if (!result) {
-      debugPrint('SUB: no sub for month=$month/$year (have: ${_subscriptions.map((s) => '${s.month}/${s.year}').join(', ')})');
+      appLog('SUB: no sub for month=$month/$year (have: ${_subscriptions.map((s) => '${s.month}/${s.year}').join(', ')})');
     }
     return result;
   }

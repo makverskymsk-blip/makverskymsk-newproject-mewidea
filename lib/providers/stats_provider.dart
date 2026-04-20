@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/achievement.dart';
 import '../models/enums.dart';
@@ -75,7 +76,7 @@ class StatsProvider extends ChangeNotifier {
           drawCount: data['draw_count'] ?? 0,
           totalDistanceKm: totalDist,
         );
-        debugPrint('STATS: Loaded $sportStr stats for $userId');
+        appLog('STATS: Loaded $sportStr stats for $userId');
       }
 
       // Load sport-filtered match history
@@ -84,7 +85,7 @@ class StatsProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('STATS ERROR: Failed to load $sportStr stats: $e');
+      appLog('STATS ERROR: Failed to load $sportStr stats: $e');
     }
   }
 
@@ -108,7 +109,7 @@ class StatsProvider extends ChangeNotifier {
         );
         // Also check achievements
         _checkAchievementsFromStats(userId, _playerStats[userId]!);
-        debugPrint('STATS: Loaded real stats for $userId: overall=${_playerStats[userId]!.overallRating}, distance=${totalDist}km');
+        appLog('STATS: Loaded real stats for $userId: overall=${_playerStats[userId]!.overallRating}, distance=${totalDist}km');
       }
 
       // Load match history
@@ -119,7 +120,7 @@ class StatsProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      debugPrint('STATS ERROR: Failed to load from DB: $e');
+      appLog('STATS ERROR: Failed to load from DB: $e');
     }
   }
 

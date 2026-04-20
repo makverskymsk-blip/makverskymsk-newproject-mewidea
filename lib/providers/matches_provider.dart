@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/sport_match.dart';
 import '../models/enums.dart';
@@ -42,7 +43,7 @@ class MatchesProvider extends ChangeNotifier {
       await _fetchAllMatches();
       _subscribeToGlobalRealtime();
     } catch (e) {
-      debugPrint('MATCHES ERROR: Failed to load matches: $e');
+      appLog('MATCHES ERROR: Failed to load matches: $e');
     }
   }
 
@@ -59,7 +60,7 @@ class MatchesProvider extends ChangeNotifier {
       if (!isPersonal && !isOwnCommunity) {
         skipped++;
         if (skipped <= 3) {
-          debugPrint('MATCHES SKIP: id=${match.id} communityId="$cid" isPersonal=$isPersonal isOwn=$isOwnCommunity');
+          appLog('MATCHES SKIP: id=${match.id} communityId="$cid" isPersonal=$isPersonal isOwn=$isOwnCommunity');
         }
         continue; // skip other communities' events
       }
@@ -71,7 +72,7 @@ class MatchesProvider extends ChangeNotifier {
       }
     }
     notifyListeners();
-    debugPrint('MATCHES: Fetched ${data.length} total, kept ${_matches.length} active + ${_completedEvents.length} completed, skipped $skipped (userCommunities=$_userCommunityIds)');
+    appLog('MATCHES: Fetched ${data.length} total, kept ${_matches.length} active + ${_completedEvents.length} completed, skipped $skipped (userCommunities=$_userCommunityIds)');
   }
 
   /// Subscribe to Supabase Realtime — auto-refresh on any DB change (all matches)
@@ -164,7 +165,7 @@ class MatchesProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('MATCHES ERROR: toggleRegistration failed: $e');
+      appLog('MATCHES ERROR: toggleRegistration failed: $e');
       // Rollback local state
       match.currentPlayers = prevPlayers;
       match.isUserRegistered = prevRegistered;
@@ -193,9 +194,9 @@ class MatchesProvider extends ChangeNotifier {
   Future<void> routePaymentToCreator(String creatorId, double amount, {String? communityId}) async {
     try {
       await _db.addToUserBalance(creatorId, amount, communityId: communityId);
-      debugPrint('PAYMENT: Routed ${amount.toInt()}₽ to creator $creatorId');
+      appLog('PAYMENT: Routed ${amount.toInt()}₽ to creator $creatorId');
     } catch (e) {
-      debugPrint('PAYMENT ERROR: Failed to route to creator: $e');
+      appLog('PAYMENT ERROR: Failed to route to creator: $e');
     }
   }
 
@@ -220,9 +221,9 @@ class MatchesProvider extends ChangeNotifier {
         registeredPlayerNames: match.registeredPlayerNames,
       );
       _matches.add(savedMatch);
-      debugPrint('MATCHES: Created match ${savedMatch.id}');
+      appLog('MATCHES: Created match ${savedMatch.id}');
     } catch (e) {
-      debugPrint('MATCHES ERROR: Failed to create match: $e');
+      appLog('MATCHES ERROR: Failed to create match: $e');
       // Fallback: add locally
       _matches.add(match);
     }
@@ -432,7 +433,7 @@ class MatchesProvider extends ChangeNotifier {
     team.ratingsSubmitted = true;
     _syncEventTeams(match);
     notifyListeners();
-    debugPrint('CAPTAIN: Team ${team.name} rated. allCaptainsRated=${match.allCaptainsRated}');
+    appLog('CAPTAIN: Team ${team.name} rated. allCaptainsRated=${match.allCaptainsRated}');
     // Auto-complete if all teams rated
     if (match.allCaptainsRated) {
       completeEvent(matchId);
@@ -481,6 +482,6 @@ class MatchesProvider extends ChangeNotifier {
       body: '${match.category.displayName} ${match.format} — результаты записаны',
       payload: {'matchId': matchId},
     );
-    debugPrint('EVENT: Completed event $matchId');
+    appLog('EVENT: Completed event $matchId');
   }
 }

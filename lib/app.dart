@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -52,7 +53,7 @@ class SportsClubApp extends StatelessWidget {
       ],
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          debugPrint('APP: isLoading=${auth.isLoading}, isLoggedIn=${auth.isLoggedIn}, user=${auth.currentUser?.name}, communityIds=${auth.currentUser?.communityIds}');
+          appLog('APP: isLoading=${auth.isLoading}, isLoggedIn=${auth.isLoggedIn}, user=${auth.currentUser?.name}, communityIds=${auth.currentUser?.communityIds}');
           
           // Loading state
           if (auth.isLoading) {
@@ -126,7 +127,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
           .where((id) => !loadedIds.contains(id))
           .toList();
       if (staleIds.isNotEmpty) {
-        debugPrint('APP: removing stale communityIds: $staleIds');
+        appLog('APP: removing stale communityIds: $staleIds');
         await authProv.removeStaleCommunityIds(staleIds);
       }
 
@@ -154,7 +155,7 @@ class _MainWithCommunityLoaderState extends State<_MainWithCommunityLoader> {
         );
       }
     } catch (e) {
-      debugPrint('LOAD ERROR: $e');
+      appLog('LOAD ERROR: $e');
     }
     if (mounted) setState(() => _loaded = true);
   }

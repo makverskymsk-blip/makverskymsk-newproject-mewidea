@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 
 import 'dart:async';
 import 'dart:ui';
@@ -31,19 +32,19 @@ Future<void> main() async {
 void _setupErrorHandlers() {
   // Flutter framework errors (widget build, layout, rendering)
   FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrint('┌──── FLUTTER ERROR ────');
-    debugPrint('│ ${details.exception}');
-    debugPrint('│ ${details.stack?.toString().split('\n').take(5).join('\n│ ')}');
-    debugPrint('└───────────────────────');
+    appLog('┌──── FLUTTER ERROR ────');
+    appLog('│ ${details.exception}');
+    appLog('│ ${details.stack?.toString().split('\n').take(5).join('\n│ ')}');
+    appLog('└───────────────────────');
     // TODO: отправить в Sentry / Crashlytics
   };
 
   // Platform errors (async errors outside Flutter framework)
   PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
-    debugPrint('┌──── PLATFORM ERROR ────');
-    debugPrint('│ $error');
-    debugPrint('│ ${stack.toString().split('\n').take(5).join('\n│ ')}');
-    debugPrint('└────────────────────────');
+    appLog('┌──── PLATFORM ERROR ────');
+    appLog('│ $error');
+    appLog('│ ${stack.toString().split('\n').take(5).join('\n│ ')}');
+    appLog('└────────────────────────');
     // TODO: отправить в Sentry / Crashlytics
     return true; // prevent app crash
   };
@@ -60,9 +61,9 @@ Future<void> appMain() async {
       url: cfg.supabaseUrl,
       anonKey: cfg.supabaseAnonKey,
     ).timeout(const Duration(seconds: 10));
-    debugPrint('MAIN: Supabase initialized successfully');
+    appLog('MAIN: Supabase initialized successfully');
   } catch (e) {
-    debugPrint('MAIN: Supabase init error: $e');
+    appLog('MAIN: Supabase init error: $e');
     // Continue anyway — auth will handle offline state
   }
 
@@ -72,7 +73,7 @@ Future<void> appMain() async {
       final notificationService = NotificationService();
       await notificationService.initialize();
     } catch (e) {
-      debugPrint('Notification init failed: $e');
+      appLog('Notification init failed: $e');
     }
   } */
 

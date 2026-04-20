@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -47,7 +48,7 @@ class _MainNavigationState extends State<MainNavigation> {
     if (!auth.isLoggedIn) return;
 
     final code = widget.inviteCode!;
-    debugPrint('INVITE: handling invite code: $code');
+    appLog('INVITE: handling invite code: $code');
 
     // Показываем диалог подтверждения
     final confirmed = await showDialog<bool>(

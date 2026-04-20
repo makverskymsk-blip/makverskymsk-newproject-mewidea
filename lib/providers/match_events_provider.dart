@@ -1,3 +1,4 @@
+﻿import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/match_event.dart';
 import '../services/supabase_service.dart';
@@ -79,7 +80,7 @@ class MatchEventsProvider extends ChangeNotifier {
       notifyListeners();
       _subscribeToRealtime(matchId);
     } catch (e) {
-      debugPrint('EVENTS ERROR: $e');
+      appLog('EVENTS ERROR: $e');
     }
   }
 
@@ -100,7 +101,7 @@ class MatchEventsProvider extends ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('EVENTS FETCH ERROR: $e');
+      appLog('EVENTS FETCH ERROR: $e');
     }
   }
 
@@ -112,7 +113,7 @@ class MatchEventsProvider extends ChangeNotifier {
       _events.add(event);
       notifyListeners();
     } catch (e) {
-      debugPrint('EVENTS ADD ERROR: $e');
+      appLog('EVENTS ADD ERROR: $e');
       rethrow;
     }
   }
@@ -124,7 +125,7 @@ class MatchEventsProvider extends ChangeNotifier {
       _events.removeWhere((e) => e.id == eventId);
       notifyListeners();
     } catch (e) {
-      debugPrint('EVENTS DELETE ERROR: $e');
+      appLog('EVENTS DELETE ERROR: $e');
       rethrow;
     }
   }
