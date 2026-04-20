@@ -46,3 +46,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets / Environment
+.env
+.env.*
+!.env.example
+
+# Build output (contains compiled keys)
+/docs/
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+lib/firebase_options.dart

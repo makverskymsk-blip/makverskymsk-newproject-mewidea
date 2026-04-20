@@ -1,6 +1,6 @@
 # deploy.ps1 - Deploy Flutter Web to GitHub Pages
 Write-Host "Building..." -ForegroundColor Cyan
-flutter build web --release --base-href "/"
+flutter build web --release --base-href "/" --dart-define-from-file=.env
 
 Write-Host "Preparing..." -ForegroundColor Cyan
 Set-Content -Path "build\web\CNAME" -Value "yourperformancelab.ru" -NoNewline

@@ -2,6 +2,10 @@
 enum Environment { dev, prod }
 
 /// Конфигурация приложения, зависящая от окружения.
+///
+/// Ключи Supabase передаются через --dart-define или --dart-define-from-file:
+///   flutter run --dart-define-from-file=.env
+///   flutter build web --dart-define-from-file=.env
 class AppConfig {
   final Environment environment;
   final String supabaseUrl;
@@ -18,8 +22,15 @@ class AppConfig {
   /// Текущая активная конфигурация (устанавливается при старте приложения).
   static late final AppConfig instance;
 
+  // ─── Ключи из переменных окружения (--dart-define) ─────
+  static const _url = String.fromEnvironment('SUPABASE_URL');
+  static const _key = String.fromEnvironment('SUPABASE_ANON_KEY');
+
   /// Инициализация конфигурации. Вызывать ДО runApp().
   static void init(Environment env) {
+    assert(_url.isNotEmpty, 'SUPABASE_URL не задан! Используйте --dart-define-from-file=.env');
+    assert(_key.isNotEmpty, 'SUPABASE_ANON_KEY не задан! Используйте --dart-define-from-file=.env');
+
     instance = switch (env) {
       Environment.dev => _dev,
       Environment.prod => _prod,
@@ -32,20 +43,16 @@ class AppConfig {
   // ─── Production ──────────────────────────────────────────
   static const _prod = AppConfig._(
     environment: Environment.prod,
-    supabaseUrl: 'https://wviyyqzbafdgmsawrpnv.supabase.co',
-    supabaseAnonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2aXl5cXpiYWZkZ21zYXdycG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDY0OTYsImV4cCI6MjA5MDg4MjQ5Nn0.18plYJSc4MgV72mkJTY0oWBewiuwrV33zfufkTGqiFg',
+    supabaseUrl: _url,
+    supabaseAnonKey: _key,
     appTitle: 'Performance Lab',
   );
 
   // ─── Development ─────────────────────────────────────────
-  // TODO: Заменить URL и ключ на отдельный dev-проект Supabase.
-  //       Сейчас dev и prod указывают на один и тот же инстанс!
   static const _dev = AppConfig._(
     environment: Environment.dev,
-    supabaseUrl: 'https://wviyyqzbafdgmsawrpnv.supabase.co',
-    supabaseAnonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2aXl5cXpiYWZkZ21zYXdycG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMDY0OTYsImV4cCI6MjA5MDg4MjQ5Nn0.18plYJSc4MgV72mkJTY0oWBewiuwrV33zfufkTGqiFg',
+    supabaseUrl: _url,
+    supabaseAnonKey: _key,
     appTitle: 'Performance Lab [DEV]',
   );
 }
