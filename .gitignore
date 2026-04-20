@@ -59,3 +59,7 @@ app.*.map.json
 google-services.json
 GoogleService-Info.plist
 lib/firebase_options.dart
+
+# Database migrations (contain PII and schema)
+/migration/
+/supabase/
