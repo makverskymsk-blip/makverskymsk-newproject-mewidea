@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Политика конфиденциальности — Performance Lab</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #13131a;
+      --primary: #6c5ce7;
+      --text: #e0e0e8;
+      --text-sec: #8a8a9a;
+      --border: rgba(255,255,255,0.06);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .logo-row img {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .logo-row span {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary), #a29bfe);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .date {
+      color: var(--text-sec);
+      font-size: 13px;
+      margin-bottom: 36px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 32px;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    p, li {
+      color: var(--text-sec);
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-sec);
+      font-size: 13px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-row">
+      <img src="icons/Icon-192.png" alt="Performance Lab">
+      <span>PERFORMANCE LAB</span>
+    </div>
+
+    <h1>Политика конфиденциальности</h1>
+    <p class="date">Дата вступления в силу: 23 апреля 2026 г.</p>
+
+    <p>Настоящая Политика конфиденциальности описывает порядок сбора, использования и защиты персональных данных пользователей приложения и веб-сервиса <strong>Performance Lab</strong> (далее — «Сервис»).</p>
+
+    <h2>1. Оператор данных</h2>
+    <div class="card">
+      <p>Оператором персональных данных является администратор сервиса Performance Lab.</p>
+      <p>Контактный email: <a href="mailto:Makversky@yandex.ru">Makversky@yandex.ru</a></p>
+    </div>
+
+    <h2>2. Какие данные мы собираем</h2>
+    <p>При использовании Сервиса мы можем обрабатывать следующие данные:</p>
+    <ul>
+      <li><strong>Адрес электронной почты (email)</strong> — используется для регистрации, аутентификации и восстановления доступа к аккаунту.</li>
+      <li><strong>Пароль</strong> — хранится исключительно в зашифрованном (хэшированном) виде; доступ к исходному паролю невозможен.</li>
+      <li><strong>Имя пользователя</strong> — отображается другим участникам сообщества.</li>
+      <li><strong>Данные об участии в мероприятиях</strong> — информация о посещении спортивных событий, результаты матчей, игровая статистика.</li>
+      <li><strong>Финансовые записи</strong> — суммы абонементов и платежей внутри сообщества (без привязки к банковским картам).</li>
+    </ul>
+
+    <h2>3. Цели сбора данных</h2>
+    <p>Персональные данные обрабатываются исключительно для:</p>
+    <ul>
+      <li>Регистрации и аутентификации пользователя в Сервисе.</li>
+      <li>Управления спортивными сообществами: учёт явки на тренировки и матчи.</li>
+      <li>Ведения спортивной статистики участников.</li>
+      <li>Расчёта абонементских взносов и внутренних финансовых операций сообщества.</li>
+      <li>Отправки служебных уведомлений (подтверждение email, сброс пароля).</li>
+    </ul>
+
+    <h2>4. Передача данных третьим лицам</h2>
+    <div class="card">
+      <p>Мы <strong>не продаём, не передаём и не предоставляем</strong> персональные данные пользователей рекламным сетям, аналитическим платформам или иным третьим лицам в коммерческих целях.</p>
+      <p>Для хранения данных используется облачная платформа <a href="https://supabase.com" target="_blank">Supabase</a> (серверы ЕС/США). Supabase действует как обработчик данных в соответствии со своей <a href="https://supabase.com/privacy" target="_blank">политикой конфиденциальности</a>.</p>
+    </div>
+
+    <h2>5. Защита данных</h2>
+    <p>Мы применяем следующие меры для защиты ваших данных:</p>
+    <ul>
+      <li>Все соединения защищены протоколом HTTPS/TLS.</li>
+      <li>Пароли хранятся в виде криптографических хэшей (bcrypt).</li>
+      <li>Доступ к базе данных ограничен политиками безопасности на уровне строк (Row Level Security).</li>
+      <li>API-ключи и секреты не хранятся в клиентском коде.</li>
+    </ul>
+
+    <h2>6. Хранение данных</h2>
+    <p>Персональные данные хранятся в течение всего срока существования аккаунта пользователя. При удалении аккаунта данные удаляются в течение 30 дней.</p>
+
+    <h2>7. Права пользователя</h2>
+    <p>Вы имеете право:</p>
+    <ul>
+      <li><strong>Получить информацию</strong> о своих персональных данных, обрабатываемых Сервисом.</li>
+      <li><strong>Исправить</strong> неточные данные через настройки профиля.</li>
+      <li><strong>Удалить аккаунт</strong> и все связанные данные — через настройки приложения или обратившись на <a href="mailto:Makversky@yandex.ru">Makversky@yandex.ru</a>.</li>
+      <li><strong>Отозвать согласие</strong> на обработку данных — для этого удалите аккаунт.</li>
+    </ul>
+
+    <h2>8. Файлы cookie</h2>
+    <p>Веб-версия Сервиса может использовать технические cookie-файлы, необходимые для аутентификации и поддержания сессии. Рекламные и аналитические cookie не используются.</p>
+
+    <h2>9. Изменение Политики</h2>
+    <p>Мы оставляем за собой право обновлять данную Политику. Актуальная версия всегда доступна по адресу <a href="https://yourperformancelab.ru/privacy.html">yourperformancelab.ru/privacy.html</a>. При существенных изменениях пользователи будут уведомлены через приложение.</p>
+
+    <h2>10. Контакты</h2>
+    <p>По всем вопросам, связанным с обработкой персональных данных, обращайтесь: <a href="mailto:Makversky@yandex.ru">Makversky@yandex.ru</a></p>
+
+    <div class="footer">
+      © 2026 Performance Lab. Все права защищены.
+    </div>
+  </div>
+</body>
+</html>
