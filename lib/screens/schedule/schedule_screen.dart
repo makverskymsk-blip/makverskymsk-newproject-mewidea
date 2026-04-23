@@ -84,7 +84,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               _buildDaySelector(selectedDate),
 
               Expanded(
-                child: SingleChildScrollView(
+                child: RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: () => matchesProv.refreshMatches(),
+                  child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
@@ -184,6 +188,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       const SizedBox(height: 120),
                     ],
                   ),
+                ),
                 ),
               ),
             ],

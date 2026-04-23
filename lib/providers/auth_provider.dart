@@ -3,12 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
 import '../models/app_notification.dart';
-import '../services/supabase_service.dart';
+import '../repositories/user_repository.dart';
 import 'notification_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
-  final SupabaseService _db = SupabaseService();
+  final UserRepository _db = UserRepository();
   UserProfile? _currentUser;
   bool _isLoading = true;
   dynamic _userRealtimeChannel;

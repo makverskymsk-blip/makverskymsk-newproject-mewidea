@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../models/enums.dart';
-import '../services/supabase_service.dart';
 
 class WalletProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService(); // ignore: unused_field
   final List<Transaction> _transactions = [];
 
   List<Transaction> get transactions => _transactions;

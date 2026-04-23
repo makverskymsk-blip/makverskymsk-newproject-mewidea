@@ -1,14 +1,14 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/chat_message.dart';
-import '../services/supabase_service.dart';
+import '../repositories/chat_repository.dart';
 
 /// Manages chat state and Supabase Realtime subscriptions.
 /// Supports both community group chats and direct 1-on-1 messages.
 class ChatProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final ChatRepository _db = ChatRepository();
 
   List<ChatMessage> _messages = [];
   String? _currentChatId;

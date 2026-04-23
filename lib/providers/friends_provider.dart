@@ -1,12 +1,12 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
-import '../services/supabase_service.dart';
+import '../repositories/social_repository.dart';
 
 /// Manages follow/friends relationships.
 /// - Open profiles → instant follow (status='accepted')
 /// - Closed profiles → follow request (status='pending'), owner must accept
 class FriendsProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final SocialRepository _db = SocialRepository();
 
   // Cached data
   List<FollowEntry> _followers = [];

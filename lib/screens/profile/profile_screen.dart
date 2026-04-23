@@ -1,4 +1,4 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/match_stats.dart';
@@ -175,7 +175,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: t.scaffoldBg,
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () async {
+            final uid = auth.uid;
+            if (uid != null) {
+              await Future.wait([
+                statsProv.loadPlayerStatsFromDb(uid),
+                community.refreshCommunity(),
+              ]);
+            }
+          },
+          child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,6 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 100),
             ],
           ),
+        ),
         ),
       ),
     );

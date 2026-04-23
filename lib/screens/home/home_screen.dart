@@ -42,8 +42,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       color: AppColors.of(context).scaffoldBg,
       child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              await Future.wait([
+                matchesProv.refreshMatches(),
+                if (activeCommunity != null)
+                  communityProv.refreshCommunity(),
+              ]);
+            },
+            child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 120),
               ],
             ),
+          ),
           ),
       ),
     );

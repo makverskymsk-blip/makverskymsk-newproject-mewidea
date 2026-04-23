@@ -1,14 +1,14 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/default_exercises.dart';
 import '../models/exercise.dart';
 import '../models/workout_session.dart';
-import '../services/supabase_service.dart';
+import '../repositories/training_repository.dart';
 
 /// Manages workout sessions, exercises, Training Score, and training state.
 class TrainingProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final TrainingRepository _db = TrainingRepository();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;

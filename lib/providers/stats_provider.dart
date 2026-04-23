@@ -1,12 +1,12 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/achievement.dart';
 import '../models/enums.dart';
 import '../models/match_stats.dart';
-import '../services/supabase_service.dart';
+import '../repositories/stats_repository.dart';
 
 class StatsProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final StatsRepository _db = StatsRepository();
   final Map<String, PlayerOverallStats> _playerStats = {};
   final Map<String, List<Map<String, dynamic>>> _matchHistory = {};
   final Map<String, List<Achievement>> _achievements = {};

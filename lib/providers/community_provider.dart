@@ -6,10 +6,14 @@ import '../models/community.dart';
 import '../models/enums.dart';
 import '../models/subscription.dart';
 import '../models/transaction.dart';
-import '../services/supabase_service.dart';
+import '../repositories/community_repository.dart';
+import '../repositories/finance_repository.dart';
+import '../repositories/user_repository.dart';
 
 class CommunityProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final CommunityRepository _communityRepo = CommunityRepository();
+  final FinanceRepository _financeRepo = FinanceRepository();
+  final UserRepository _userRepo = UserRepository();
   final List<Community> _communities = [];
   Community? _activeCommunity;
   final List<MonthlySubscription> _subscriptions = [];
@@ -35,7 +39,7 @@ class CommunityProvider extends ChangeNotifier {
 
   Future<void> loadUserCommunities(List<String> communityIds) async {
     _communities.clear();
-    final loaded = await _db.getUserCommunities(communityIds);
+    final loaded = await _communityRepo.getUserCommunities(communityIds);
     _communities.addAll(loaded);
     if (_communities.isNotEmpty && _activeCommunity == null) {
       // Try to restore saved selection
@@ -62,9 +66,9 @@ class CommunityProvider extends ChangeNotifier {
   /// Upload community logo and update DB
   Future<bool> uploadLogo(String communityId, Uint8List bytes, String ext) async {
     try {
-      final url = await _db.uploadCommunityLogo(communityId, bytes, ext);
+      final url = await _userRepo.uploadCommunityLogo(communityId, bytes, ext);
       if (url == null) return false;
-      await _db.updateCommunityLogoUrl(communityId, url);
+      await _userRepo.updateCommunityLogoUrl(communityId, url);
       // Update local
       final idx = _communities.indexWhere((c) => c.id == communityId);
       if (idx != -1) _communities[idx].logoUrl = url;
@@ -89,17 +93,17 @@ class CommunityProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get userRequests => _userRequests;
 
   Future<void> loadAllCommunities() async {
-    _allCommunities = await _db.getAllCommunities();
+    _allCommunities = await _communityRepo.getAllCommunities();
     notifyListeners();
   }
 
   Future<void> loadUserJoinRequests(String userId) async {
-    _userRequests = await _db.getUserJoinRequests(userId);
+    _userRequests = await _communityRepo.getUserJoinRequests(userId);
     notifyListeners();
   }
 
   Future<void> loadPendingRequests(String communityId) async {
-    _pendingRequests = await _db.getJoinRequestsForCommunity(communityId);
+    _pendingRequests = await _communityRepo.getJoinRequestsForCommunity(communityId);
     notifyListeners();
   }
 
@@ -111,14 +115,14 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<void> sendJoinRequest(String communityId, String userId) async {
-    await _db.createJoinRequest(communityId, userId);
+    await _communityRepo.createJoinRequest(communityId, userId);
     await loadUserJoinRequests(userId);
   }
 
   Future<void> acceptJoinRequest(String requestId, String userId, String communityId) async {
     try {
       // Atomic RPC: updates request status + adds user to community
-      await _db.adminAcceptJoinRequest(requestId, userId, communityId);
+      await _communityRepo.adminAcceptJoinRequest(requestId, userId, communityId);
       // Reload pending requests
       if (_activeCommunity != null) {
         await loadPendingRequests(_activeCommunity!.id);
@@ -130,7 +134,7 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<void> rejectJoinRequest(String requestId) async {
-    await _db.updateJoinRequestStatus(requestId, 'rejected');
+    await _communityRepo.updateJoinRequestStatus(requestId, 'rejected');
     if (_activeCommunity != null) {
       await loadPendingRequests(_activeCommunity!.id);
     }
@@ -142,16 +146,23 @@ class CommunityProvider extends ChangeNotifier {
   /// Subscribe to Realtime changes for a community
   void _subscribeToCommunityRealtime(String communityId) {
     _communityRealtimeChannel?.unsubscribe();
-    _communityRealtimeChannel = _db.watchCommunityChannel(
+    _communityRealtimeChannel = _communityRepo.watchCommunityChannel(
       communityId,
       onChanged: () => _refreshActiveCommunity(communityId),
     );
   }
 
   /// Refresh community data from DB when realtime event fires
+  /// Also used as public API for pull-to-refresh fallback.
+  Future<void> refreshCommunity() async {
+    if (_activeCommunity != null) {
+      await _refreshActiveCommunity(_activeCommunity!.id);
+    }
+  }
+
   Future<void> _refreshActiveCommunity(String communityId) async {
     try {
-      final freshList = await _db.getUserCommunities([communityId]);
+      final freshList = await _communityRepo.getUserCommunities([communityId]);
       if (freshList.isNotEmpty) {
         final fresh = freshList.first;
         // Update in local list
@@ -181,7 +192,7 @@ class CommunityProvider extends ChangeNotifier {
         '${name.substring(0, 2).toUpperCase()}${DateTime.now().millisecondsSinceEpoch % 10000}';
     
     // Let PostgreSQL generate the UUID — insert and get back the ID
-    final response = await _db.createCommunityAndReturn(
+    final response = await _communityRepo.createCommunityAndReturn(
       name: name,
       sport: sport,
       inviteCode: code,
@@ -209,7 +220,7 @@ class CommunityProvider extends ChangeNotifier {
 
   Future<bool> joinCommunityFirestore(String inviteCode, String userId) async {
     final community =
-        await _db.getCommunityByInviteCode(inviteCode.toUpperCase());
+        await _communityRepo.getCommunityByInviteCode(inviteCode.toUpperCase());
     if (community == null) return false;
     if (community.isMember(userId)) {
       _activeCommunity = community;
@@ -219,7 +230,7 @@ class CommunityProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     }
-    await _db.joinCommunity(community.id, userId);
+    await _communityRepo.joinCommunity(community.id, userId);
     community.memberIds.add(userId);
     if (!_communities.any((c) => c.id == community.id)) {
       _communities.add(community);
@@ -230,7 +241,7 @@ class CommunityProvider extends ChangeNotifier {
   }
 
   Future<void> leaveCommunity(String communityId, String userId) async {
-    await _db.leaveCommunity(communityId, userId);
+    await _communityRepo.leaveCommunity(communityId, userId);
     _communities.removeWhere((c) => c.id == communityId);
     if (_activeCommunity?.id == communityId) {
       _activeCommunity = _communities.isNotEmpty ? _communities.first : null;
@@ -241,7 +252,7 @@ class CommunityProvider extends ChangeNotifier {
   /// Kick a member from the community (admin/owner only).
   /// Uses the same leave_community RPC which already checks admin rights.
   Future<void> kickMember(String communityId, String userId) async {
-    await _db.leaveCommunity(communityId, userId);
+    await _communityRepo.leaveCommunity(communityId, userId);
     // Update local community data
     final idx = _communities.indexWhere((c) => c.id == communityId);
     if (idx >= 0) {
@@ -267,7 +278,7 @@ class CommunityProvider extends ChangeNotifier {
     _activeCommunity!.adminIds.add(targetUserId);
     _activeCommunity!.memberIds.remove(targetUserId);
 
-    await _db.updateCommunityAdmins(
+    await _communityRepo.updateCommunityAdmins(
       _activeCommunity!.id,
       _activeCommunity!.adminIds,
       _activeCommunity!.memberIds,
@@ -288,7 +299,7 @@ class CommunityProvider extends ChangeNotifier {
     _activeCommunity!.adminIds.remove(targetUserId);
     _activeCommunity!.memberIds.add(targetUserId);
 
-    await _db.updateCommunityAdmins(
+    await _communityRepo.updateCommunityAdmins(
       _activeCommunity!.id,
       _activeCommunity!.adminIds,
       _activeCommunity!.memberIds,
@@ -310,8 +321,8 @@ class CommunityProvider extends ChangeNotifier {
     if (_activeCommunity == null || amount <= 0) return false;
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
-    await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
-    await _db.addTransaction(
+    await _userRepo.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -337,8 +348,8 @@ class CommunityProvider extends ChangeNotifier {
     if (_activeCommunity == null || amount <= 0) return false;
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
-    await _db.updateUserBalance(targetUserId, -amount, communityId: _activeCommunity!.id);
-    await _db.addTransaction(
+    await _userRepo.updateUserBalance(targetUserId, -amount, communityId: _activeCommunity!.id);
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -372,15 +383,15 @@ class CommunityProvider extends ChangeNotifier {
     final settledAmount = currentBalance.abs();
 
     // 1. Обнулить баланс пользователя (прибавить |долг|)
-    await _db.updateUserBalance(targetUserId, settledAmount, communityId: _activeCommunity!.id);
+    await _userRepo.updateUserBalance(targetUserId, settledAmount, communityId: _activeCommunity!.id);
 
     // 2. Добавить в банк сообщества
     _activeCommunity!.bankBalance += settledAmount;
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
 
     // 3. Зарегистрировать транзакцию
-    await _db.addTransaction(
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -410,15 +421,15 @@ class CommunityProvider extends ChangeNotifier {
     if (amount <= 0) return false;
 
     // 1. Погасить часть долга пользователя (прибавить amount к балансу)
-    await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
+    await _userRepo.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
 
     // 2. Добавить в банк сообщества
     _activeCommunity!.bankBalance += amount;
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
 
     // 3. Зарегистрировать транзакцию
-    await _db.addTransaction(
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -449,9 +460,9 @@ class CommunityProvider extends ChangeNotifier {
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
     _activeCommunity!.bankBalance += amount;
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
-    await _db.addTransaction(
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -477,9 +488,9 @@ class CommunityProvider extends ChangeNotifier {
     if (!_activeCommunity!.canManageBalance(requesterId)) return false;
 
     _activeCommunity!.bankBalance -= amount;
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
-    await _db.addTransaction(
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -542,7 +553,7 @@ class CommunityProvider extends ChangeNotifier {
       totalRent: totalRent ?? _activeCommunity!.monthlyRent,
     );
     // Save to DB and get real UUID back
-    final realId = await _db.saveSubscription(_activeCommunity!.id, sub);
+    final realId = await _financeRepo.saveSubscription(_activeCommunity!.id, sub);
     // Create subscription with correct DB id
     final savedSub = MonthlySubscription(
       id: realId,
@@ -566,7 +577,7 @@ class CommunityProvider extends ChangeNotifier {
     if (!_activeCommunity!.isAdmin(requesterId)) return false;
 
     try {
-      await _db.deleteSubscription(subscriptionId);
+      await _financeRepo.deleteSubscription(subscriptionId);
       _subscriptions.removeWhere((s) => s.id == subscriptionId);
       appLog('SUB: DELETED subscription id=$subscriptionId');
       notifyListeners();
@@ -624,7 +635,7 @@ class CommunityProvider extends ChangeNotifier {
       sub.entries.add(SubscriptionEntry(userId: userId, userName: userName));
     }
 
-    _db.saveSubscription(_activeCommunity!.id, sub);
+    _financeRepo.saveSubscription(_activeCommunity!.id, sub);
     notifyListeners();
   }
 
@@ -734,11 +745,11 @@ class CommunityProvider extends ChangeNotifier {
     _activeCommunity!.bankBalance -= amount;
 
     // Обновить банк в БД
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
 
     // Сохранить транзакцию
-    await _db.addTransaction(
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -762,7 +773,7 @@ class CommunityProvider extends ChangeNotifier {
       }
     }
 
-    await _db.saveSubscription(_activeCommunity!.id, sub);
+    await _financeRepo.saveSubscription(_activeCommunity!.id, sub);
     notifyListeners();
     return true;
   }
@@ -802,12 +813,12 @@ class CommunityProvider extends ChangeNotifier {
       // Списать стоимость абонемента с баланса каждого подписчика
       if (perPlayer > 0) {
         try {
-          await _db.updateUserBalance(entry.userId, -perPlayer, communityId: _activeCommunity!.id);
+          await _userRepo.updateUserBalance(entry.userId, -perPlayer, communityId: _activeCommunity!.id);
         } catch (e) {
           appLog('SUB CALC: Failed to deduct balance for ${entry.userId}: $e');
         }
         try {
-          await _db.addTransaction(
+          await _financeRepo.addTransaction(
             _activeCommunity!.id,
             Transaction(
               id: 'tx_${DateTime.now().millisecondsSinceEpoch}_${entry.userId.substring(0, 8)}',
@@ -832,7 +843,7 @@ class CommunityProvider extends ChangeNotifier {
         DateTime(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
     try {
-      await _db.saveSubscription(_activeCommunity!.id, sub);
+      await _financeRepo.saveSubscription(_activeCommunity!.id, sub);
     } catch (e) {
       appLog('SUB CALC: Failed to save subscription: $e');
     }
@@ -874,8 +885,8 @@ class CommunityProvider extends ChangeNotifier {
     final amount = entry.calculatedAmount ?? sub.perPlayerAmount;
     if (amount > 0) {
       // Вернуть списанную сумму на баланс пользователя (он оплатил вживую)
-      await _db.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
-      await _db.addTransaction(
+      await _userRepo.updateUserBalance(targetUserId, amount, communityId: _activeCommunity!.id);
+      await _financeRepo.addTransaction(
         _activeCommunity!.id,
         Transaction(
           id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -892,14 +903,14 @@ class CommunityProvider extends ChangeNotifier {
       // Абонемент НЕ зачисляется в банк сообщества
     }
 
-    await _db.saveSubscription(_activeCommunity!.id, sub);
+    await _financeRepo.saveSubscription(_activeCommunity!.id, sub);
     notifyListeners();
     return true;
   }
 
   /// Загрузить абонементы сообщества из Supabase + подписка на Realtime
   Future<void> loadSubscriptions(String communityId) async {
-    final loaded = await _db.getSubscriptions(communityId);
+    final loaded = await _financeRepo.getSubscriptions(communityId);
     _subscriptions.removeWhere((s) => s.communityId == communityId);
     _subscriptions.addAll(loaded);
     notifyListeners();
@@ -908,10 +919,10 @@ class CommunityProvider extends ChangeNotifier {
 
   void _subscribeToSubscriptionsRealtime(String communityId) {
     _subsRealtimeChannel?.unsubscribe();
-    _subsRealtimeChannel = _db.watchSubscriptionsChannel(
+    _subsRealtimeChannel = _financeRepo.watchSubscriptionsChannel(
       communityId,
       onChanged: () async {
-        final loaded = await _db.getSubscriptions(communityId);
+        final loaded = await _financeRepo.getSubscriptions(communityId);
         _subscriptions.removeWhere((s) => s.communityId == communityId);
         _subscriptions.addAll(loaded);
         notifyListeners();
@@ -957,8 +968,8 @@ class CommunityProvider extends ChangeNotifier {
 
     if (price == 0) return true; // абонемент — бесплатно
 
-    await _db.updateUserBalance(userId, -price, communityId: _activeCommunity!.id);
-    await _db.addTransaction(
+    await _userRepo.updateUserBalance(userId, -price, communityId: _activeCommunity!.id);
+    await _financeRepo.addTransaction(
       _activeCommunity!.id,
       Transaction(
         id: 'tx_${DateTime.now().millisecondsSinceEpoch}',
@@ -972,7 +983,7 @@ class CommunityProvider extends ChangeNotifier {
     );
 
     _activeCommunity!.bankBalance += price;
-    await _db.updateCommunityBank(
+    await _communityRepo.updateCommunityBank(
         _activeCommunity!.id, _activeCommunity!.bankBalance);
 
     notifyListeners();

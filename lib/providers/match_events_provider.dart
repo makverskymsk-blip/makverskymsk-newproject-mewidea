@@ -1,10 +1,10 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/match_event.dart';
-import '../services/supabase_service.dart';
+import '../repositories/match_events_repository.dart';
 
 class MatchEventsProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final MatchEventsRepository _db = MatchEventsRepository();
   final List<MatchEvent> _events = [];
   String? _currentMatchId; // ignore: unused_field
   dynamic _realtimeSubscription;

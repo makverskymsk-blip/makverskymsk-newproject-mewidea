@@ -1,9 +1,9 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/material.dart';
 import '../models/sport_match.dart';
 import '../models/enums.dart';
 import '../models/app_notification.dart';
-import '../services/supabase_service.dart';
+import '../repositories/match_repository.dart';
 import 'notification_provider.dart';
 
 /// Предопределённые цвета для команд
@@ -20,7 +20,7 @@ const teamColorNames = [
 ];
 
 class MatchesProvider extends ChangeNotifier {
-  final SupabaseService _db = SupabaseService();
+  final MatchRepository _db = MatchRepository();
   final List<SportMatch> _matches = [];
   final List<SportMatch> _completedEvents = []; // архив завершённых
   String? _currentCommunityId;
@@ -82,6 +82,9 @@ class MatchesProvider extends ChangeNotifier {
       onChanged: () => _fetchAllMatches(),
     );
   }
+
+  /// Manual refresh for pull-to-refresh fallback
+  Future<void> refreshMatches() => _fetchAllMatches();
 
   @override
   void dispose() {
