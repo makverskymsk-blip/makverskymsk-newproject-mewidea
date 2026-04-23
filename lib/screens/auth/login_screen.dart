@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/pl_logo.dart';
+import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _agreedToPrivacy = false;
   String? _error;
 
   @override
@@ -32,6 +34,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.trim().isEmpty) {
       setState(() => _error = 'Заполните все поля');
+      return;
+    }
+    if (!_isLogin && !_agreedToPrivacy) {
+      setState(() => _error = 'Необходимо принять Политику конфиденциальности');
       return;
     }
     if (!_isLogin && _nameController.text.trim().isEmpty) {
@@ -209,12 +215,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           _buildField(_passwordController, 'Пароль',
                               Icons.lock_outline,
                               obscure: true),
-                          const SizedBox(height: 28),
+                          if (!_isLogin) ...[
+                            const SizedBox(height: 16),
+                            _buildPrivacyCheckbox(),
+                          ],
+                          const SizedBox(height: 20),
                           SizedBox(
                             width: double.infinity,
                             height: 52,
                             child: ElevatedButton(
-                              onPressed: _isLoading ? null : _submit,
+                              onPressed: (_isLoading || (!_isLogin && !_agreedToPrivacy)) ? null : _submit,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
@@ -263,6 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => setState(() {
                         _isLogin = !_isLogin;
                         _error = null;
+                        _agreedToPrivacy = false;
                       }),
                       child: Text(
                         _isLogin
@@ -276,6 +287,61 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrivacyCheckbox() {
+    final t = AppColors.of(context);
+    return GestureDetector(
+      onTap: () => setState(() => _agreedToPrivacy = !_agreedToPrivacy),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: _agreedToPrivacy,
+              onChanged: (v) => setState(() => _agreedToPrivacy = v ?? false),
+              activeColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              side: BorderSide(color: t.textHint.withValues(alpha: 0.4)),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                text: 'Я согласен с условиями ',
+                style: TextStyle(color: t.textHint, fontSize: 12.5),
+                children: [
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+                      ),
+                      child: const Text(
+                        'Политики конфиденциальности',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12.5,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

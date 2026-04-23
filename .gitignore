@@ -63,3 +63,6 @@ lib/firebase_options.dart
 # Database migrations (contain PII and schema)
 /migration/
 /supabase/
+
+# Personal project guide
+makverskyinfo.md

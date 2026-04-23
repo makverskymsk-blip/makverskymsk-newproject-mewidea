@@ -1,4 +1,4 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
@@ -330,6 +330,38 @@ class AuthProvider extends ChangeNotifier {
       return null; // success
     } catch (e) {
       return 'Ошибка: $e';
+    }
+  }
+
+  /// Полное удаление аккаунта: вызывает серверную RPC-функцию,
+  /// которая удаляет все данные пользователя и запись auth.
+  Future<String?> deleteAccount() async {
+    try {
+      // Удалить аватар из storage (best effort)
+      if (_currentUser?.avatarUrl != null && _currentUser!.avatarUrl!.isNotEmpty) {
+        try {
+          final userId = _currentUser!.id;
+          // Try common extensions
+          for (final ext in ['jpg', 'jpeg', 'png', 'webp']) {
+            try {
+              await _supabase.storage.from('avatars').remove(['avatars/$userId.$ext']);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      // Вызвать серверную функцию удаления
+      await _supabase.rpc('delete_user_account');
+
+      // Очистить локальное состояние
+      _userRealtimeChannel?.unsubscribe();
+      _userRealtimeChannel = null;
+      _currentUser = null;
+      notifyListeners();
+      return null; // success
+    } catch (e) {
+      appLog('AUTH: deleteAccount error: $e');
+      return 'Ошибка удаления: $e';
     }
   }
 

@@ -2078,6 +2078,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: t.borderLight.withValues(alpha: 0.5), height: 24),
         _menuTile(Icons.logout_rounded, 'Выйти', () => auth.logout(),
             isDestructive: true),
+        const SizedBox(height: 8),
+        _menuTile(Icons.delete_forever_rounded, 'Удалить аккаунт',
+            () => _showDeleteAccountDialog(context, auth),
+            isDestructive: true),
         const SizedBox(height: 16),
         Center(
           child: Text(
@@ -2089,6 +2093,153 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider auth) {
+    final t = AppColors.of(context);
+    final confirmCtrl = TextEditingController();
+    bool isDeleting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDState) => AlertDialog(
+          backgroundColor: t.dialogBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded,
+                  color: AppColors.error, size: 24),
+              SizedBox(width: 8),
+              Text('Удалить аккаунт?',
+                  style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.2)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Это действие необратимо!',
+                      style: TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Будут удалены:\n'
+                      '• Ваш профиль и аватар\n'
+                      '• История матчей и статистика\n'
+                      '• Все сообщения\n'
+                      '• Транзакции и подписки\n'
+                      '• Членство в сообществах',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Для подтверждения введите УДАЛИТЬ',
+                style: TextStyle(
+                  color: t.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: confirmCtrl,
+                style: TextStyle(color: t.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'УДАЛИТЬ',
+                  hintStyle: TextStyle(color: t.textHint),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: BorderSide(color: t.borderLight),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(100),
+                    borderSide: const BorderSide(color: AppColors.error),
+                  ),
+                  filled: true,
+                  fillColor: t.cardBg,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                ),
+                onChanged: (_) => setDState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isDeleting ? null : () => Navigator.pop(ctx),
+              child: Text('Отмена',
+                  style: TextStyle(
+                      color: isDeleting ? t.textHint : t.textPrimary)),
+            ),
+            TextButton(
+              onPressed: isDeleting ||
+                      confirmCtrl.text.trim() != 'УДАЛИТЬ'
+                  ? null
+                  : () async {
+                      setDState(() => isDeleting = true);
+                      final error = await auth.deleteAccount();
+                      if (error != null && ctx.mounted) {
+                        setDState(() => isDeleting = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(error),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      } else if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        // UI will auto-navigate to login screen
+                      }
+                    },
+              child: isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.error),
+                    )
+                  : Text(
+                      'Удалить навсегда',
+                      style: TextStyle(
+                        color: confirmCtrl.text.trim() == 'УДАЛИТЬ'
+                            ? AppColors.error
+                            : t.textHint,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

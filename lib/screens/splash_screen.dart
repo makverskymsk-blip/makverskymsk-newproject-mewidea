@@ -205,10 +205,10 @@ class _SplashScreenState extends State<SplashScreen>
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: Text(
-                'Powered by Supabase',
+                'v1.0',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: AppColors.textHint,
+                  color: AppColors.textHint.withValues(alpha: 0.4),
                   fontSize: 11,
                   letterSpacing: 1,
                 ),

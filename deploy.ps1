@@ -5,6 +5,7 @@ flutter build web --release --base-href "/" --dart-define-from-file=.env
 Write-Host "Preparing..." -ForegroundColor Cyan
 Set-Content -Path "build\web\CNAME" -Value "yourperformancelab.ru" -NoNewline
 Copy-Item "build\web\index.html" "build\web\404.html"
+Copy-Item "web\privacy.html" "build\web\privacy.html"
 Remove-Item -Recurse -Force "build\web\.git" -ErrorAction SilentlyContinue
 
 Write-Host "Deploying..." -ForegroundColor Cyan

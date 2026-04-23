@@ -3,6 +3,7 @@ import '../models/enums.dart';
 import '../models/match_stats.dart';
 import '../theme/app_colors.dart';
 import 'radar_chart.dart';
+import 'gyro_shimmer_overlay.dart';
 
 class PlayerFifaCard extends StatefulWidget {
   final String playerName;
@@ -77,40 +78,42 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
       child: AnimatedScale(
         scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppColors.of(context).cardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: tier.borderColor, width: 1.5),
-            boxShadow: [
-              // Diffuse elevation shadow
-              BoxShadow(
-                color: AppColors.of(context).isDark
-                    ? Colors.black.withValues(alpha: 0.25)
-                    : Colors.black.withValues(alpha: 0.07),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-                spreadRadius: -4,
+        child: Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.of(context).cardBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: tier.borderColor, width: 1.5),
+                boxShadow: [
+                  // Diffuse elevation shadow
+                  BoxShadow(
+                    color: AppColors.of(context).isDark
+                        ? Colors.black.withValues(alpha: 0.25)
+                        : Colors.black.withValues(alpha: 0.07),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
+                    spreadRadius: -4,
+                  ),
+                  // Tight ambient
+                  BoxShadow(
+                    color: AppColors.of(context).isDark
+                        ? Colors.black.withValues(alpha: 0.12)
+                        : Colors.black.withValues(alpha: 0.025),
+                    blurRadius: 5,
+                    offset: const Offset(0, 1),
+                  ),
+                  // Glow for Gold & Legendary only
+                  if (tier == CardTier.top || tier == CardTier.legendary)
+                    BoxShadow(
+                      color: tier.accentColor.withValues(alpha: 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                    ),
+                ],
               ),
-              // Tight ambient
-              BoxShadow(
-                color: AppColors.of(context).isDark
-                    ? Colors.black.withValues(alpha: 0.12)
-                    : Colors.black.withValues(alpha: 0.025),
-                blurRadius: 5,
-                offset: const Offset(0, 1),
-              ),
-              // Glow for Gold & Legendary only
-              if (tier == CardTier.top || tier == CardTier.legendary)
-                BoxShadow(
-                  color: tier.accentColor.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  spreadRadius: 0,
-                ),
-            ],
-          ),
-          child: Column(
+              child: Column(
             children: [
               // ─── Top section: Overall + Radar ───
               Container(
@@ -388,7 +391,23 @@ class _PlayerFifaCardState extends State<PlayerFifaCard> {
                 ),
               ),
             ],
-          ),
+          ), // end Column
+          ), // end Container
+            // ─── Gyro Shimmer overlay for Gold & Legendary ───
+            if (tier == CardTier.top || tier == CardTier.legendary)
+              Positioned.fill(
+                child: GyroShimmerOverlay(
+                  shimmerColor: tier == CardTier.legendary
+                      ? const Color(0xFFCE93D8)  // Purple for legendary
+                      : const Color(0xFFFFD54F), // Gold for top
+                  secondaryColor: tier == CardTier.legendary
+                      ? const Color(0xFF9C27B0)
+                      : const Color(0xFFFF8F00),
+                  borderRadius: BorderRadius.circular(20),
+                  intensity: tier == CardTier.legendary ? 0.6 : 0.45,
+                ),
+              ),
+          ],
         ),
       ),
     );

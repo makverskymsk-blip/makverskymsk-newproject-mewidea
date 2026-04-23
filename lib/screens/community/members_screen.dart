@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/community.dart';
 import '../../models/enums.dart';
 import '../../models/sport_match.dart';
+import '../../models/subscription.dart';
 
 import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
@@ -320,7 +321,25 @@ class _MembersScreenState extends State<MembersScreen>
     CommunityProvider communityProv,
     AuthProvider auth,
   ) {
-    if (debtors.isEmpty) {
+    // Collect unpaid subscription entries across all subscriptions
+    final unpaidSubEntries = <({MonthlySubscription sub, SubscriptionEntry entry})>[];
+    for (final sub in communityProv.subscriptions) {
+      if (sub.communityId != community.id || !sub.isCalculated) continue;
+      for (final entry in sub.entries) {
+        if (entry.paymentStatus != SubscriptionPaymentStatus.paid) {
+          unpaidSubEntries.add((sub: sub, entry: entry));
+        }
+      }
+    }
+
+    // Get all community matches for cross-referencing
+    final matchesProv = context.read<MatchesProvider>();
+    final allMatches = [...matchesProv.matches, ...matchesProv.completedEvents];
+
+    final hasDebtors = debtors.isNotEmpty;
+    final hasUnpaidSubs = unpaidSubEntries.isNotEmpty;
+
+    if (!hasDebtors && !hasUnpaidSubs) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -358,25 +377,392 @@ class _MembersScreenState extends State<MembersScreen>
       );
     }
 
-    // Get all community matches for cross-referencing
-    final matchesProv = context.read<MatchesProvider>();
-    final allMatches = [...matchesProv.matches, ...matchesProv.completedEvents];
-
     return RefreshIndicator(
       onRefresh: _loadMembers,
       color: AppColors.primary,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: debtors.length,
-        itemBuilder: (ctx, i) => _debtorCard(
-          debtors[i],
-          community,
-          isOwner,
-          isAdmin,
-          communityProv,
-          auth,
-          allMatches,
+        children: [
+          // ── Subscription section ──
+          if (hasUnpaidSubs) ...[
+            _sectionHeader(
+              icon: Icons.card_membership_rounded,
+              title: 'Абонемент',
+              color: AppColors.warning,
+              count: unpaidSubEntries.length,
+            ),
+            const SizedBox(height: 8),
+            ...unpaidSubEntries.map((record) => _subscriptionPaymentCard(
+              record.sub,
+              record.entry,
+              isOwner,
+              isAdmin,
+              communityProv,
+              auth,
+            )),
+            if (hasDebtors) const SizedBox(height: 16),
+          ],
+
+          // ── Events section ──
+          if (hasDebtors) ...[
+            _sectionHeader(
+              icon: Icons.sports_rounded,
+              title: 'За события',
+              color: const Color(0xFFFF4D4D),
+              count: debtors.length,
+            ),
+            const SizedBox(height: 8),
+            ...debtors.map((user) => _debtorCard(
+              user,
+              community,
+              isOwner,
+              isAdmin,
+              communityProv,
+              auth,
+              allMatches,
+            )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Section header for payment tab
+  Widget _sectionHeader({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required int count,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Subscription payment card (separate line, NOT going to bank)
+  Widget _subscriptionPaymentCard(
+    MonthlySubscription sub,
+    SubscriptionEntry entry,
+    bool isOwner,
+    bool isAdmin,
+    CommunityProvider communityProv,
+    AuthProvider auth,
+  ) {
+    final amount = entry.calculatedAmount ?? sub.perPlayerAmount;
+    const months = [
+      '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+    ];
+    final monthName = months[sub.month];
+    final statusColor = entry.paymentStatus == SubscriptionPaymentStatus.overdue
+        ? AppColors.error
+        : AppColors.warning;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: statusColor.withValues(alpha: 0.04),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.18),
+          width: 1,
         ),
+      ),
+      child: Row(
+        children: [
+          // Avatar / initial
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  statusColor.withValues(alpha: 0.2),
+                  statusColor.withValues(alpha: 0.06),
+                ],
+              ),
+              border: Border.all(
+                  color: statusColor.withValues(alpha: 0.3), width: 1),
+            ),
+            child: Center(
+              child: Text(
+                entry.userName.isNotEmpty
+                    ? entry.userName[0].toUpperCase()
+                    : '?',
+                style: TextStyle(
+                    color: statusColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Name + month
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.userName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.of(context).textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(Icons.card_membership_rounded,
+                        size: 12, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$monthName ${sub.year}',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Amount
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(
+              '${amount.toInt()} ₽',
+              style: TextStyle(
+                color: statusColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Confirm button
+          if (isOwner || isAdmin)
+            GestureDetector(
+              onTap: () => _confirmSubPayment(
+                  sub, entry, communityProv, auth),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00E676), Color(0xFF00C853)],
+                  ),
+                  borderRadius: BorderRadius.circular(100),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          const Color(0xFF00E676).withValues(alpha: 0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_rounded,
+                        size: 14, color: Colors.white),
+                    SizedBox(width: 3),
+                    Text(
+                      'Оплачено',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Confirm subscription payment dialog (no bank deposit)
+  void _confirmSubPayment(
+    MonthlySubscription sub,
+    SubscriptionEntry entry,
+    CommunityProvider communityProv,
+    AuthProvider auth,
+  ) {
+    final amount = entry.calculatedAmount ?? sub.perPlayerAmount;
+    const months = [
+      '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+      'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+    ];
+    final monthName = months[sub.month];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.of(context).dialogBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: AppColors.borderLight),
+          ),
+          title: const Text('Подтвердить оплату абонемента'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.userName,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.of(context).surfaceBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: AppColors.borderLight.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.card_membership_rounded,
+                            size: 18, color: AppColors.warning),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Абонемент — $monthName ${sub.year}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Сумма',
+                            style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13)),
+                        Text('${amount.toInt()} ₽',
+                            style: const TextStyle(
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 14, color: AppColors.primary),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Абонемент не зачисляется в банк сообщества',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Отмена'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final ok =
+                    await communityProv.confirmSubscriptionPayment(
+                  requesterId: auth.uid!,
+                  targetUserId: entry.userId,
+                  month: sub.month,
+                  year: sub.year,
+                );
+                if (ok) {
+                  await auth.refreshBalance();
+                  await _loadMembers();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            '${entry.userName} — абонемент $monthName оплачен'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Подтвердить',
+                  style: TextStyle(color: AppColors.success)),
+            ),
+          ],
       ),
     );
   }

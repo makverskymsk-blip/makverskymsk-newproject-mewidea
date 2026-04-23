@@ -1,4 +1,4 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/community.dart';
@@ -7,207 +7,76 @@ import '../models/user_profile.dart';
 import '../models/sport_match.dart';
 import '../models/subscription.dart';
 import '../models/transaction.dart' as app_tx;
+import '../repositories/user_repository.dart';
+import '../repositories/community_repository.dart';
+import '../repositories/match_repository.dart';
+import '../repositories/finance_repository.dart';
+import '../repositories/stats_repository.dart';
+import '../repositories/training_repository.dart';
+import '../repositories/social_repository.dart';
+import '../repositories/chat_repository.dart';
+import '../repositories/match_events_repository.dart';
 
+/// Thin facade over domain repositories.
+/// All methods delegate to the appropriate repository.
+/// Consumers can gradually migrate to using repositories directly.
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
   factory SupabaseService() => _instance;
   SupabaseService._internal();
 
-  final SupabaseClient _supabase = Supabase.instance.client;
+  // ─── Repository instances (accessible for direct use) ───
+  final userRepo = UserRepository();
+  final communityRepo = CommunityRepository();
+  final matchRepo = MatchRepository();
+  final financeRepo = FinanceRepository();
+  final statsRepo = StatsRepository();
+  final trainingRepo = TrainingRepository();
+  final socialRepo = SocialRepository();
+  final chatRepo = ChatRepository();
+  final matchEventsRepo = MatchEventsRepository();
 
-  // ===== AVATAR UPLOAD =====
+  // Legacy: expose supabase client for realtime subscriptions
+  SupabaseClient get client => chatRepo.client;
 
-  /// Upload avatar image and return public URL
-  Future<String?> uploadAvatar(String userId, Uint8List bytes, String ext) async {
-    try {
-      final path = 'avatars/$userId.$ext';
-      await _supabase.storage.from('avatars').uploadBinary(
-        path,
-        bytes,
-        fileOptions: FileOptions(
-          contentType: 'image/$ext',
-          upsert: true,
-        ),
-      );
-      final url = _supabase.storage.from('avatars').getPublicUrl(path);
-      // Add cache buster to force reload
-      final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
-      appLog('AVATAR: Uploaded to $publicUrl');
-      return publicUrl;
-    } catch (e) {
-      appLog('AVATAR ERROR: $e');
-      return null;
-    }
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // USER REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-  Future<String?> uploadCommunityLogo(String communityId, Uint8List bytes, String ext) async {
-    try {
-      final path = 'community_logos/$communityId.$ext';
-      await _supabase.storage.from('avatars').uploadBinary(
-        path,
-        bytes,
-        fileOptions: FileOptions(
-          contentType: 'image/$ext',
-          upsert: true,
-        ),
-      );
-      final url = _supabase.storage.from('avatars').getPublicUrl(path);
-      final publicUrl = '$url?t=${DateTime.now().millisecondsSinceEpoch}';
-      appLog('LOGO: Uploaded to $publicUrl');
-      return publicUrl;
-    } catch (e) {
-      appLog('LOGO ERROR: $e');
-      return null;
-    }
-  }
+  Future<String?> uploadAvatar(String userId, Uint8List bytes, String ext) =>
+      userRepo.uploadAvatar(userId, bytes, ext);
 
-  Future<void> updateCommunityLogoUrl(String communityId, String logoUrl) async {
-    await _supabase.from('communities').update({
-      'logo_url': logoUrl,
-    }).eq('id', communityId);
-  }
+  Future<String?> uploadCommunityLogo(String communityId, Uint8List bytes, String ext) =>
+      userRepo.uploadCommunityLogo(communityId, bytes, ext);
 
-  // ===== USERS =====
+  Future<void> updateCommunityLogoUrl(String communityId, String logoUrl) =>
+      userRepo.updateCommunityLogoUrl(communityId, logoUrl);
 
-  Future<void> createUser(UserProfile user) async {
-    await _supabase.from('users').insert({
-      'id': user.id,
-      'name': user.name,
-      'email': user.email,
-      'position': user.position,
-      'balance': user.balance,
-      'debt': user.debt,
-      'community_ids': user.communityIds,
-      'is_premium': user.isPremium,
-      'games_played': user.gamesPlayed,
-      'goals_scored': user.goalsScored,
-      'sport_positions': user.sportPositions,
-      'gender': user.gender,
-      'height_cm': user.heightCm,
-      'weight_kg': user.weightKg,
-      'age': user.age,
-      'training_xp': user.trainingXp,
-      'training_level': user.trainingLevel,
-      'is_public_profile': user.isPublicProfile,
-      'created_at': DateTime.now().toIso8601String(),
-    });
-  }
+  Future<void> createUser(UserProfile user) =>
+      userRepo.createUser(user);
 
-  Future<UserProfile?> getUser(String uid) async {
-    final response = await _supabase
-        .from('users')
-        .select()
-        .eq('id', uid)
-        .maybeSingle();
+  Future<UserProfile?> getUser(String uid) =>
+      userRepo.getUser(uid);
 
-    if (response == null) return null;
-    
-    return UserProfile(
-      id: response['id'],
-      name: response['name'] ?? '',
-      email: response['email'],
-      position: response['position'] ?? 'Не указана',
-      avatarUrl: response['avatar_url'],
-      balance: (response['balance'] ?? 0).toDouble(),
-      debt: (response['debt'] ?? 0).toDouble(),
-      communityIds: List<String>.from(response['community_ids'] ?? []),
-      isPremium: response['is_premium'] ?? false,
-      gamesPlayed: response['games_played'] ?? 0,
-      goalsScored: response['goals_scored'] ?? 0,
-      sportPositions: response['sport_positions'] != null
-          ? Map<String, String>.from(response['sport_positions'])
-          : {},
-      gender: response['gender'],
-      heightCm: response['height_cm'],
-      weightKg: (response['weight_kg'] as num?)?.toDouble(),
-      age: response['age'],
-      trainingXp: response['training_xp'] ?? 0,
-      trainingLevel: response['training_level'] ?? 1,
-      isPublicProfile: response['is_public_profile'] ?? true,
-    );
-  }
+  Future<void> updateUser(String uid, Map<String, dynamic> data) =>
+      userRepo.updateUser(uid, data);
 
-  Future<void> updateUser(String uid, Map<String, dynamic> data) async {
-    // Map Firestore names to Supabase names (camelCase to snake_case)
-    final mappedData = <String, dynamic>{};
-    const keyMap = {
-      'communityIds': 'community_ids',
-      'isPremium': 'is_premium',
-      'gamesPlayed': 'games_played',
-      'goalsScored': 'goals_scored',
-      'avatarUrl': 'avatar_url',
-      'sportPositions': 'sport_positions',
-      'heightCm': 'height_cm',
-      'weightKg': 'weight_kg',
-      'trainingXp': 'training_xp',
-      'trainingLevel': 'training_level',
-      'isPublicProfile': 'is_public_profile',
-    };
-    data.forEach((key, value) {
-      mappedData[keyMap[key] ?? key] = value;
-    });
+  Future<void> updateUserBalance(String uid, double amount, {String? communityId}) =>
+      userRepo.updateUserBalance(uid, amount, communityId: communityId);
 
-    await _supabase.from('users').update(mappedData).eq('id', uid);
-  }
+  Future<List<UserProfile>> getUsersByIds(List<String> userIds) =>
+      userRepo.getUsersByIds(userIds);
 
-  /// Обновить баланс пользователя (прибавить или вычесть amount).
-  /// [communityId] — если передан, RPC проверит что вызывающий admin/owner.
-  /// Если не передан, RPC разрешит изменение только собственного баланса.
-  Future<void> updateUserBalance(String uid, double amount, {String? communityId}) async {
-    try {
-      appLog('BALANCE: calling RPC for $uid amount=$amount communityId=$communityId');
-      await _supabase.rpc('increment_user_balance', params: {
-        'user_id_param': uid,
-        'amount_param': amount,
-        'p_community_id': communityId,
-      });
-      appLog('BALANCE: RPC success for $uid');
-    } catch (e) {
-      appLog('BALANCE: RPC FAILED for $uid: $e');
-      rethrow;
-    }
-  }
+  dynamic watchUserChannel(String userId, {required VoidCallback onChanged}) =>
+      userRepo.watchUserChannel(userId, onChanged: onChanged);
 
-  /// Получить список пользователей по ID
-  Future<List<UserProfile>> getUsersByIds(List<String> userIds) async {
-    if (userIds.isEmpty) return [];
-    final response = await _supabase
-        .from('users')
-        .select()
-        .inFilter('id', userIds);
+  // ═══════════════════════════════════════════════════════════════
+  // COMMUNITY REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-    return (response as List).map((d) => UserProfile(
-      id: d['id'],
-      name: d['name'] ?? '',
-      email: d['email'],
-      position: d['position'] ?? 'Не указана',
-      avatarUrl: d['avatar_url'],
-      balance: (d['balance'] ?? 0).toDouble(),
-      debt: (d['debt'] ?? 0).toDouble(),
-      communityIds: List<String>.from(d['community_ids'] ?? []),
-      isPremium: d['is_premium'] ?? false,
-      gamesPlayed: d['games_played'] ?? 0,
-      goalsScored: d['goals_scored'] ?? 0,
-    )).toList();
-  }
+  Future<void> createCommunity(Community community) =>
+      communityRepo.createCommunity(community);
 
-  // ===== COMMUNITIES =====
-
-  Future<void> createCommunity(Community community) async {
-    await _supabase.from('communities').insert({
-      'name': community.name,
-      'sport': community.sport.index,
-      'invite_code': community.inviteCode,
-      'owner_id': community.ownerId,
-      'admin_ids': community.adminIds,
-      'member_ids': community.memberIds,
-      'monthly_rent': community.monthlyRent,
-      'single_game_price': community.singleGamePrice,
-      'bank_balance': community.bankBalance,
-    });
-  }
-
-  /// Insert community and return the generated row (with UUID id)
   Future<Map<String, dynamic>> createCommunityAndReturn({
     required String name,
     required SportCategory sport,
@@ -215,1084 +84,255 @@ class SupabaseService {
     required String ownerId,
     double monthlyRent = 100000,
     double singleGamePrice = 1200,
-  }) async {
-    final response = await _supabase.from('communities').insert({
-      'name': name,
-      'sport': sport.index,
-      'invite_code': inviteCode,
-      'owner_id': ownerId,
-      'admin_ids': [ownerId],
-      'member_ids': [],
-      'monthly_rent': monthlyRent,
-      'single_game_price': singleGamePrice,
-      'bank_balance': 0,
-    }).select().single();
-    return response;
-  }
+  }) => communityRepo.createCommunityAndReturn(
+        name: name,
+        sport: sport,
+        inviteCode: inviteCode,
+        ownerId: ownerId,
+        monthlyRent: monthlyRent,
+        singleGamePrice: singleGamePrice,
+      );
 
-  Future<Community?> getCommunityByInviteCode(String code) async {
-    final response = await _supabase
-        .from('communities')
-        .select()
-        .eq('invite_code', code.toUpperCase())
-        .maybeSingle();
+  Future<Community?> getCommunityByInviteCode(String code) =>
+      communityRepo.getCommunityByInviteCode(code);
 
-    if (response == null) return null;
-    return _communityFromMap(response);
-  }
+  Future<List<Community>> getUserCommunities(List<String> communityIds) =>
+      communityRepo.getUserCommunities(communityIds);
 
-  Future<List<Community>> getUserCommunities(List<String> communityIds) async {
-    if (communityIds.isEmpty) return [];
-    final response = await _supabase
-        .from('communities')
-        .select()
-        .inFilter('id', communityIds);
+  Future<void> joinCommunity(String communityId, String userId) =>
+      communityRepo.joinCommunity(communityId, userId);
 
-    return (response as List).map((d) => _communityFromMap(d)).toList();
-  }
-
-  /// Атомарное вступление в сообщество через RPC (без race conditions)
-  Future<void> joinCommunity(String communityId, String userId) async {
-    await _supabase.rpc('join_community', params: {
-      'p_community_id': communityId,
-      'p_user_id': userId,
-    });
-  }
-
-  /// Атомарный выход из сообщества через RPC (без race conditions)
-  Future<void> leaveCommunity(String communityId, String userId) async {
-    await _supabase.rpc('leave_community', params: {
-      'p_community_id': communityId,
-      'p_user_id': userId,
-    });
-  }
+  Future<void> leaveCommunity(String communityId, String userId) =>
+      communityRepo.leaveCommunity(communityId, userId);
 
   Future<void> updateCommunityAdmins(
     String communityId,
     List<String> adminIds,
     List<String> memberIds,
-  ) async {
-    await _supabase.from('communities').update({
-      'admin_ids': adminIds,
-      'member_ids': memberIds,
-    }).eq('id', communityId);
-  }
+  ) => communityRepo.updateCommunityAdmins(communityId, adminIds, memberIds);
 
-  Future<void> updateCommunityBank(
-      String communityId, double newBalance) async {
-    await _supabase.from('communities').update({
-      'bank_balance': newBalance,
-    }).eq('id', communityId);
-  }
+  Future<void> updateCommunityBank(String communityId, double newBalance) =>
+      communityRepo.updateCommunityBank(communityId, newBalance);
 
-  Community _communityFromMap(Map<String, dynamic> d) {
-    return Community(
-      id: d['id'].toString(),
-      name: d['name'] ?? '',
-      sport: SportCategory.values[d['sport'] ?? 0],
-      inviteCode: d['invite_code'] ?? '',
-      ownerId: d['owner_id'] ?? '',
-      adminIds: List<String>.from(d['admin_ids'] ?? []),
-      memberIds: List<String>.from(d['member_ids'] ?? []),
-      monthlyRent: (d['monthly_rent'] ?? 100000).toDouble(),
-      singleGamePrice: (d['single_game_price'] ?? 1200).toDouble(),
-      bankBalance: (d['bank_balance'] ?? 0).toDouble(),
-      logoUrl: d['logo_url']?.toString(),
-    );
-  }
+  Future<List<Community>> getAllCommunities() =>
+      communityRepo.getAllCommunities();
 
-  // ===== COMMUNITY DIRECTORY =====
+  Future<void> createJoinRequest(String communityId, String userId) =>
+      communityRepo.createJoinRequest(communityId, userId);
 
-  /// Get ALL communities for the directory
-  Future<List<Community>> getAllCommunities() async {
-    final response = await _supabase
-        .from('communities')
-        .select()
-        .order('name');
-    return (response as List).map((d) => _communityFromMap(d)).toList();
-  }
+  Future<List<Map<String, dynamic>>> getJoinRequestsForCommunity(String communityId) =>
+      communityRepo.getJoinRequestsForCommunity(communityId);
 
-  // ===== JOIN REQUESTS =====
+  Future<List<Map<String, dynamic>>> getUserJoinRequests(String userId) =>
+      communityRepo.getUserJoinRequests(userId);
 
-  /// Create a join request
-  Future<void> createJoinRequest(String communityId, String userId) async {
-    await _supabase.from('join_requests').upsert({
-      'user_id': userId,
-      'community_id': communityId,
-      'status': 'pending',
-    }, onConflict: 'user_id,community_id');
-  }
+  Future<void> updateJoinRequestStatus(String requestId, String status) =>
+      communityRepo.updateJoinRequestStatus(requestId, status);
 
-  /// Get join requests for a community (for admins)
-  Future<List<Map<String, dynamic>>> getJoinRequestsForCommunity(String communityId) async {
-    final response = await _supabase
-        .from('join_requests')
-        .select()
-        .eq('community_id', communityId)
-        .eq('status', 'pending')
-        .order('created_at');
-    return List<Map<String, dynamic>>.from(response);
-  }
+  Future<void> deleteJoinRequest(String requestId) =>
+      communityRepo.deleteJoinRequest(requestId);
 
-  /// Get user's own join requests
-  Future<List<Map<String, dynamic>>> getUserJoinRequests(String userId) async {
-    final response = await _supabase
-        .from('join_requests')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at');
-    return List<Map<String, dynamic>>.from(response);
-  }
+  Future<void> adminAcceptJoinRequest(String requestId, String userId, String communityId) =>
+      communityRepo.adminAcceptJoinRequest(requestId, userId, communityId);
 
-  /// Update join request status (accept/reject)
-  Future<void> updateJoinRequestStatus(String requestId, String status) async {
-    await _supabase.from('join_requests').update({
-      'status': status,
-    }).eq('id', requestId);
-  }
+  dynamic watchCommunityChannel(String communityId, {required VoidCallback onChanged}) =>
+      communityRepo.watchCommunityChannel(communityId, onChanged: onChanged);
 
-  /// Delete a join request
-  Future<void> deleteJoinRequest(String requestId) async {
-    await _supabase.from('join_requests').delete().eq('id', requestId);
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // MATCH REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-  /// Admin accepts a join request (atomically updates status + adds user to community)
-  Future<void> adminAcceptJoinRequest(String requestId, String userId, String communityId) async {
-    await _supabase.rpc('admin_accept_join_request', params: {
-      'p_request_id': requestId,
-      'p_user_id': userId,
-      'p_community_id': communityId,
-    });
-  }
+  Future<void> createMatch(String communityId, SportMatch match) =>
+      matchRepo.createMatch(communityId, match);
 
-  // ===== SUBSCRIPTIONS =====
+  Future<Map<String, dynamic>> createMatchAndReturn(
+      String? communityId, SportMatch match) =>
+      matchRepo.createMatchAndReturn(communityId, match);
 
-  Future<String> saveSubscription(
-      String communityId, MonthlySubscription sub) async {
-    // Map to snake_case DB columns
-    final map = <String, dynamic>{
-      'community_id': communityId,
-      'month': sub.month,
-      'year': sub.year,
-      'total_rent': sub.totalRent,
-      'compensation_amount': sub.compensationAmount,
-      'entries': sub.entries.map((e) => e.toMap()).toList(),
-      'is_calculated': sub.isCalculated,
-      'calculation_date': sub.calculationDate?.millisecondsSinceEpoch,
-      'payment_deadline': sub.paymentDeadline?.millisecondsSinceEpoch,
-    };
+  Future<List<SportMatch>> getMatches(String communityId) =>
+      matchRepo.getMatches(communityId);
 
-    // If sub.id is a real UUID, the row already exists → use UPDATE
-    // (UPDATE policy allows all community members, INSERT only admins)
-    final isRealUuid = sub.id.length == 36 && sub.id.contains('-');
-    if (isRealUuid) {
-      final result = await _supabase
-          .from('subscriptions')
-          .update(map)
-          .eq('id', sub.id)
-          .select()
-          .single();
-      return result['id'].toString();
-    }
+  Future<List<SportMatch>> getAllActiveMatches() =>
+      matchRepo.getAllActiveMatches();
 
-    // New subscription → use upsert (requires admin INSERT policy)
-    final result = await _supabase
-        .from('subscriptions')
-        .upsert(map, onConflict: 'community_id,month,year')
-        .select()
-        .single();
-    return result['id'].toString();
-  }
+  Future<List<SportMatch>> getAllMatches() =>
+      matchRepo.getAllMatches();
 
-  Future<List<MonthlySubscription>> getSubscriptions(
-      String communityId) async {
-    final response = await _supabase
-        .from('subscriptions')
-        .select()
-        .eq('community_id', communityId)
-        .order('year', ascending: false)
-        .order('month', ascending: false);
-    
-    return (response as List).map((d) => MonthlySubscription.fromMap(
-      d['id'].toString(),
-      {
-        'communityId': d['community_id'] ?? '',
-        'month': d['month'] ?? 1,
-        'year': d['year'] ?? 2026,
-        'totalRent': d['total_rent'] ?? 0,
-        'compensationAmount': d['compensation_amount'] ?? 0,
-        'entries': d['entries'] ?? [],
-        'isCalculated': d['is_calculated'] ?? false,
-        'calculationDate': d['calculation_date'],
-        'paymentDeadline': d['payment_deadline'],
-      },
-    )).toList();
-  }
+  Stream<List<SportMatch>> watchMatches(String communityId) =>
+      matchRepo.watchMatches(communityId);
+
+  dynamic watchAllMatchesChannel({required VoidCallback onChanged}) =>
+      matchRepo.watchAllMatchesChannel(onChanged: onChanged);
+
+  dynamic watchMatchesChannel(String communityId, {required VoidCallback onChanged}) =>
+      matchRepo.watchMatchesChannel(communityId, onChanged: onChanged);
+
+  Future<void> addToUserBalance(String userId, double amount, {String? communityId}) =>
+      matchRepo.addToUserBalance(userId, amount, communityId: communityId);
+
+  Future<void> updateMatch(
+      String communityId, String matchId, Map<String, dynamic> data) =>
+      matchRepo.updateMatch(communityId, matchId, data);
+
+  // ═══════════════════════════════════════════════════════════════
+  // FINANCE REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
+
+  Future<String> saveSubscription(String communityId, MonthlySubscription sub) =>
+      financeRepo.saveSubscription(communityId, sub);
+
+  Future<List<MonthlySubscription>> getSubscriptions(String communityId) =>
+      financeRepo.getSubscriptions(communityId);
 
   Future<MonthlySubscription?> getSubscriptionForMonth(
     String communityId,
     int month,
     int year,
-  ) async {
-    final response = await _supabase
-        .from('subscriptions')
-        .select()
-        .eq('community_id', communityId)
-        .eq('month', month)
-        .eq('year', year)
-        .maybeSingle();
-
-    if (response == null) return null;
-    return MonthlySubscription.fromMap(response['id'].toString(), response);
-  }
+  ) => financeRepo.getSubscriptionForMonth(communityId, month, year);
 
   Stream<MonthlySubscription?> watchSubscription(
     String communityId,
     int month,
     int year,
-  ) {
-    return _supabase
-        .from('subscriptions')
-        .stream(primaryKey: ['id'])
-        .eq('community_id', communityId)
-        .map((list) {
-      if (list.isEmpty) return null;
-      final filtered = list.where((d) => d['month'] == month && d['year'] == year);
-      if (filtered.isEmpty) return null;
-      return MonthlySubscription.fromMap(filtered.first['id'].toString(), filtered.first);
-    });
-  }
+  ) => financeRepo.watchSubscription(communityId, month, year);
 
-  Future<void> deleteSubscription(String subscriptionId) async {
-    await _supabase.from('subscriptions').delete().eq('id', subscriptionId);
-  }
+  Future<void> deleteSubscription(String subscriptionId) =>
+      financeRepo.deleteSubscription(subscriptionId);
 
-  // ===== MATCHES =====
+  dynamic watchSubscriptionsChannel(String communityId, {required VoidCallback onChanged}) =>
+      financeRepo.watchSubscriptionsChannel(communityId, onChanged: onChanged);
 
-  Future<void> createMatch(String communityId, SportMatch match) async {
-    await _supabase.from('matches').insert({
-      'community_id': communityId,
-      'category': match.category.index,
-      'format': match.format,
-      'date_time': match.dateTime.toIso8601String(),
-      'location': match.location,
-      'price': match.price,
-      'total_capacity': match.totalCapacity,
-      'current_players': match.currentPlayers,
-      'registered_player_ids': match.registeredPlayerIds,
-      'registered_player_names': match.registeredPlayerNames,
-      'is_completed': match.isCompleted,
-    });
-  }
-
-  /// Insert match and return the generated row (with UUID id)
-  Future<Map<String, dynamic>> createMatchAndReturn(
-      String? communityId, SportMatch match) async {
-    final response = await _supabase.from('matches').insert({
-      'community_id': (communityId != null && communityId.isNotEmpty) ? communityId : null,
-      if (match.creatorId != null) 'creator_id': match.creatorId,
-      'category': match.category.index,
-      'format': match.format,
-      'date_time': match.dateTime.toIso8601String(),
-      'location': match.location,
-      'price': match.price,
-      'total_capacity': match.totalCapacity,
-      'current_players': match.currentPlayers,
-      'registered_player_ids': match.registeredPlayerIds,
-      'registered_player_names': match.registeredPlayerNames,
-      'is_completed': match.isCompleted,
-    }).select().single();
-    return response;
-  }
-
-  /// Get all matches for a community
-  Future<List<SportMatch>> getMatches(String communityId) async {
-    final response = await _supabase
-        .from('matches')
-        .select()
-        .eq('community_id', communityId)
-        .order('date_time', ascending: true);
-    return (response as List).map((d) => _parseMatch(d)).toList();
-  }
-
-  /// Get ALL active (non-completed) matches globally
-  Future<List<SportMatch>> getAllActiveMatches() async {
-    final response = await _supabase
-        .from('matches')
-        .select()
-        .eq('is_completed', false)
-        .order('date_time', ascending: true);
-    return (response as List).map((d) => _parseMatch(d)).toList();
-  }
-
-  /// Get ALL matches (active + completed) globally
-  Future<List<SportMatch>> getAllMatches() async {
-    final response = await _supabase
-        .from('matches')
-        .select()
-        .order('date_time', ascending: true);
-    return (response as List).map((d) => _parseMatch(d)).toList();
-  }
-
-  /// Parse a single match row into SportMatch
-  SportMatch _parseMatch(Map<String, dynamic> d) {
-    final playerIds = List<String>.from(d['registered_player_ids'] ?? []);
-    return SportMatch(
-      id: d['id'].toString(),
-      communityId: d['community_id']?.toString(),
-      creatorId: d['creator_id']?.toString(),
-      category: SportCategory.values[d['category'] ?? 0],
-      format: d['format'] ?? '',
-      dateTime: DateTime.parse(d['date_time']),
-      location: d['location'] ?? '',
-      price: (d['price'] ?? 0).toDouble(),
-      totalCapacity: d['total_capacity'] ?? 20,
-      currentPlayers: playerIds.length,
-      registeredPlayerIds: playerIds,
-      registeredPlayerNames:
-          List<String>.from(d['registered_player_names'] ?? []),
-      isCompleted: d['is_completed'] ?? false,
-      eventTeams: _parseEventTeams(d['event_teams']),
-      innerMatches: _parseInnerMatches(d['inner_matches']),
-    );
-  }
-
-  Stream<List<SportMatch>> watchMatches(String communityId) {
-    return _supabase
-        .from('matches')
-        .stream(primaryKey: ['id'])
-        .eq('community_id', communityId)
-        .map((list) => list
-            .map((d) {
-                  final playerIds = List<String>.from(d['registered_player_ids'] ?? []);
-                  return SportMatch(
-                    id: d['id'].toString(),
-                    communityId: communityId,
-                    category: SportCategory.values[d['category'] ?? 0],
-                    format: d['format'] ?? '',
-                    dateTime: DateTime.parse(d['date_time']),
-                    location: d['location'] ?? '',
-                    price: (d['price'] ?? 0).toDouble(),
-                    totalCapacity: d['total_capacity'] ?? 20,
-                    currentPlayers: playerIds.length,
-                    registeredPlayerIds: playerIds,
-                    registeredPlayerNames:
-                        List<String>.from(d['registered_player_names'] ?? []),
-                    isCompleted: d['is_completed'] ?? false,
-                    eventTeams: _parseEventTeams(d['event_teams']),
-                    innerMatches: _parseInnerMatches(d['inner_matches']),
-                  );
-                })
-            .toList()
-          ..sort((a, b) => a.dateTime.compareTo(b.dateTime)));
-  }
-
-  /// Subscribe to Realtime changes on matches table (all matches globally)
-  dynamic watchAllMatchesChannel({required VoidCallback onChanged}) {
-    final channel = _supabase.channel('matches_global')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'matches',
-        callback: (payload) {
-          appLog('REALTIME: matches changed — ${payload.eventType}');
-          onChanged();
-        },
-      )
-      .subscribe();
-    return channel;
-  }
-
-  /// Subscribe to Realtime changes on matches table (community-specific, kept for backward compat)
-  dynamic watchMatchesChannel(String communityId, {required VoidCallback onChanged}) {
-    final channel = _supabase.channel('matches_$communityId')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'matches',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'community_id',
-          value: communityId,
-        ),
-        callback: (payload) {
-          appLog('REALTIME: matches changed — ${payload.eventType}');
-          onChanged();
-        },
-      )
-      .subscribe();
-    return channel;
-  }
-
-  /// RPC: Add amount to user's balance atomically.
-  /// [communityId] — если передан, RPC проверит что вызывающий admin/owner.
-  Future<void> addToUserBalance(String userId, double amount, {String? communityId}) async {
-    await _supabase.rpc('add_to_user_balance', params: {
-      'target_user_id': userId,
-      'amount': amount,
-      'p_community_id': communityId,
-    });
-  }
-
-  /// Subscribe to Realtime changes on subscriptions table
-  dynamic watchSubscriptionsChannel(String communityId, {required VoidCallback onChanged}) {
-    final channel = _supabase.channel('subs_$communityId')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'subscriptions',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'community_id',
-          value: communityId,
-        ),
-        callback: (payload) {
-          appLog('REALTIME: subscriptions changed — ${payload.eventType}');
-          onChanged();
-        },
-      )
-      .subscribe();
-    return channel;
-  }
-
-  /// Subscribe to Realtime changes on a specific community row
-  dynamic watchCommunityChannel(String communityId, {required VoidCallback onChanged}) {
-    final channel = _supabase.channel('community_$communityId')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'communities',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'id',
-          value: communityId,
-        ),
-        callback: (payload) {
-          appLog('REALTIME: community changed — ${payload.eventType}');
-          onChanged();
-        },
-      )
-      .subscribe();
-    return channel;
-  }
-
-  /// Subscribe to Realtime changes on a specific user row
-  dynamic watchUserChannel(String userId, {required VoidCallback onChanged}) {
-    final channel = _supabase.channel('user_$userId')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'users',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'id',
-          value: userId,
-        ),
-        callback: (payload) {
-          appLog('REALTIME: user profile changed — ${payload.eventType}');
-          onChanged();
-        },
-      )
-      .subscribe();
-    return channel;
-  }
-
-  Future<void> updateMatch(
-      String communityId, String matchId, Map<String, dynamic> data) async {
-    final mappedData = <String, dynamic>{};
-    const keyMap = {
-      'dateTime': 'date_time',
-      'totalCapacity': 'total_capacity',
-      'currentPlayers': 'current_players',
-      'registeredPlayerIds': 'registered_player_ids',
-      'registeredPlayerNames': 'registered_player_names',
-      'isCompleted': 'is_completed',
-      'eventTeams': 'event_teams',
-      'innerMatches': 'inner_matches',
-    };
-    data.forEach((key, value) {
-      if (key == 'dateTime') {
-        mappedData['date_time'] = (value as DateTime).toIso8601String();
-      } else {
-        mappedData[keyMap[key] ?? key] = value;
-      }
-    });
-
-    await _supabase.from('matches').update(mappedData).eq('id', matchId);
-  }
-
-  // ===== HELPERS =====
-
-  List<EventTeam> _parseEventTeams(dynamic json) {
-    if (json == null) return [];
-    try {
-      final list = json is List ? json : [];
-      return list.map((e) => EventTeam.fromJson(Map<String, dynamic>.from(e))).toList();
-    } catch (e) {
-      appLog('PARSE: Failed to parse event_teams: $e');
-      return [];
-    }
-  }
-
-  List<InnerMatch> _parseInnerMatches(dynamic json) {
-    if (json == null) return [];
-    try {
-      final list = json is List ? json : [];
-      return list.map((e) => InnerMatch.fromJson(Map<String, dynamic>.from(e))).toList();
-    } catch (e) {
-      appLog('PARSE: Failed to parse inner_matches: $e');
-      return [];
-    }
-  }
-
-  // ===== TRANSACTIONS =====
-
-  Future<void> addTransaction(
-      String communityId, app_tx.Transaction tx) async {
-    await _supabase.from('transactions').insert({
-      'community_id': communityId,
-      'user_id': tx.userId,
-      'type': tx.type.index,
-      'amount': tx.amount,
-      'status': tx.status.index,
-      'description': tx.description,
-      'date_time': tx.dateTime.toIso8601String(),
-    });
-  }
+  Future<void> addTransaction(String communityId, app_tx.Transaction tx) =>
+      financeRepo.addTransaction(communityId, tx);
 
   Stream<List<app_tx.Transaction>> watchTransactions(
-      String communityId, String userId) {
-    return _supabase
-        .from('transactions')
-        .stream(primaryKey: ['id'])
-        .eq('community_id', communityId)
-        .map((list) => list
-            .where((d) => d['user_id'] == userId)
-            .map((d) => app_tx.Transaction(
-                  id: d['id'].toString(),
-                  userId: d['user_id'] ?? '',
-                  communityId: communityId,
-                  type: TransactionType.values[d['type'] ?? 0],
-                  amount: (d['amount'] ?? 0).toDouble(),
-                  status: TransactionStatus.values[d['status'] ?? 0],
-                  description: d['description'] ?? '',
-                  dateTime: DateTime.parse(d['date_time']),
-                ))
-            .toList()
-          ..sort((a, b) => b.dateTime.compareTo(a.dateTime)));
-  }
+      String communityId, String userId) =>
+      financeRepo.watchTransactions(communityId, userId);
 
-  // ===== PLAYER STATS =====
+  // ═══════════════════════════════════════════════════════════════
+  // STATS REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-  /// Save player stats for a completed match
-  Future<void> saveMatchPlayerStats(List<Map<String, dynamic>> statsList) async {
-    if (statsList.isEmpty) return;
-    await _supabase.from('match_player_stats').insert(statsList);
-    appLog('STATS: Saved ${statsList.length} player stats records');
-  }
+  Future<void> saveMatchPlayerStats(List<Map<String, dynamic>> statsList) =>
+      statsRepo.saveMatchPlayerStats(statsList);
 
-  /// Get aggregated stats for a player (all-time or filtered by sport)
   Future<Map<String, dynamic>?> getPlayerAggregateStats(
     String userId, {
     String? sportCategory,
-  }) async {
-    try {
-      var query = _supabase
-          .from('match_player_stats')
-          .select()
-          .eq('user_id', userId);
+  }) => statsRepo.getPlayerAggregateStats(userId, sportCategory: sportCategory);
 
-      if (sportCategory != null) {
-        query = query.eq('sport_category', sportCategory);
-      }
-
-      final data = await query.order('created_at', ascending: false);
-
-      if (data.isEmpty) return null;
-
-      int totalGames = data.length;
-      int totalGoals = 0;
-      int totalAssists = 0;
-      int totalSaves = 0;
-      int totalMvp = 0;
-      int winCount = 0;
-      int drawCount = 0;
-      int lossCount = 0;
-      double totalRating = 0;
-
-      for (final row in data) {
-        totalGoals += (row['goals'] as int?) ?? 0;
-        totalAssists += (row['assists'] as int?) ?? 0;
-        totalSaves += (row['saves'] as int?) ?? 0;
-        if (row['is_mvp'] == true) totalMvp++;
-        if (row['is_win'] == true) {
-          winCount++;
-        } else if (row['is_draw'] == true) {
-          drawCount++;
-        } else {
-          lossCount++;
-        }
-        totalRating += (row['overall_rating'] as num?)?.toDouble() ?? 6.0;
-      }
-
-      return {
-        'total_games': totalGames,
-        'total_goals': totalGoals,
-        'total_assists': totalAssists,
-        'total_saves': totalSaves,
-        'total_mvp': totalMvp,
-        'avg_rating': totalGames > 0 ? totalRating / totalGames : 0.0,
-        'win_count': winCount,
-        'draw_count': drawCount,
-        'loss_count': lossCount,
-      };
-    } catch (e) {
-      appLog('STATS ERROR: Failed to get aggregate stats: $e');
-      return null;
-    }
-  }
-
-  /// Get aggregated stats via RPC (server-side, faster)
   Future<Map<String, dynamic>?> getPlayerStatsBySportRpc(
     String userId, {
     String? sportCategory,
-  }) async {
-    try {
-      final result = await _supabase.rpc('get_player_stats_by_sport', params: {
-        'p_user_id': userId,
-        'p_sport_category': sportCategory,
-      });
+  }) => statsRepo.getPlayerStatsBySportRpc(userId, sportCategory: sportCategory);
 
-      if (result == null || (result is List && result.isEmpty)) return null;
-
-      final row = result is List ? result.first : result;
-      return {
-        'total_games': row['total_games'] ?? 0,
-        'total_goals': row['total_goals'] ?? 0,
-        'total_assists': row['total_assists'] ?? 0,
-        'total_saves': row['total_saves'] ?? 0,
-        'total_mvp': row['total_mvp'] ?? 0,
-        'avg_rating': (row['avg_rating'] ?? 0.0).toDouble(),
-        'win_count': row['win_count'] ?? 0,
-        'draw_count': row['draw_count'] ?? 0,
-        'loss_count': row['loss_count'] ?? 0,
-        'total_distance': (row['total_distance'] ?? 0.0).toDouble(),
-      };
-    } catch (e) {
-      appLog('STATS RPC ERROR: $e');
-      // Fallback to client-side aggregation
-      return getPlayerAggregateStats(userId, sportCategory: sportCategory);
-    }
-  }
-
-  /// Get recent match history for a player (optionally filtered by sport)
   Future<List<Map<String, dynamic>>> getPlayerMatchHistory(
-      String userId, {int limit = 10, String? sportCategory}) async {
-    try {
-      var query = _supabase
-          .from('match_player_stats')
-          .select()
-          .eq('user_id', userId);
+      String userId, {int limit = 10, String? sportCategory}) =>
+      statsRepo.getPlayerMatchHistory(userId, limit: limit, sportCategory: sportCategory);
 
-      if (sportCategory != null) {
-        query = query.eq('sport_category', sportCategory);
-      }
-
-      final data = await query
-          .order('created_at', ascending: false)
-          .limit(limit);
-      return List<Map<String, dynamic>>.from(data);
-    } catch (e) {
-      appLog('STATS ERROR: Failed to get match history: $e');
-      return [];
-    }
-  }
-
-  // ===== MATCH EVENTS (LIVE) =====
-
-  /// Add a live match event (goal, assist, save, foul, own_goal, etc.)
-  Future<void> addMatchEvent(Map<String, dynamic> eventData) async {
-    await _supabase.from('match_events').insert(eventData);
-  }
-
-  /// Delete a match event by ID
-  Future<void> deleteMatchEvent(String eventId) async {
-    await _supabase.from('match_events').delete().eq('id', eventId);
-  }
-
-  /// Get all events for a match, ordered chronologically
-  Future<List<Map<String, dynamic>>> getMatchEvents(String matchId) async {
-    final data = await _supabase
-        .from('match_events')
-        .select()
-        .eq('match_id', matchId)
-        .order('created_at', ascending: true);
-    return List<Map<String, dynamic>>.from(data);
-  }
-
-  /// Subscribe to realtime changes on match_events for a specific match
-  dynamic watchMatchEventsChannel(String matchId, {required VoidCallback onChanged}) {
-    return _supabase
-        .channel('match_events_$matchId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'match_events',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'match_id',
-            value: matchId,
-          ),
-          callback: (payload) {
-            appLog('REALTIME: match_events changed — ${payload.eventType}');
-            onChanged();
-          },
-        )
-        .subscribe();
-  }
-
-  // ===== PLAYER DISTANCE =====
-
-  /// Save distance for a specific match+player
   Future<void> savePlayerDistance(
     String matchId,
     String userId,
     double km, {
     String sportCategory = 'football',
-  }) async {
-    // Check if record exists
-    final existing = await _supabase
-        .from('match_player_stats')
-        .select('id')
-        .eq('match_id', matchId)
-        .eq('user_id', userId)
-        .maybeSingle();
+  }) => statsRepo.savePlayerDistance(matchId, userId, km, sportCategory: sportCategory);
 
-    if (existing != null) {
-      // Update existing
-      await _supabase
-          .from('match_player_stats')
-          .update({
-            'distance_km': km,
-            'sport_category': sportCategory,
-          })
-          .eq('match_id', matchId)
-          .eq('user_id', userId);
-    } else {
-      // Insert new
-      await _supabase.from('match_player_stats').insert({
-        'match_id': matchId,
-        'user_id': userId,
-        'distance_km': km,
-        'sport_category': sportCategory,
-      });
-    }
-  }
+  Future<double> getPlayerDistance(String matchId, String userId) =>
+      statsRepo.getPlayerDistance(matchId, userId);
 
-  /// Get distance for a player in a specific match
-  Future<double> getPlayerDistance(String matchId, String userId) async {
-    try {
-      final data = await _supabase
-          .from('match_player_stats')
-          .select('distance_km')
-          .eq('match_id', matchId)
-          .eq('user_id', userId)
-          .maybeSingle();
-      return (data?['distance_km'] ?? 0.0).toDouble();
-    } catch (_) {
-      return 0.0;
-    }
-  }
+  Future<double> getPlayerTotalDistance(String userId, {String? sportCategory}) =>
+      statsRepo.getPlayerTotalDistance(userId, sportCategory: sportCategory);
 
-  /// Get total distance across all matches for a player (optionally by sport)
-  Future<double> getPlayerTotalDistance(String userId, {String? sportCategory}) async {
-    try {
-      var query = _supabase
-          .from('match_player_stats')
-          .select('distance_km')
-          .eq('user_id', userId);
+  // ═══════════════════════════════════════════════════════════════
+  // TRAINING REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-      if (sportCategory != null) {
-        query = query.eq('sport_category', sportCategory);
-      }
+  Future<List<Map<String, dynamic>>> getExercises(String userId) =>
+      trainingRepo.getExercises(userId);
 
-      final data = await query;
-      double total = 0;
-      for (final row in data) {
-        total += (row['distance_km'] ?? 0.0).toDouble();
-      }
-      return total;
-    } catch (_) {
-      return 0.0;
-    }
-  }
+  Future<Map<String, dynamic>> createExercise(Map<String, dynamic> exercise) =>
+      trainingRepo.createExercise(exercise);
 
-  // ===== TRAINING MODULE =====
+  Future<void> updateExercise(String id, Map<String, dynamic> data) =>
+      trainingRepo.updateExercise(id, data);
 
-  // --- Exercises ---
+  Future<void> deleteExercise(String id) =>
+      trainingRepo.deleteExercise(id);
 
-  Future<List<Map<String, dynamic>>> getExercises(String userId) async {
-    final data = await _supabase
-        .from('exercises')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(data);
-  }
+  Future<Map<String, dynamic>> createWorkoutSession(Map<String, dynamic> session) =>
+      trainingRepo.createWorkoutSession(session);
 
-  Future<Map<String, dynamic>> createExercise(Map<String, dynamic> exercise) async {
-    final result = await _supabase
-        .from('exercises')
-        .insert(exercise)
-        .select()
-        .single();
-    return result;
-  }
+  Future<List<Map<String, dynamic>>> getWorkoutSessions(String userId, {int limit = 50}) =>
+      trainingRepo.getWorkoutSessions(userId, limit: limit);
 
-  Future<void> updateExercise(String id, Map<String, dynamic> data) async {
-    await _supabase.from('exercises').update(data).eq('id', id);
-  }
+  Future<void> updateWorkoutSession(String id, Map<String, dynamic> data) =>
+      trainingRepo.updateWorkoutSession(id, data);
 
-  Future<void> deleteExercise(String id) async {
-    await _supabase.from('exercises').delete().eq('id', id);
-  }
+  Future<Map<String, dynamic>> createWorkoutSet(Map<String, dynamic> setData) =>
+      trainingRepo.createWorkoutSet(setData);
 
-  // --- Workout Sessions ---
+  Future<List<Map<String, dynamic>>> getWorkoutSets(String sessionId) =>
+      trainingRepo.getWorkoutSets(sessionId);
 
-  Future<Map<String, dynamic>> createWorkoutSession(Map<String, dynamic> session) async {
-    final result = await _supabase
-        .from('workout_sessions')
-        .insert(session)
-        .select()
-        .single();
-    return result;
-  }
+  Future<void> updateWorkoutSet(String id, Map<String, dynamic> data) =>
+      trainingRepo.updateWorkoutSet(id, data);
 
-  Future<List<Map<String, dynamic>>> getWorkoutSessions(String userId, {int limit = 50}) async {
-    final data = await _supabase
-        .from('workout_sessions')
-        .select()
-        .eq('user_id', userId)
-        .order('started_at', ascending: false)
-        .limit(limit);
-    return List<Map<String, dynamic>>.from(data);
-  }
+  Future<void> deleteWorkoutSet(String id) =>
+      trainingRepo.deleteWorkoutSet(id);
 
-  Future<void> updateWorkoutSession(String id, Map<String, dynamic> data) async {
-    await _supabase.from('workout_sessions').update(data).eq('id', id);
-  }
+  Future<void> deleteWorkoutSession(String sessionId) =>
+      trainingRepo.deleteWorkoutSession(sessionId);
 
-  // --- Workout Sets ---
+  Future<void> updateTrainingXpAndLevel(String userId, int xp, int level) =>
+      trainingRepo.updateTrainingXpAndLevel(userId, xp, level);
 
-  Future<Map<String, dynamic>> createWorkoutSet(Map<String, dynamic> setData) async {
-    final result = await _supabase
-        .from('workout_sets')
-        .insert(setData)
-        .select()
-        .single();
-    return result;
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // SOCIAL REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-  Future<List<Map<String, dynamic>>> getWorkoutSets(String sessionId) async {
-    final data = await _supabase
-        .from('workout_sets')
-        .select()
-        .eq('session_id', sessionId)
-        .order('set_order', ascending: true);
-    return List<Map<String, dynamic>>.from(data);
-  }
+  Future<void> followUser(String followerId, String followingId, {required bool targetIsPublic}) =>
+      socialRepo.followUser(followerId, followingId, targetIsPublic: targetIsPublic);
 
-  Future<void> updateWorkoutSet(String id, Map<String, dynamic> data) async {
-    await _supabase.from('workout_sets').update(data).eq('id', id);
-  }
+  Future<void> unfollowUser(String followerId, String followingId) =>
+      socialRepo.unfollowUser(followerId, followingId);
 
-  Future<void> deleteWorkoutSet(String id) async {
-    await _supabase.from('workout_sets').delete().eq('id', id);
-  }
+  Future<void> acceptFollowRequest(String followId) =>
+      socialRepo.acceptFollowRequest(followId);
 
-  /// Delete a workout session and all its sets
-  Future<void> deleteWorkoutSession(String sessionId) async {
-    // Delete sets first (cascade)
-    await _supabase.from('workout_sets').delete().eq('session_id', sessionId);
-    await _supabase.from('workout_sessions').delete().eq('id', sessionId);
-  }
+  Future<void> rejectFollowRequest(String followId) =>
+      socialRepo.rejectFollowRequest(followId);
 
-  /// Update user training XP and level
-  Future<void> updateTrainingXpAndLevel(String userId, int xp, int level) async {
-    await _supabase.from('users').update({
-      'training_xp': xp,
-      'training_level': level,
-    }).eq('id', userId);
-  }
+  Future<List<Map<String, dynamic>>> getFollowers(String userId) =>
+      socialRepo.getFollowers(userId);
 
-  // ===== FOLLOWS =====
+  Future<List<Map<String, dynamic>>> getFollowing(String userId) =>
+      socialRepo.getFollowing(userId);
 
-  /// Follow a user. If target has public profile → status='accepted', else 'pending'.
-  Future<void> followUser(String followerId, String followingId, {required bool targetIsPublic}) async {
-    await _supabase.from('follows').upsert({
-      'follower_id': followerId,
-      'following_id': followingId,
-      'status': targetIsPublic ? 'accepted' : 'pending',
-    }, onConflict: 'follower_id,following_id');
-  }
+  Future<List<Map<String, dynamic>>> getPendingFollowRequests(String userId) =>
+      socialRepo.getPendingFollowRequests(userId);
 
-  /// Unfollow / cancel request
-  Future<void> unfollowUser(String followerId, String followingId) async {
-    await _supabase.from('follows')
-        .delete()
-        .eq('follower_id', followerId)
-        .eq('following_id', followingId);
-  }
+  Future<Map<String, int>> getFollowCounts(String userId) =>
+      socialRepo.getFollowCounts(userId);
 
-  /// Accept a follow request (for closed profiles)
-  Future<void> acceptFollowRequest(String followId) async {
-    await _supabase.from('follows').update({
-      'status': 'accepted',
-    }).eq('id', followId);
-  }
+  Future<String?> getFollowStatus(String followerId, String followingId) =>
+      socialRepo.getFollowStatus(followerId, followingId);
 
-  /// Reject a follow request
-  Future<void> rejectFollowRequest(String followId) async {
-    await _supabase.from('follows').delete().eq('id', followId);
-  }
+  Future<bool> areMutualFollowers(String userId1, String userId2) =>
+      socialRepo.areMutualFollowers(userId1, userId2);
 
-  /// Get my followers (people who follow me) — accepted only
-  Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
-    final response = await _supabase
-        .from('follows')
-        .select()
-        .eq('following_id', userId)
-        .eq('status', 'accepted')
-        .order('created_at', ascending: false);
-    // Enrich with user data
-    final results = <Map<String, dynamic>>[];
-    for (final row in response) {
-      final userResp = await _supabase
-          .from('users')
-          .select('id, name, avatar_url, position, sport_positions, is_public_profile')
-          .eq('id', row['follower_id'])
-          .maybeSingle();
-      results.add({...row, 'follower': userResp});
-    }
-    return results;
-  }
+  Future<bool> isUserPublic(String userId) =>
+      socialRepo.isUserPublic(userId);
 
-  /// Get people I'm following — accepted only
-  Future<List<Map<String, dynamic>>> getFollowing(String userId) async {
-    final response = await _supabase
-        .from('follows')
-        .select()
-        .eq('follower_id', userId)
-        .eq('status', 'accepted')
-        .order('created_at', ascending: false);
-    final results = <Map<String, dynamic>>[];
-    for (final row in response) {
-      final userResp = await _supabase
-          .from('users')
-          .select('id, name, avatar_url, position, sport_positions, is_public_profile')
-          .eq('id', row['following_id'])
-          .maybeSingle();
-      results.add({...row, 'following': userResp});
-    }
-    return results;
-  }
+  Future<List<Map<String, dynamic>>> searchUsers(String query, {int limit = 20}) =>
+      socialRepo.searchUsers(query, limit: limit);
 
-  /// Get pending follow requests to me (for closed profiles)
-  Future<List<Map<String, dynamic>>> getPendingFollowRequests(String userId) async {
-    final response = await _supabase
-        .from('follows')
-        .select()
-        .eq('following_id', userId)
-        .eq('status', 'pending')
-        .order('created_at', ascending: false);
-    final results = <Map<String, dynamic>>[];
-    for (final row in response) {
-      final userResp = await _supabase
-          .from('users')
-          .select('id, name, avatar_url, position')
-          .eq('id', row['follower_id'])
-          .maybeSingle();
-      results.add({...row, 'follower': userResp});
-    }
-    return results;
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // CHAT REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-  /// Get follow counts for a user
-  Future<Map<String, int>> getFollowCounts(String userId) async {
-    final followers = await _supabase
-        .from('follows')
-        .select()
-        .eq('following_id', userId)
-        .eq('status', 'accepted');
-    final following = await _supabase
-        .from('follows')
-        .select()
-        .eq('follower_id', userId)
-        .eq('status', 'accepted');
-    final pending = await _supabase
-        .from('follows')
-        .select()
-        .eq('following_id', userId)
-        .eq('status', 'pending');
-    return {
-      'followers': (followers as List).length,
-      'following': (following as List).length,
-      'pending': (pending as List).length,
-    };
-  }
+  static String getDirectChatId(String userId1, String userId2) =>
+      ChatRepository.getDirectChatId(userId1, userId2);
 
-  /// Check relationship status between two users
-  /// Returns: null, 'pending', 'accepted'
-  Future<String?> getFollowStatus(String followerId, String followingId) async {
-    final response = await _supabase
-        .from('follows')
-        .select('status')
-        .eq('follower_id', followerId)
-        .eq('following_id', followingId)
-        .maybeSingle();
-    return response?['status'];
-  }
-
-  /// Check if two users are mutual followers (friends)
-  Future<bool> areMutualFollowers(String userId1, String userId2) async {
-    final f1 = await getFollowStatus(userId1, userId2);
-    final f2 = await getFollowStatus(userId2, userId1);
-    return f1 == 'accepted' && f2 == 'accepted';
-  }
-
-  /// Check if target user has public profile
-  Future<bool> isUserPublic(String userId) async {
-    final response = await _supabase
-        .from('users')
-        .select('is_public_profile')
-        .eq('id', userId)
-        .maybeSingle();
-    return response?['is_public_profile'] ?? true;
-  }
-
-  /// Search users by name (for follow search)
-  Future<List<Map<String, dynamic>>> searchUsers(String query, {int limit = 20}) async {
-    if (query.trim().isEmpty) return [];
-    final response = await _supabase
-        .from('users')
-        .select('id, name, avatar_url, position, is_public_profile')
-        .ilike('name', '%${query.trim()}%')
-        .limit(limit);
-    return List<Map<String, dynamic>>.from(response);
-  }
-
-  // ═══════════ CHAT / MESSAGES ═══════════
-
-  /// Expose supabase client for realtime subscriptions
-  SupabaseClient get client => _supabase;
-
-  /// Generate consistent direct chat ID from two user IDs
-  static String getDirectChatId(String userId1, String userId2) {
-    final sorted = [userId1, userId2]..sort();
-    return '${sorted[0]}_${sorted[1]}';
-  }
-
-  /// Send a message
   Future<Map<String, dynamic>?> sendMessage({
     required String chatType,
     required String chatId,
@@ -1300,208 +340,68 @@ class SupabaseService {
     required String content,
     String messageType = 'text',
     String? mediaUrl,
-  }) async {
-    final response = await _supabase.from('messages').insert({
-      'chat_type': chatType,
-      'chat_id': chatId,
-      'sender_id': senderId,
-      'content': content,
-      'message_type': messageType,
-      if (mediaUrl != null) 'media_url': mediaUrl,
-    }).select().single();
-    return response;
-  }
+  }) => chatRepo.sendMessage(
+        chatType: chatType,
+        chatId: chatId,
+        senderId: senderId,
+        content: content,
+        messageType: messageType,
+        mediaUrl: mediaUrl,
+      );
 
-  /// Get messages for a chat with pagination
   Future<List<Map<String, dynamic>>> getMessages(
     String chatId, {
     int limit = 50,
     DateTime? before,
-  }) async {
-    var query = _supabase
-        .from('messages')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('is_deleted', false)
-        .order('created_at', ascending: false)
-        .limit(limit);
+  }) => chatRepo.getMessages(chatId, limit: limit, before: before);
 
-    if (before != null) {
-      query = _supabase
-          .from('messages')
-          .select()
-          .eq('chat_id', chatId)
-          .eq('is_deleted', false)
-          .lt('created_at', before.toIso8601String())
-          .order('created_at', ascending: false)
-          .limit(limit);
-    }
+  Future<List<Map<String, dynamic>>> getDirectConversations(String userId) =>
+      chatRepo.getDirectConversations(userId);
 
-    final response = await query;
-    // Enrich with sender data
-    final results = <Map<String, dynamic>>[];
-    // Collect unique sender IDs
-    final senderIds = <String>{};
-    for (final row in response) {
-      senderIds.add(row['sender_id'] ?? '');
-    }
-    // Batch fetch sender profiles
-    final senderProfiles = <String, Map<String, dynamic>>{};
-    if (senderIds.isNotEmpty) {
-      final profiles = await _supabase
-          .from('users')
-          .select('id, name, avatar_url')
-          .inFilter('id', senderIds.toList());
-      for (final p in profiles) {
-        senderProfiles[p['id']] = p;
-      }
-    }
-    for (final row in response) {
-      results.add({
-        ...row,
-        'sender': senderProfiles[row['sender_id']],
-      });
-    }
-    return results;
-  }
+  Future<void> deleteMessage(String messageId) =>
+      chatRepo.deleteMessage(messageId);
 
-  /// Get all direct conversations for a user (for DM inbox)
-  /// Returns list of conversations with last message and other user info.
-  Future<List<Map<String, dynamic>>> getDirectConversations(String userId) async {
-    try {
-      // Get all direct messages where userId is either sender or part of chat_id
-      final response = await _supabase
-          .from('messages')
-          .select()
-          .eq('chat_type', 'direct')
-          .or('chat_id.ilike.%$userId%')
-          .order('created_at', ascending: false);
+  Future<int> cleanupOldCommunityMessages(String chatId, {int daysToKeep = 3}) =>
+      chatRepo.cleanupOldCommunityMessages(chatId, daysToKeep: daysToKeep);
 
-      // Group by chat_id, keep only last message
-      final Map<String, Map<String, dynamic>> chatMap = {};
-      for (final msg in response) {
-        final chatId = msg['chat_id'] as String;
-        if (!chatMap.containsKey(chatId)) {
-          chatMap[chatId] = msg;
-        }
-      }
+  Future<int> clearDirectChat(String chatId) =>
+      chatRepo.clearDirectChat(chatId);
 
-      // Enrich with other user's profile
-      final results = <Map<String, dynamic>>[];
-      for (final entry in chatMap.entries) {
-        final chatId = entry.key;
-        final lastMsg = entry.value;
+  // ═══════════════════════════════════════════════════════════════
+  // MATCH EVENTS REPOSITORY DELEGATES
+  // ═══════════════════════════════════════════════════════════════
 
-        // Extract the other user's ID from chat_id (format: id1_id2, sorted)
-        final parts = chatId.split('_');
-        if (parts.length < 2) continue;
+  Future<void> addMatchEvent(Map<String, dynamic> eventData) =>
+      matchEventsRepo.addMatchEvent(eventData);
 
-        // Reconstruct both UUIDs (they may contain hyphens so we join on underscore boundaries)
-        // The chat ID format is: sortedId1_sortedId2, where IDs are UUIDs
-        String? otherUserId;
-        // Try splitting by finding the userId in the chatId
-        if (chatId.startsWith(userId)) {
-          otherUserId = chatId.substring(userId.length + 1);
-        } else if (chatId.endsWith(userId)) {
-          otherUserId = chatId.substring(0, chatId.length - userId.length - 1);
-        } else {
-          continue;
-        }
+  Future<void> deleteMatchEvent(String eventId) =>
+      matchEventsRepo.deleteMatchEvent(eventId);
 
-        // Get the other user's profile
-        final otherUser = await _supabase
-            .from('users')
-            .select('id, name, avatar_url')
-            .eq('id', otherUserId)
-            .maybeSingle();
+  Future<List<Map<String, dynamic>>> getMatchEvents(String matchId) =>
+      matchEventsRepo.getMatchEvents(matchId);
 
-        if (otherUser == null) continue;
+  dynamic watchMatchEventsChannel(String matchId, {required VoidCallback onChanged}) =>
+      matchEventsRepo.watchMatchEventsChannel(matchId, onChanged: onChanged);
 
-        results.add({
-          'chat_id': chatId,
-          'last_message': lastMsg,
-          'other_user': otherUser,
-        });
-      }
+  // ═══════════════════════════════════════════════════════════════
+  // MIGRATION (one-time, kept in facade for backward compat)
+  // ═══════════════════════════════════════════════════════════════
 
-      // Sort by last message time (newest first)
-      results.sort((a, b) {
-        final aTime = DateTime.parse(a['last_message']['created_at']);
-        final bTime = DateTime.parse(b['last_message']['created_at']);
-        return bTime.compareTo(aTime);
-      });
-
-      return results;
-    } catch (e) {
-      appLog('CHAT: Error loading direct conversations: $e');
-      return [];
-    }
-  }
-
-  /// Soft-delete a message
-  Future<void> deleteMessage(String messageId) async {
-    await _supabase.from('messages').update({
-      'is_deleted': true,
-      'content': 'Сообщение удалено',
-    }).eq('id', messageId);
-  }
-
-  /// Auto-cleanup: hard-delete community messages older than [daysToKeep] days.
-  /// Called automatically when opening a community chat.
-  Future<int> cleanupOldCommunityMessages(String chatId, {int daysToKeep = 3}) async {
-    final cutoff = DateTime.now().subtract(Duration(days: daysToKeep));
-    try {
-      final deleted = await _supabase
-          .from('messages')
-          .delete()
-          .eq('chat_id', chatId)
-          .eq('chat_type', 'community')
-          .lt('created_at', cutoff.toIso8601String())
-          .select('id');
-      appLog('CHAT CLEANUP: Deleted ${deleted.length} old messages from community $chatId (older than $daysToKeep days)');
-      return deleted.length;
-    } catch (e) {
-      appLog('CHAT CLEANUP ERROR: $e');
-      return 0;
-    }
-  }
-
-  /// Clear all messages in a direct chat (hard-delete).
-  Future<int> clearDirectChat(String chatId) async {
-    try {
-      final deleted = await _supabase
-          .from('messages')
-          .delete()
-          .eq('chat_id', chatId)
-          .eq('chat_type', 'direct')
-          .select('id');
-      appLog('CHAT CLEAR: Deleted ${deleted.length} messages from DM $chatId');
-      return deleted.length;
-    } catch (e) {
-      appLog('CHAT CLEAR ERROR: $e');
-      return 0;
-    }
-  }
-
-  // ===== ONE-TIME MIGRATION: Split event-level stats into per-inner-match stats =====
-
-  /// Recalculate old match_player_stats: replace 1 record per event
-  /// with N records per inner match (one for each match the player played in).
   Future<Map<String, int>> migrateStatsToPerInnerMatch() async {
+    // This is a one-time migration helper — kept here for simplicity
+    final db = Supabase.instance.client;
     int deleted = 0;
     int inserted = 0;
     int skipped = 0;
 
     try {
-      // 1. Get ALL existing match_player_stats
-      final allStats = await _supabase
+      final allStats = await db
           .from('match_player_stats')
           .select()
           .order('created_at', ascending: true);
 
       appLog('MIGRATION: Found ${allStats.length} existing records');
 
-      // 2. Group by match_id
       final byMatch = <String, List<Map<String, dynamic>>>{};
       for (final row in allStats) {
         final matchId = row['match_id'] as String? ?? '';
@@ -1510,39 +410,34 @@ class SupabaseService {
 
       appLog('MIGRATION: ${byMatch.length} unique matches');
 
-      // 3. Process each match
       for (final matchId in byMatch.keys) {
         final records = byMatch[matchId]!;
 
-        // Load the match data
         SportMatch? match;
         try {
-          final matchData = await _supabase
+          final matchData = await db
               .from('matches')
               .select()
               .eq('id', matchId)
               .maybeSingle();
           if (matchData != null) {
-            match = _parseMatch(matchData);
+            match = matchRepo.parseMatch(matchData);
           }
         } catch (e) {
           appLog('MIGRATION: Could not load match $matchId: $e');
         }
 
         if (match == null || match.innerMatches.isEmpty || match.eventTeams.length < 2) {
-          // No inner matches — keep existing record as-is
           skipped += records.length;
           appLog('MIGRATION: Skipping match $matchId (no inner matches)');
           continue;
         }
 
-        // Load live events for this match (for per-inner-match goals/assists/saves)
         List<Map<String, dynamic>> liveEvents = [];
         try {
-          liveEvents = await getMatchEvents(matchId);
+          liveEvents = await matchEventsRepo.getMatchEvents(matchId);
         } catch (_) {}
 
-        // Helper: get per-inner-match stats for a player from live events
         Map<String, int> getImStats(String playerId, String innerMatchId) {
           int goals = 0, assists = 0, saves = 0;
           for (final e in liveEvents) {
@@ -1556,11 +451,9 @@ class SupabaseService {
           return {'goals': goals, 'assists': assists, 'saves': saves};
         }
 
-        // Process each player record for this match
         for (final record in records) {
           final pid = record['user_id'] as String? ?? '';
 
-          // Find player's team
           int playerTeamIdx = -1;
           for (int ti = 0; ti < match.eventTeams.length; ti++) {
             if (match.eventTeams[ti].hasPlayer(pid)) {
@@ -1574,21 +467,18 @@ class SupabaseService {
             continue;
           }
 
-          // Find completed inner matches this player was in
           final playerInnerMatches = match.innerMatches.where((im) {
             if (!im.isCompleted) return false;
             return im.team1Index == playerTeamIdx || im.team2Index == playerTeamIdx;
           }).toList();
 
           if (playerInnerMatches.length <= 1) {
-            // 0 or 1 inner match — keep existing record, just fix win/loss if needed
             if (playerInnerMatches.length == 1) {
               final im = playerInnerMatches.first;
               final isTeam1 = im.team1Index == playerTeamIdx;
               final myScore = isTeam1 ? im.team1Score : im.team2Score;
               final oppScore = isTeam1 ? im.team2Score : im.team1Score;
-              // Update is_win/is_draw based on actual match score
-              await _supabase.from('match_player_stats').update({
+              await db.from('match_player_stats').update({
                 'is_win': myScore > oppScore,
                 'is_draw': myScore == oppScore,
               }).eq('id', record['id']);
@@ -1597,9 +487,8 @@ class SupabaseService {
             continue;
           }
 
-          // Multiple inner matches → delete old record, insert new per-match records
           final oldId = record['id'];
-          await _supabase.from('match_player_stats').delete().eq('id', oldId);
+          await db.from('match_player_stats').delete().eq('id', oldId);
           deleted++;
 
           final newRecords = <Map<String, dynamic>>[];
@@ -1629,7 +518,7 @@ class SupabaseService {
           }
 
           if (newRecords.isNotEmpty) {
-            await _supabase.from('match_player_stats').insert(newRecords);
+            await db.from('match_player_stats').insert(newRecords);
             inserted += newRecords.length;
           }
 

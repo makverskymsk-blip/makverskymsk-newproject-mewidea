@@ -20,6 +20,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
   int _selectedMonthIndex = 0;
+  bool _isCalculating = false;
 
   @override
   void initState() {
@@ -1390,21 +1391,35 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         ),
         const SizedBox(height: 10),
         GestureDetector(
-          onTap: () async {
-            await communityProv.calculateSubscription(
-              requesterId: auth.uid!,
-              month: month,
-              year: year,
-            );
-            // Обновить локальный баланс текущего пользователя
-            await auth.refreshBalance();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Стоимость абонемента рассчитана!'),
-                  backgroundColor: AppColors.success,
-                ),
+          onTap: _isCalculating ? null : () async {
+            setState(() => _isCalculating = true);
+            try {
+              await communityProv.calculateSubscription(
+                requesterId: auth.uid!,
+                month: month,
+                year: year,
               );
+              // Обновить локальный баланс текущего пользователя
+              await auth.refreshBalance();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Стоимость абонемента рассчитана!'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Ошибка расчёта: $e'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+              }
+            } finally {
+              if (mounted) setState(() => _isCalculating = false);
             }
           },
           child: Container(
@@ -1413,22 +1428,33 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(100),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.calculate_rounded,
-                    color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Рассчитать стоимость',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+            child: _isCalculating
+                ? const Center(
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  )
+                : const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calculate_rounded,
+                          color: Colors.white, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Рассчитать стоимость',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
         const SizedBox(height: 20),

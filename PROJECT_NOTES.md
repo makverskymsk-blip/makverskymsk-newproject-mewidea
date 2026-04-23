@@ -326,13 +326,14 @@ lib/
 - [x] **`add_to_user_balance` RPC** — аналогично, проверка admin/owner ✅
 - [x] Удалён fallback в `updateUserBalance` (race condition) ✅
 - [ ] Создать **отдельный DEV-инстанс** Supabase (сейчас dev = prod!)
-- [ ] Скрыть `email` из публичного SELECT или сделать отдельную view
+- [ ] Скрыть `email` из публичного SELECT — создать VIEW `public_users` (без email), заменить `.from('users')` → `.from('public_users')` в запросах чужих профилей (`getUsersByIds`, `searchUsers`)
 
 ### Следующий спринт (Sprint 3)
 - [ ] AI Lab — конструктор тренировок на Gemini
 - [ ] Body Heatmap — тепловая карта нагрузки мышц (силуэт)
 - [ ] Athlete Card — полноценная карточка в профиле (при выборе «Тренировка»)
 - [ ] Radar Chart для тренировок (сила/выносливость/объём/частота)
+- [ ] Shorebird OTA — подключить OTA-обновления для Android (патчи без пересборки APK). shorebird.dev, бесплатно до 5000 патчей/мес. Команды: `shorebird init`, `shorebird release android`, `shorebird patch android`
 
 ---
 

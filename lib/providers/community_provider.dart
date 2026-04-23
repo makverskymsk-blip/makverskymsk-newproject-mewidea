@@ -1,4 +1,4 @@
-﻿import 'package:new_idea_works/utils/app_logger.dart';
+import 'package:new_idea_works/utils/app_logger.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -801,20 +801,28 @@ class CommunityProvider extends ChangeNotifier {
 
       // Списать стоимость абонемента с баланса каждого подписчика
       if (perPlayer > 0) {
-        await _db.updateUserBalance(entry.userId, -perPlayer, communityId: _activeCommunity!.id);
-        await _db.addTransaction(
-          _activeCommunity!.id,
-          Transaction(
-            id: 'tx_${DateTime.now().millisecondsSinceEpoch}_${entry.userId.substring(0, 8)}',
-            userId: entry.userId,
-            communityId: _activeCommunity!.id,
-            type: TransactionType.subscriptionPayment,
-            amount: perPlayer,
-            status: TransactionStatus.pending,
-            description:
-                'Абонемент ${_monthName(targetMonth)} $targetYear — ожидает оплаты',
-          ),
-        );
+        try {
+          await _db.updateUserBalance(entry.userId, -perPlayer, communityId: _activeCommunity!.id);
+        } catch (e) {
+          appLog('SUB CALC: Failed to deduct balance for ${entry.userId}: $e');
+        }
+        try {
+          await _db.addTransaction(
+            _activeCommunity!.id,
+            Transaction(
+              id: 'tx_${DateTime.now().millisecondsSinceEpoch}_${entry.userId.substring(0, 8)}',
+              userId: entry.userId,
+              communityId: _activeCommunity!.id,
+              type: TransactionType.subscriptionPayment,
+              amount: perPlayer,
+              status: TransactionStatus.pending,
+              description:
+                  'Абонемент ${_monthName(targetMonth)} $targetYear — ожидает оплаты',
+            ),
+          );
+        } catch (e) {
+          appLog('SUB CALC: Failed to add transaction for ${entry.userId}: $e');
+        }
       }
     }
 
@@ -823,7 +831,11 @@ class CommunityProvider extends ChangeNotifier {
     sub.paymentDeadline =
         DateTime(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
-    await _db.saveSubscription(_activeCommunity!.id, sub);
+    try {
+      await _db.saveSubscription(_activeCommunity!.id, sub);
+    } catch (e) {
+      appLog('SUB CALC: Failed to save subscription: $e');
+    }
     notifyListeners();
   }
 
@@ -877,10 +889,7 @@ class CommunityProvider extends ChangeNotifier {
         ),
       );
 
-      // Добавить в банк сообщества
-      _activeCommunity!.bankBalance += amount;
-      await _db.updateCommunityBank(
-          _activeCommunity!.id, _activeCommunity!.bankBalance);
+      // Абонемент НЕ зачисляется в банк сообщества
     }
 
     await _db.saveSubscription(_activeCommunity!.id, sub);
